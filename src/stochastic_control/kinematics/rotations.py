@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-# function for matrix cross product (tilde)
+# tilde operator
 def skew_symmetric(v):
     v = np.array(v).flatten()
     result = np.array([[0, -v[2], v[1]],
@@ -10,13 +10,16 @@ def skew_symmetric(v):
 
     return result
 
-def dcm_derivatives(dcm_bn: ArrayLike, angular_velocity_bn: ArrayLike) -> NDArray[np.float64]:
+# Get DCM time derivative from body angular velocity
+def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn: ArrayLike) -> NDArray[np.float64]:
     c_bn = np.asarray(dcm_bn, dtype = float).reshape(3,3)
     omega = np.asarray(angular_velocity_bn, dtype = float).reshape(3,1)
 
-    return - skew_symmetric(omega) @ c_bn
+    dcm_dot = - skew_symmetric(omega) @ c_bn
 
-# get the Principal Inertias (descending order)
+    return dcm_dot
+
+# get Principal Inertias (descending order)
 def get_principal_inertias(Ic_B):
     # get eigenvalues & eigenvectors
     eig_vals, eig_vecs = np.linalg.eigh(Ic_B)
