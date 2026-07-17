@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 def skew_symmetric(v):
     v = np.array(v).flatten()
@@ -7,6 +8,8 @@ def skew_symmetric(v):
                     [-v[1], v[0], 0]])
 
     return result
+
+''' Euler Angles '''
 
 # Directional Cosine Matrix to (3-2-1) Euler Angles
 def dcm_to_ea321(dcm):
@@ -20,6 +23,39 @@ def dcm_to_ea321(dcm):
 
     return euler_angles_rad
 
+# (3-2-1) Euler Angles to Directional Cosine Matrix
+def ea321_to_dcm(euler_angles_rad):
+
+    # allocate parameters
+    theta1, theta2, theta3 = euler_angles_rad.flatten()
+
+    # refactoring
+    c1, s1 = np.cos(theta1), np.sin(theta1)
+    c2, s2 = np.cos(theta2), np.sin(theta2)
+    c3, s3 = np.cos(theta3), np.sin(theta3)
+
+    dcm = np.array([[c2*c1, c2*s1, -s2],
+                    [s3*s2*c1 - c3*s1, s3*s2*s1 + c3*c1, s3*c2],
+                    [c3*s2*c1 + s3*s1, c3*s2*s1 - s3*c1, c3*c2]])
+
+    return dcm
+
+# Get (3-2-1) Euler Anlges time derivative from body angular velocity
+def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+    euler_angles = np.asarray(euler_angles_rad, dtype = float).reshape(3)
+    omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
+
+    psi, theta, phi = euler_angles
+
+    if abs(np.cos(theta)) < 1e-6:
+        raise ValueError('Gimbal-lock')
+
+    euler_angles_dot = (1 / np.cos(theta)) * np.array([[0, np.sin(phi), np.cos(phi)],
+                                                       [0, np.cos(phi)*np.cos(theta), -np.sin(phi)*np.cos(theta)],
+                                                       [np.cos(theta), np.sin(phi)*np.sin(theta), np.cos(phi)*np.sin(theta)]]) @ omega
+    
+    return euler_angles_dot.flatten()
+
 # Directional Cosine Matrix to (3-1-3) Euler Angles
 def dcm_to_ea313(dcm):
 
@@ -31,6 +67,41 @@ def dcm_to_ea313(dcm):
     euler_angles_rad = np.array([theta1, theta2, theta3]).reshape(3,1)
 
     return euler_angles_rad
+
+# (3-1-3) Euler Angles to Directional Cosine Matrix
+def ea313_to_dcm(euler_angles_rad):
+
+    # allocate parameters
+    theta1, theta2, theta3 = euler_angles_rad.flatten()
+
+    # refactoring
+    c1, s1 = np.cos(theta1), np.sin(theta1)
+    c2, s2 = np.cos(theta2), np.sin(theta2)
+    c3, s3 = np.cos(theta3), np.sin(theta3)
+
+    dcm = np.array([[c3*c1 - s3*c2*s1, c3*s1 + s3*c2*c1, s3*s2],
+                    [-s3*c1 - c3*c2*s1, -s3*s1 + c3*c2*c1, c3*s2],
+                    [s2*s1, -s2*c1, c2]])
+
+    return dcm
+
+# Get (3-1-3) Euler Anlges time derivative from body angular velocity
+def ea313_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+    euler_angles = np.asarray(euler_angles_rad, dtype = float).reshape(3)
+    omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
+
+    theta1, theta2, theta3 = euler_angles
+
+    if abs(np.sin(theta2)) < 1e-6:
+        raise ValueError('Gimbal-lock')
+
+    euler_angles_dot = (1 / np.sin(theta2)) * np.array([[np.sin(theta3), np.cos(theta3), 0],
+                                                       [np.cos(theta3)*np.sin(theta2), -np.sin(theta3)*np.sin(theta2), 0],
+                                                       [-np.sin(theta3)*np.cos(theta2), -np.cos(theta3)*np.cos(theta2), np.sin(theta2)]]) @ omega
+    
+    return euler_angles_dot.flatten()
+
+''' Quaternions '''
     
 # Directional Cosine Matrix to Quaternions (Sheppard's method)
 def dcm_to_quaternion(dcm):
@@ -76,54 +147,6 @@ def dcm_to_quaternion(dcm):
 
     return quaternions
 
-# Directional Cosine Matrix to CLassical Rodrigues Parameters
-def dcm_to_crp(dcm):
-    zeta_square = 1 + np.trace(dcm)
-    q = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]).reshape(3,1) / zeta_square
-
-    return q
-
-# Directional Cosine Matrix to Modified Rodrigues Parameters
-def dcm_to_mrp(dcm):
-    zeta = np.sqrt(1 + np.trace(dcm))
-    sigma = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]).reshape(3,1) / (zeta*(zeta + 2))
-
-    return sigma
-
-# (3-2-1) Euler Angles to Directional Cosine Matrix
-def ea321_to_dcm(euler_angles_rad):
-
-    # allocate parameters
-    theta1, theta2, theta3 = euler_angles_rad.flatten()
-
-    # refactoring
-    c1, s1 = np.cos(theta1), np.sin(theta1)
-    c2, s2 = np.cos(theta2), np.sin(theta2)
-    c3, s3 = np.cos(theta3), np.sin(theta3)
-
-    dcm = np.array([[c2*c1, c2*s1, -s2],
-                    [s3*s2*c1 - c3*s1, s3*s2*s1 + c3*c1, s3*c2],
-                    [c3*s2*c1 + s3*s1, c3*s2*s1 - s3*c1, c3*c2]])
-
-    return dcm
-
-# (3-1-3) Euler Angles to Directional Cosine Matrix
-def ea313_to_dcm(euler_angles_rad):
-
-    # allocate parameters
-    theta1, theta2, theta3 = euler_angles_rad.flatten()
-
-    # refactoring
-    c1, s1 = np.cos(theta1), np.sin(theta1)
-    c2, s2 = np.cos(theta2), np.sin(theta2)
-    c3, s3 = np.cos(theta3), np.sin(theta3)
-
-    dcm = np.array([[c3*c1 - s3*c2*s1, c3*s1 + s3*c2*c1, s3*s2],
-                    [-s3*c1 - c3*c2*s1, -s3*s1 + c3*c2*c1, c3*s2],
-                    [s2*s1, -s2*c1, c2]])
-
-    return dcm
-
 # Quaternions to Directional Cosine Matrix
 def quaternion_to_dcm(quaternions):
 
@@ -136,11 +159,52 @@ def quaternion_to_dcm(quaternions):
         
     return dcm
 
+# Get quaternions time derivative from body angular velocity
+def quaternion_derivative(quaternions: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+    euler_parameters = np.asarray(quaternions, dtype = float).reshape(4)
+    omega = np.asarray(angular_velocity_b, dtype = float).reshape(3)
+
+    b0, b1, b2, b3 = euler_parameters
+
+    quaternion_dot = (1/2) * np.array([[b0, -b1, -b2, -b3],
+                                       [b1, b0, -b3, b2],
+                                       [b2, b3, b0, -b1],
+                                       [b3, -b2, b1, b0]]) @ np.array([0, omega[0], omega[1], omega[2]]).reshape(4,1)
+    
+    return quaternion_dot.flatten()
+
+''' Classical Rodrigues Parameters'''
+
+# Directional Cosine Matrix to CLassical Rodrigues Parameters
+def dcm_to_crp(dcm):
+    zeta_square = 1 + np.trace(dcm)
+    q = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]).reshape(3,1) / zeta_square
+
+    return q
+
 # Classical Rodrigues Parameters to Directional Cosine Matrix
 def crp_to_dcm(q):
     dcm = ((1 - np.vdot(q, q)) * np.eye(3) + 2 * np.outer(q, q) - 2 * skew_symmetric(q)) / (1 + np.vdot(q, q))
 
     return dcm
+
+# Get CRPs time derivative from body angular velocity
+def crp_derivative(crp: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+    q = np.asarray(crp, dtype = float).reshape(3,1)
+    omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
+
+    q_dot = (1/2) * (np.eye(3) + skew_symmetric(q) + q @ q.T) @ omega
+    
+    return q_dot.flatten()
+
+'''Modified Rodrigues Parameters'''
+
+# Directional Cosine Matrix to Modified Rodrigues Parameters
+def dcm_to_mrp(dcm):
+    zeta = np.sqrt(1 + np.trace(dcm))
+    sigma = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]).reshape(3,1) / (zeta*(zeta + 2))
+
+    return sigma
 
 # Modified Rodrigues Parameters to Directional Cosine Matrix
 def mrp_to_dcm(sigma):
@@ -148,64 +212,12 @@ def mrp_to_dcm(sigma):
 
     return dcm
 
+# Get MRPs time derivative from body angular velocity
+def mrp_derivative(mrp: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+    sigma = np.asarray(mrp, dtype = float).reshape(3,1)
+    omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
 
-class Attitude:
-    
-    # the most fundamental attitude coordinate is dcm
-    def __init__(self, dcm):
-        self.dcm = dcm
+    sigma_dot = (1/4) * ((1 - np.vdot(sigma, sigma)) * np.eye(3) + 2 * skew_symmetric(sigma) + 2 * sigma @ sigma.T) @ omega
 
-    @classmethod
-    def from_ea321(cls, euler_angles_rad):
-        dcm = ea321_to_dcm(euler_angles_rad)
+    return sigma_dot.flatten()
 
-        return cls(dcm)
-
-    @classmethod
-    def from_ea313(cls, euler_angles_rad):
-        dcm = ea313_to_dcm(euler_angles_rad)
-        
-        return cls(dcm)
-    
-    @classmethod
-    def from_quaternion(cls, quaternions):
-        dcm = quaternion_to_dcm(quaternions)
-        
-        return cls(dcm)
-
-    @classmethod
-    def from_crp(cls, q):
-        dcm = crp_to_dcm(q)
-
-        return cls(dcm)
-    
-    @classmethod
-    def from_mrp(cls, sigma):
-        dcm = mrp_to_dcm(sigma)
-
-        return cls(dcm) 
-
-    def get_ea321(self):
-        ea321 = self.dcm_to_ea321(self.dcm)
-
-        return ea321
-    
-    def get_ea313(self):
-        ea313 = self.dcm_to_ea313(self.dcm)
-
-        return ea313
-    
-    def get_quaternion(self):
-        quaternion = self.dcm_to_quaternion(self.dcm)
-
-        return quaternion
-
-    def get_crp(self):
-        crp = self.dcm_to_crp(self.dcm)
-
-        return crp
-    
-    def get_mrp(self):
-        mrp = self.dcm_to_mrp(self.dcm)
-
-        return mrp
