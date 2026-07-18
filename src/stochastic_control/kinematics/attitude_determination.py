@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from attitude import crp_to_dcm
 
 def skew_symmetric(v):
     v = np.array(v).flatten()
@@ -55,7 +56,7 @@ def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLi
     # get b_matrix
     b_matrix = (weights * measured_vectors).T @ reference_vectors
 
-    # define parameters
+    # initial parameters
     z_matrix = np.array([[b_matrix[1,2] - b_matrix[2,1]], 
                          [b_matrix[2,0] - b_matrix[0,2]],
                          [b_matrix[0,1] - b_matrix[1,0]]])
@@ -69,7 +70,40 @@ def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLi
 
     return optimal_quaternion
 
+# optimal linear attitude estimator (olae)
+def olae_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike) -> NDArray[np.float64]:
 
+    # dimension validation
+    assert len(b_vectors) == len(n_vectors) == len(weight_vectors), "Error: The number of data pairs does not match n"
+
+    # data processing
+    n_sensors = len(b_vectors)
+    measured_vectors = np.asarray(b_vectors, dtype = float).reshape(n_sensors, 3)
+    reference_vectors = np.asarray(n_vectors, dtype = float).reshape(n_sensors, 3)
+    weights = np.asarray(weight_vectors, dtype = float).reshape(n_sensors, 1)
+
+    # normalization
+    measured_vectors /= np.linalg.norm(measured_vectors, axis=1, keepdims=True)
+    reference_vectors /= np.linalg.norm(reference_vectors, axis=1, keepdims=True)
+
+    # initial parameters
+    d_vectors = measured_vectors - reference_vectors
+    d_matrix = d_vectors.reshape(3 * n_sensors, 1)
+
+    s_vectors = measured_vectors + reference_vectors
+    s_matrix = np.zeros((3 * n_sensors, 3))
+
+    w_matrix = np.zeros(3 * n_sensors, 3 * n_sensors)
+
+    for i in range(n_sensors):
+        s_matrix[3*i:3*(i+1), :] = skew_symmetric(s_vectors[i, :])
+        w_matrix[3*i:3*(i+1), 3*i:3*(i+1)] = weights[i, 0] * np.eye(3)
+
+    # derive optimal dcm
+    optimal_crp = np.linalg.inv(s_matrix.T @ w_matrix @ s_matrix) @ s_matrix.T @ w_matrix @ d_matrix
+    optimal_dcm = crp_to_dcm(optimal_crp.flatten())
+
+    return optimal_dcm
 
 
 
