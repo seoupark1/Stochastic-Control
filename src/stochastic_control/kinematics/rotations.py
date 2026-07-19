@@ -10,7 +10,19 @@ def skew_symmetric(v):
 
     return result
 
-# Get DCM time derivative from body angular velocity
+# numerical integrator (runge-kutta 4th order method)
+def runge_kutta_4th(func, state_current, omega, dt):
+    # weights
+    k1 = func(state_current, omega)
+    k2 = func(state_current + 0.5 * dt * k1, omega)
+    k3 = func(state_current + 0.5 * dt * k2, omega)
+    k4 = func(state_current + dt * k3, omega)
+
+    state_next = state_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    return state_next
+
+# get dcm time derivative from body angular velocity
 def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn: ArrayLike) -> NDArray[np.float64]:
     c_bn = np.asarray(dcm_bn, dtype = float).reshape(3,3)
     omega = np.asarray(angular_velocity_bn, dtype = float).reshape(3,1)
@@ -19,7 +31,7 @@ def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn: ArrayLike) -> NDArray
 
     return dcm_dot
 
-# get Principal Inertias (descending order)
+# get principal inertias (descending order)
 def get_principal_inertias(Ic_B):
     # get eigenvalues & eigenvectors
     eig_vals, eig_vecs = np.linalg.eigh(Ic_B)
