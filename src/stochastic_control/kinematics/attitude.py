@@ -10,6 +10,18 @@ def skew_symmetric(v):
 
     return tilde
 
+% numberical integrator (runge-kutta 4th order method)
+def runge_kutta_4(func, attitude_current, omega, dt)
+    % weights
+    k1 = func(attitude_current, omega)
+    k2 = func(attitude_current + 0.5 * dt * k1, omega)
+    k3 = func(attitude_current + 0.5 * dt * k2, omega)
+    k4 = func(attitude_current + dt * k3, omega)
+
+    attitude_next = sigma_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    return attitude_next
+
 ''' Euler Angles '''
 
 # directional cosine matrix to (3-2-1) euler angles
