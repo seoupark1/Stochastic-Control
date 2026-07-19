@@ -10,17 +10,17 @@ def skew_symmetric(v):
 
     return tilde
 
-# numberical integrator (runge-kutta 4th order method)
-def runge_kutta_4(func, attitude_current, omega, dt)
-    % weights
-    k1 = func(attitude_current, omega)
-    k2 = func(attitude_current + 0.5 * dt * k1, omega)
-    k3 = func(attitude_current + 0.5 * dt * k2, omega)
-    k4 = func(attitude_current + dt * k3, omega)
+# numerical integrator (runge-kutta 4th order method)
+def runge_kutta_4th(func, state_current, omega, dt):
+    # weights
+    k1 = func(state_current, omega)
+    k2 = func(state_current + 0.5 * dt * k1, omega)
+    k3 = func(state_current + 0.5 * dt * k2, omega)
+    k4 = func(state_current + dt * k3, omega)
 
-    attitude_next = sigma_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
+    state_next = state_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
-    return attitude_next
+    return state_next
 
 ''' Euler Angles '''
 
@@ -61,7 +61,7 @@ def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike)
 
     # catch gimbal-lock
     if abs(np.cos(theta)) < 1e-6:
-        raise ValueError('Gimbal-lock')
+        raise ValueError('Error: Gimbal-lock in (3-2-1) Euler Angles')
 
     euler_angles_dot = (1 / np.cos(theta)) * np.array([[0, np.sin(phi), np.cos(phi)],
                                                        [0, np.cos(phi)*np.cos(theta), -np.sin(phi)*np.cos(theta)],
@@ -106,7 +106,7 @@ def ea313_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike)
 
     # catch gimbal-lock
     if abs(np.sin(theta2)) < 1e-6:
-        raise ValueError('Gimbal-lock')
+        raise ValueError('Error: Gimbal-lock in (3-1-3) Euler Angles-lock')
 
     euler_angles_dot = (1 / np.sin(theta2)) * np.array([[np.sin(theta3), np.cos(theta3), 0],
                                                        [np.cos(theta3)*np.sin(theta2), -np.sin(theta3)*np.sin(theta2), 0],
@@ -190,6 +190,11 @@ def quaternion_derivative(quaternions: ArrayLike, angular_velocity_b: ArrayLike)
 # directional cosine matrix to classical rodrigues parameters
 def dcm_to_crp(dcm):
     zeta_square = 1 + np.trace(dcm)
+
+     # check singularity
+    if zeta_square < 1e-6:
+        raise ValueError('Error: CRP Singularity')
+    
     q = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]) / zeta_square
 
     return q
@@ -211,15 +216,31 @@ def crp_derivative(crp: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.
 
 '''Modified Rodrigues Parameters'''
 
+# switch mrp to its shadow_set to avoid singularity
+def mrp_shadow_set(mrp: ArrayLike) -> NDArray[np.float64]:
+    sigma = np.asarray(mrp, dtype = float).reshape(3,1)
+    norm_sigma = np.vdot(sigma, sigma)
+
+    if norm_sigma > 1:
+        sigma = - sigma / norm_sigma
+    
+    return sigma.flatten()
+    
 # directional cosine matrix to modified rodrigues parameters
 def dcm_to_mrp(dcm):
     zeta = np.sqrt(1 + np.trace(dcm))
+
+    # check singularity
+    if abs(zeta) < 1e-6:
+        raise ValueError('Error: MRP Singularity')
+    
     sigma = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]) / (zeta*(zeta + 2))
 
     return sigma
 
 # modified rodrigues parameters to directional cosine matrix
 def mrp_to_dcm(sigma):
+    sigma = mrp_shadow_set(sigma)
     dcm = (np.eye(3) + (8 * skew_symmetric(sigma) @ skew_symmetric(sigma) - 4 * (1 - np.vdot(sigma,sigma)) * skew_symmetric(sigma)) / (1 + np.vdot(sigma,sigma))**2)
 
     return dcm
