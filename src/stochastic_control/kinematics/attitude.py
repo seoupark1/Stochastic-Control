@@ -1,14 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-
-# tilde operator
-def skew_symmetric(v):
-    v = np.array(v).flatten()
-    tilde = np.array([[0, -v[2], v[1]],
-                    [v[2], 0, -v[0]],
-                    [-v[1], v[0], 0]])
-
-    return tilde
+from rotations import skew_symmetric
 
 ''' Euler Angles '''
 
