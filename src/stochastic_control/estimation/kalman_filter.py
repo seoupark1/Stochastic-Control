@@ -13,45 +13,49 @@ class KalmanFilter:
                  motion_noise_covariance: ArrayLike,
                  measurement_noise_covariance: ArrayLike):
         
+        # state & covariance
         self.x = np.asarray(state, dtype = float).reshape(-1)
-
         self.P = np.asarray(covariance, dtype = float)
 
-        # constant jacobian for linear system
+        # constant jacobians for linear system
         self.F = np.asarray(motion_jacobian, dtype = float)
-
-        # constant jacobian for linear system
         self.G = np.asarray(control_jacobian, dtype = float)
-
-        # constant jacobian for linear system
         self.H = np.asarray(measurement_jacobian, dtype = float)
 
+        # noise covariances
         self.Q = np.asarray(motion_noise_covariance, dtype = float)
-
         self.R = np.asarray(measurement_noise_covariance, dtype = float)
 
+    def prediction(self, 
+                   control_vector:ArrayLike):
+        
+        u = np.asarray(control_vector, dtype = float).reshape(-1)
 
-    def kalmanfilter(self,
-                     control_vector: ArrayLike,
-                     measurement_vector: ArrayLike):
+        # prediction stage
+        self.x = self.F @ self.x + self.G @ u
+        self.P = self.F @ self.P @ self.F.T + self.Q
 
-        u = np.asarray(control_vector, dtype = float)
-
-        y = np.asarray(measurement_vector, dtype = float)
+    def correction(self, 
+                   measurement_vector: ArrayLike):
+        
+        y = np.asarray(measurement_vector, dtype = float).reshape(-1)
 
         # find out the size
         n = len(self.x)
 
-        # prediction stage
-        x_check = self.F @ self.x + self.G @ u
-        P_check = self.F @ self.P @ self.F.T + self.Q
-
         # extract kalman gain
-        K = P_check @ self.H.T @ np.linalg.inv(self.H @ P_check @ self.H.T + self.R)
+        K = self.P @ self.H.T @ np.linalg.inv(self.H @ self.P @ self.H.T + self.R)
 
         # correction stage
-        self.x = x_check + K @ (y - self.H @ x_check)
-        self.P = (np.eye(n) - K @ self.H) @ P_check
+        self.x = self.x + K @ (y - self.H @ self.x)
+        self.P = (np.eye(n) - K @ self.H) @ self.P
+
+    def kalmanfilter(self,
+                     control_vector:ArrayLike,
+                     measurement_vector: ArrayLike):
+        
+        self.prediction(control_vector)
+        self.correction(measurement_vector)
 
     @property
     def state(self):
