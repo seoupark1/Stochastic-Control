@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from collections.abc import Callable
 
-class ExtendedKalmanFilter:
+class ErrorStateExtendedKalmanFilter:
     
     def __init__(self,
                 state: ArrayLike,
@@ -42,46 +42,23 @@ class ExtendedKalmanFilter:
         # F jacobian about k-1 step
         F = np.asarray(self.F_jacobian(self.x, u, 0), dtype = float)
 
-        # x_check, P_check about k step
-        self.x = self.f_model(self.x, u, 0).reshape(-1)
+        self.x = np.asarray(self.f_model(self.x, u, 0), dtype = float).reshape(-1)
         self.P = F @ self.P @ F.T + self.L_jacobian @ self.Q @ self.L_jacobian.T
         self.P = (self.P + self.P.T) / 2
 
     def correction(self,
                    measurement_vector: ArrayLike):
-        
+           
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
-        measurement_size = self.x.size
 
         # H jacobian & h about k step
-        H = np.asarray(self.H_jacobian(self.x, 0), dtype = float)
+        H = np.asarry(self.H_jacobian(self.x, 0), dtype = float)
         h = np.asarray(self.h_model(self.x, 0), dtype = float).reshape(-1)
 
         # kalman gain
-        K = self.P @ H.T @ np.linalg.inv(H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T)
-        
-        # x_hat, P_hat about k step
-        self.x = self.x + K @ (y - h)
-        self.P = (np.eye(measurement_size) - K @ H) @ self.P
-        self.P = (self.P + self.P.T) / 2
+        K = self.P @ H @ np.linalg.inv(H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T)
 
-    def extendedkalmanfilter(self,
-                             control_vector: ArrayLike,
-                             measurement_vector: ArrayLike):
-        
-        self.prediction(control_vector)
-        self.correction(measurement_vector)
-    
-    @property
-    def state(self):
-        return self.x.copy()
-    
-    @property
-    def covariance(self):
-        return self.P.copy()
+        # compute error state
+        del_x = K @ (y - h)
 
-
-
-
-
-    
+''' 전체적으로 error-state ekf에 대한 이해가 부족한 느낌, 코드 나중에 다시 작성 '''
