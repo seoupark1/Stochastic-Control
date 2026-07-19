@@ -1,14 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from attitude import crp_to_dcm
-
-def skew_symmetric(v):
-    v = np.array(v).flatten()
-    result = np.array([[0, -v[2], v[1]],
-                    [v[2], 0, -v[0]],
-                    [-v[1], v[0], 0]])
-
-    return result
+from rotations import skew_symmetric
 
 # Triaxial Attitude Determination (TRIAD)
 # Assume sensor1 is more accurate than sensor2
