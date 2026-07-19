@@ -10,7 +10,7 @@ def skew_symmetric(v):
 
     return tilde
 
-% numberical integrator (runge-kutta 4th order method)
+# numberical integrator (runge-kutta 4th order method)
 def runge_kutta_4(func, attitude_current, omega, dt)
     % weights
     k1 = func(attitude_current, omega)
