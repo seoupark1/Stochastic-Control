@@ -34,6 +34,7 @@ class KalmanFilter:
         # prediction stage
         self.x = self.F @ self.x + self.G @ u
         self.P = self.F @ self.P @ self.F.T + self.Q
+        self.P = (self.P + self.P.T) / 2
 
     def correction(self, 
                    measurement_vector: ArrayLike):
@@ -49,6 +50,7 @@ class KalmanFilter:
         # correction stage
         self.x = self.x + K @ (y - self.H @ self.x)
         self.P = (np.eye(n) - K @ self.H) @ self.P
+        self.P = (self.P + self.P.T) / 2
 
     def kalmanfilter(self,
                      control_vector:ArrayLike,
