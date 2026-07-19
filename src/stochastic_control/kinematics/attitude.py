@@ -16,9 +16,9 @@ def dcm_to_ea321(dcm):
     return euler_angles_rad
 
 # (3-2-1) euler angles to directional cosine matrix
-def ea321_to_dcm(euler_angles_rad):
+def ea321_to_dcm(euler_angles_rad: NDArray) -> NDArray[np.float64]:
     # allocate parameters
-    theta1, theta2, theta3 = euler_angles_rad.flatten()
+    theta1, theta2, theta3 = np.asarray(euler_angles_rad, dtype = float).reshape(3)
 
     # refactoring
     c1, s1 = np.cos(theta1), np.sin(theta1)
@@ -61,9 +61,9 @@ def dcm_to_ea313(dcm):
     return euler_angles_rad
 
 # (3-1-3) euler angles to directional cosine matrix
-def ea313_to_dcm(euler_angles_rad):
+def ea313_to_dcm(euler_angles_rad: ArrayLike) -> NDArray[np.float64]:
     # allocate parameters
-    theta1, theta2, theta3 = euler_angles_rad.flatten()
+    theta1, theta2, theta3 = np.asarray(euler_angles_rad, dtype = float).reshape(3)
 
     # refactoring
     c1, s1 = np.cos(theta1), np.sin(theta1)
@@ -140,9 +140,11 @@ def dcm_to_quaternion(dcm):
     return quaternions
 
 # quaternions to directional cosine matrix
-def quaternion_to_dcm(quaternions):
+def quaternion_to_dcm(quaternions: ArrayLike) -> NDArray[np.float64]:
     # allocate parameters (b0 is a scalar part)
-    b0, b1, b2, b3 = quaternions.flatten()
+    quaternion = np.asarray(quaternions, dtype = float).reshape(4)
+    quaternion /= np.linalg.norm(quaternion)
+    b0 ,b1, b2, b3 = quaternion
 
     dcm = np.array([[b0**2 + b1**2 - b2**2 - b3**2,  2*(b1*b2 + b0*b3), 2*(b1*b3 - b0*b2)],
                     [2*(b1*b2 - b0*b3), b0**2 - b1**2 + b2**2 - b3**2,  2*(b2*b3 + b0*b1)],
@@ -172,7 +174,7 @@ def dcm_to_crp(dcm):
     zeta_square = 1 + np.trace(dcm)
 
      # check singularity
-    if zeta_square < 1e-6:
+    if zeta_square < 1e-10:
         raise ValueError('Error: CRP Singularity')
     
     q = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]) / zeta_square
@@ -180,7 +182,8 @@ def dcm_to_crp(dcm):
     return q
 
 # classical rodrigues parameters to directional cosine matrix
-def crp_to_dcm(q):
+def crp_to_dcm(q: ArrayLike) -> NDArray[np.float64]:
+    q = np.asarray(q, dtype = float).reshape(3)
     dcm = ((1 - np.vdot(q, q)) * np.eye(3) + 2 * np.outer(q, q) - 2 * skew_symmetric(q)) / (1 + np.vdot(q, q))
 
     return dcm
@@ -211,7 +214,7 @@ def dcm_to_mrp(dcm):
     zeta = np.sqrt(1 + np.trace(dcm))
 
     # check singularity
-    if abs(zeta) < 1e-6:
+    if abs(zeta) < 1e-10:
         raise ValueError('Error: MRP Singularity')
     
     sigma = np.array([dcm[1,2] - dcm[2,1], dcm[2,0] - dcm[0,2], dcm[0,1] - dcm[1,0]]) / (zeta*(zeta + 2))
@@ -219,8 +222,8 @@ def dcm_to_mrp(dcm):
     return sigma
 
 # modified rodrigues parameters to directional cosine matrix
-def mrp_to_dcm(sigma):
-    sigma = mrp_shadow_set(sigma)
+def mrp_to_dcm(sigma: ArrayLike) -> NDArray[np.float64]:
+    sigma = np.asarray(sigma, dtype = float).reshape(3)
     dcm = (np.eye(3) + (8 * skew_symmetric(sigma) @ skew_symmetric(sigma) - 4 * (1 - np.vdot(sigma,sigma)) * skew_symmetric(sigma)) / (1 + np.vdot(sigma,sigma))**2)
 
     return dcm
