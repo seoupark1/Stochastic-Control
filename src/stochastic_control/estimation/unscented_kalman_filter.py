@@ -24,6 +24,9 @@ class UnscentedKalmanFilter:
         self.h_model = measurement_model
         self.R = np.asarray(measurement_noise_covariance, dtype = float)
 
+        # useful parameters
+        self.propagated_sigma_points = None
+
     def get_propagated_sigma_points(self,
                                     control_vector: ArrayLike):
         
@@ -63,8 +66,9 @@ class UnscentedKalmanFilter:
         a = self.get_weights()
         n = self.mean.shape[0]
         
-        # propagate sigma points
-        propagated_sigma_points = self.get_propagated_sigma_points(u)       
+        # propagated sigma points
+        propagated_sigma_points = self.get_propagated_sigma_points(u) 
+        self.propagated_sigma_points = propagated_sigma_points     
 
         # compute x_check   
         x_check = a @ propagated_sigma_points
@@ -87,7 +91,7 @@ class UnscentedKalmanFilter:
         n = self.mean.shape[0]
         m = y.size
         a = self.get_weights()
-        propagated_sigma_points = self.get_propagated_sigma_points()
+        propagated_sigma_points = self.get_propagated_sigma_points
 
         # predicted measurements from propagated sigma points
         predicted_measurements = np.zeros((2 * n + 1, len(y)))
@@ -101,7 +105,7 @@ class UnscentedKalmanFilter:
         P_y = np.zeros((m,m), dtype = float)
         for i in range(2 * n + 1):
             diff = predicted_measurements[i, :] - y_hat
-            P_y += a * np.outer(diff, diff)
+            P_y += a[i] * np.outer(diff, diff)
         
         P_y += self.R
         P_y = (P_y + P_y.T) / 2
@@ -120,6 +124,7 @@ class UnscentedKalmanFilter:
         self.mean += K @ (y - y_hat)
         self.P -= K @ P_y @ K.T
         self.P = (self.P + self.P.T) / 2
+        self.propagated_sigma_points = None
 
     def unscentedkalmanfilter(self,
                               control_vector: ArrayLike,
@@ -132,11 +137,11 @@ class UnscentedKalmanFilter:
 
     @property
     def state(self):
-        return self.mean
+        return self.mean.copy()
     
     @property
     def covariance(self):
-        return self.P
+        return self.P.copy()
 
         
 
