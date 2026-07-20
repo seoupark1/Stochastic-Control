@@ -86,12 +86,15 @@ class UnscentedKalmanFilter:
 
     def correction(self,
                    measurement_vector: ArrayLike):
+
+        if self.propagated_sigma_points is None:
+            raise RuntimeError('Error: Prediction has not been preceded')
         
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
         n = self.mean.shape[0]
         m = y.size
         a = self.get_weights()
-        propagated_sigma_points = self.get_propagated_sigma_points
+        propagated_sigma_points = self.propagated_sigma_points
 
         # predicted measurements from propagated sigma points
         predicted_measurements = np.zeros((2 * n + 1, len(y)))
