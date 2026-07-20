@@ -1,8 +1,5 @@
-# 
-
-
 ## 2026-06-08 
-### Topic: 깃허브 Repository 구조 변경
+### Title: 깃허브 Repository 구조 변경
 <br>
 
 **1. Theory (이론 및 수식)**
