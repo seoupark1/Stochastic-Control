@@ -43,7 +43,7 @@ class ExtendedKalmanFilter:
         F = np.asarray(self.F_jacobian(self.x, u, 0), dtype = float)
 
         # x_check, P_check about k step
-        self.x = self.f_model(self.x, u, 0).reshape(-1)
+        self.x = np.asarray(self.f_model(self.x, u, 0), dtype = float).reshape(-1)
         self.P = F @ self.P @ F.T + self.L_jacobian @ self.Q @ self.L_jacobian.T
         self.P = (self.P + self.P.T) / 2
 
@@ -51,7 +51,7 @@ class ExtendedKalmanFilter:
                    measurement_vector: ArrayLike):
         
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
-        measurement_size = self.x.size
+        state_size = self.x.size
 
         # H jacobian & h about k step
         H = np.asarray(self.H_jacobian(self.x, 0), dtype = float)
@@ -62,7 +62,7 @@ class ExtendedKalmanFilter:
         
         # x_hat, P_hat about k step
         self.x = self.x + K @ (y - h)
-        self.P = (np.eye(measurement_size) - K @ H) @ self.P
+        self.P = (np.eye(state_size) - K @ H) @ self.P
         self.P = (self.P + self.P.T) / 2
 
     def extendedkalmanfilter(self,
