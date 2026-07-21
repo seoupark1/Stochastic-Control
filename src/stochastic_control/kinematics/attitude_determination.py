@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from attitude import crp_to_dcm
-from rotations import skew_symmetric
+from .crp import crp_to_dcm
+from .tools import skew_symmetric
 
 # Triaxial Attitude Determination (TRIAD)
 # Assume sensor1 is more accurate than sensor2
@@ -33,7 +33,8 @@ def triad_method(v1_B, v2_B, v1_N, v2_N):
 def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike) -> NDArray[np.float64]:
 
     # dimension validation
-    assert len(b_vectors) == len(n_vectors) == len(weight_vectors), "Error: The number of data pairs does not match n"
+    if not (len(b_vectors) == len(n_vectors) == len(weight_vectors)):
+        raise ValueError("Error: The number of data pairs does not match n")
 
     # data processing
     n_sensors = len(b_vectors)
@@ -61,13 +62,18 @@ def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLi
     eigenvalues, eigenvectors = np.linalg.eigh(k_matrix)
     optimal_quaternion = eigenvectors[:, 3]
 
+    # get shortest path
+    if optimal_quaternion[0] < 0:
+        optimal_quaternion *= -1
+
     return optimal_quaternion
 
 # optimal linear attitude estimator (olae)
 def olae_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike) -> NDArray[np.float64]:
 
     # dimension validation
-    assert len(b_vectors) == len(n_vectors) == len(weight_vectors), "Error: The number of data pairs does not match n"
+    if not (len(b_vectors) == len(n_vectors) == len(weight_vectors)):
+        raise ValueError("Error: The number of data pairs does not match n")
 
     # data processing
     n_sensors = len(b_vectors)
@@ -86,7 +92,7 @@ def olae_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: Arra
     s_vectors = measured_vectors + reference_vectors
     s_matrix = np.zeros((3 * n_sensors, 3))
 
-    w_matrix = np.zeros(3 * n_sensors, 3 * n_sensors)
+    w_matrix = np.zeros((3 * n_sensors, 3 * n_sensors))
 
     for i in range(n_sensors):
         s_matrix[3*i:3*(i+1), :] = skew_symmetric(s_vectors[i, :])
