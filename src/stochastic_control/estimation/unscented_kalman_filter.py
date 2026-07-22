@@ -70,19 +70,18 @@ class UnscentedKalmanFilter:
         propagated_sigma_points = self.get_propagated_sigma_points(u) 
         self.propagated_sigma_points = propagated_sigma_points     
 
-        # compute x_check   
-        x_check = a @ propagated_sigma_points
+        # compute predicted mean   
+        predicted_mean = a @ propagated_sigma_points
         
-        # compute P_check
-        P_check = np.zeros_like(self.P)
+        # compute predicted covariance
+        predicted_P = np.zeros_like(self.P)
         for i in range(2 * n + 1):
-            diff = propagated_sigma_points[i, :] - x_check
-            P_check += a[i] * np.outer(diff, diff)
+            diff = propagated_sigma_points[i, :] - predicted_mean
+            predicted_P += a[i] * np.outer(diff, diff)
 
-        self.mean = x_check
-        self.P = P_check + self.Q
+        self.mean = predicted_mean
+        self.P = predicted_P + self.Q
         self.P = (self.P + self.P.T) / 2
-
 
     def correction(self,
                    measurement_vector: ArrayLike):
