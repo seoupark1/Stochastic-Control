@@ -11,7 +11,7 @@ def skew_symmetric(v: ArrayLike) -> NDArray[np.float64]:
     return result
 
 # numerical integrator (runge-kutta 4th order method)
-def runge_kutta_4th_constant_input(func, state_current, input_constant, dt):
+def runge_kutta_4th(func, state_current, input_constant, dt):
     # weights
     k1 = func(state_current, input_constant)
     k2 = func(state_current + 0.5 * dt * k1, input_constant)
