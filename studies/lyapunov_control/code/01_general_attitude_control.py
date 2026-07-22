@@ -12,7 +12,7 @@ def B_matrix(sigma):
     return ((1-np.vdot(sigma, sigma)) * np.eye(3) + 2 * skew_symmetric(sigma) + 2 * np.outer(sigma, sigma)) / 4
 
 def control_vector(sigma, omega, I, K, P):
-    return -K * sigma - P @ omega - I @ omega + skew_symmetric(omega) @ I @ omega
+    return -K * sigma - P @ omega + skew_symmetric(omega) @ I @ omega
 
 def state_dot(state, I, K, P):
     sigma = state[0:3]
