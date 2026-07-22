@@ -1,5 +1,12 @@
 import numpy as np
-from src.stochastic_control.kinematics.tools import skew_symmetric
+
+def skew_symmetric(v):
+    v = np.asarray(v, dtype = float).flatten()
+    result = np.array([[0, -v[2], v[1]],
+                    [v[2], 0, -v[0]],
+                    [-v[1], v[0], 0]])
+
+    return result
 
 def B_matrix(sigma):
     return ((1-np.vdot(sigma, sigma)) * np.eye(3) + 2 * skew_symmetric(sigma) + 2 * np.outer(sigma, sigma)) / 4
@@ -45,7 +52,7 @@ dt = 0.1
 total_step = t_span / dt
 K = 5
 P = 10 * np.eye(3)
-sigma_hist = np.zeros((total_step, 3))
+sigma_hist = np.zeros((int(total_step), 3))
 
 
 for i in range(int(total_step)):
@@ -53,4 +60,4 @@ for i in range(int(total_step)):
     state_next = rk4(state_dot, state_current, I, K, P, dt)
     state_current = state_next
     
-print(sigma_hist[int(30/dt)])
+print(np.linalg.norm(sigma_hist[int(30/dt)]))
