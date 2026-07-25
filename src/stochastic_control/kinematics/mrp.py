@@ -39,3 +39,10 @@ def mrp_derivative(mrp: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.
     sigma_dot = (1/4) * ((1 - np.vdot(sigma, sigma)) * np.eye(3) + 2 * skew_symmetric(sigma) + 2 * sigma @ sigma.T) @ omega
 
     return sigma_dot.flatten()
+
+# get B matrix used in mrp_derivative
+def mrp_b_matrix(mrp: ArrayLike) -> NDArray[np.float64]:
+    sigma = np.asarray(mrp, dtype = float).reshape(3,1)
+    B_matrix = (1 - np.vdot(sigma, sigma)) * np.eye(3) + 2 * skew_symmetric(sigma) + 2 * sigma @ sigma.T
+
+    return B_matrix
