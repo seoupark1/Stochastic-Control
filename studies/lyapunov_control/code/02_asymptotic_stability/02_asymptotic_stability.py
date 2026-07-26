@@ -1,6 +1,6 @@
 import numpy as np
-from src.stochastic_control.kinematics.tools import skew_symmetric
-from src.stochastic_control.kinematics.mrp import mrp_to_dcm, dcm_to_mrp
+from src.stochastic_control.attitude.tools import skew_symmetric
+from src.stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp
 
 def sigma_RN(t, f):
     return np.array([0.2 * np.sin(f*t), 0.3 * np.cos(f*t), -0.3 * np.sin(f*t)])

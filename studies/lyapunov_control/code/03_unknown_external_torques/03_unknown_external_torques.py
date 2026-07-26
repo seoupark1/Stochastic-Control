@@ -1,5 +1,5 @@
 import numpy as np
-from src.stochastic_control.kinematics.mrp import mrp_derivative, mrp_shadow_set
+from src.stochastic_control.attitude.mrp import mrp_derivative, mrp_shadow_set
 
 def state_derivative(state_current, I, P, K, external_torque):
     sigma = state_current[0:3]

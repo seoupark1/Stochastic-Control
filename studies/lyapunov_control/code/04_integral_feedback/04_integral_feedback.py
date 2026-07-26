@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
-from src.stochastic_control.kinematics.tools import skew_symmetric
-from src.stochastic_control.kinematics.mrp import mrp_derivative, mrp_b_matrix, mrp_to_dcm, dcm_to_mrp, mrp_shadow_set
+from src.stochastic_control.attitude.tools import skew_symmetric
+from src.stochastic_control.attitude.mrp import mrp_derivative, mrp_b_matrix, mrp_to_dcm, dcm_to_mrp, mrp_shadow_set
 
 def mrp_b_dot(sigma, sigma_dot):
     return (-2 * np.dot(sigma, sigma_dot) * np.eye(3)
