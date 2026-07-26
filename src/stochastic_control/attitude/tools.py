@@ -21,17 +21,3 @@ def runge_kutta_4th(func, state_current, input_constant, dt):
     state_next = state_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
     return state_next
-
-# get principal inertias (descending order)
-def get_principal_inertias(Ic_B):
-    # get eigenvalues & eigenvectors
-    eig_vals, eig_vecs = np.linalg.eigh(Ic_B)
-
-    # change eigenvalue's index
-    I_min, I_med, I_max = eig_vals[0], eig_vals[1], eig_vals[2]
-
-    principal_inertia_tensor = np.array([[I_max, 0, 0],
-                                         [0, I_med, 0],
-                                         [0, 0, I_min]])
-
-    return principal_inertia_tensor
