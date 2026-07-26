@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from .tools import skew_symmetric
+from .math import skew_symmetric
 
 # directional cosine matrix to classical rodrigues parameters
 def dcm_to_crp(dcm):

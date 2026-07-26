@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-def normalize_quaternion(b: ArrayLike) -> NDArray[np.float64]:
+def normalize_quaternion(quaternion: ArrayLike) -> NDArray[np.float64]:
+    b = np.asarray(quaternion, dtype = float).reshape(4)
     norm_b = np.linalg.norm(b)
 
     if norm_b != 1:
@@ -48,9 +49,9 @@ def dcm_to_quaternion(dcm):
     if b0 < 0:
         b0, b1, b2, b3 = -b0, -b1, -b2, -b3
         
-    quaternions = np.array([b0, b1, b2, b3])
+    quaternion = np.array([b0, b1, b2, b3])
 
-    return quaternions
+    return quaternion
 
 # quaternions to directional cosine matrix
 def quaternion_to_dcm(quaternions: ArrayLike) -> NDArray[np.float64]:

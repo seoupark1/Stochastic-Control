@@ -1,5 +1,5 @@
 import numpy as np
-from src.stochastic_control.attitude.tools import skew_symmetric
+from stochastic_control.attitude.math import skew_symmetric
 
 class Inertia:
 

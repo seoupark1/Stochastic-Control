@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from .tools import skew_symmetric
+from .math import skew_symmetric
 
 # get dcm time derivative from body angular velocity
 def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn_b: ArrayLike) -> NDArray[np.float64]:
