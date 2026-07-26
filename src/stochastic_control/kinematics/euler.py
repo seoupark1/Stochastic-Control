@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 # directional cosine matrix to (3-2-1) euler angles
-def dcm_to_ea321(dcm):
+def dcm_to_ea321(dcm: NDArray) -> NDArray[np.float64]:
     # allocate parameters
     theta1 = np.arctan2(dcm[0,1], dcm[0,0])
     theta2 = -np.arcsin(dcm[0,2])
@@ -47,7 +47,7 @@ def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike)
     return euler_angles_dot.flatten()
 
 # directional dosine matrix to (3-1-3) euler angles
-def dcm_to_ea313(dcm):
+def dcm_to_ea313(dcm: ArrayLike) -> NDArray[np.float64]:
     # allocate parameters
     theta1 = np.arctan2(dcm[2,0], -dcm[2,1])
     theta2 = np.arccos(dcm[2,2])
