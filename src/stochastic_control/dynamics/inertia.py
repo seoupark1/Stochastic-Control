@@ -24,10 +24,10 @@ class Inertia:
     def parallel_axis_shift(self,
                             displacement: ArrayLike) -> NDArray[np.float64]:
 
-        if self.mass == None:
+        if self.mass is None:
             raise ValueError('Mass is required for parallel axis shift')
         
-        r = np.assary(displacement, dtype = float).reshape(3)
+        r = np.asarray(displacement, dtype = float).reshape(3)
 
         return self.inertia_tensor + self.mass * skew_symmetric(r) @ skew_symmetric(r).T
 
