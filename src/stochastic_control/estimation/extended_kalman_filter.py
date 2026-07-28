@@ -41,10 +41,10 @@ class ExtendedKalmanFilter:
         u = np.asarray(control_vector, dtype = float).reshape(-1)
 
         # jacobian F about k-1 step
-        F = np.asarray(self.F_jacobian(self.x, u, 0), dtype = float)
+        F = np.asarray(self.F_jacobian(self.x, u), dtype = float)
 
         # x_check, P_check about k step
-        self.x = np.asarray(self.f_model(self.x, u, 0), dtype = float).reshape(-1)
+        self.x = np.asarray(self.f_model(self.x, u), dtype = float).reshape(-1)
         self.P = F @ self.P @ F.T + self.L_jacobian @ self.Q @ self.L_jacobian.T
         self.P = (self.P + self.P.T) / 2
 
@@ -56,8 +56,8 @@ class ExtendedKalmanFilter:
         n = self.x.size
 
         # jacobian H & model h about k step
-        H = np.asarray(self.H_jacobian(self.x, 0), dtype = float)
-        h = np.asarray(self.h_model(self.x, 0), dtype = float).reshape(-1)
+        H = np.asarray(self.H_jacobian(self.x), dtype = float)
+        h = np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
 
         # kalman gain
         A = (H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T).T
