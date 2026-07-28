@@ -9,8 +9,8 @@ class RigidBody:
     def __init__(self,
                  inertia_tensor):
         
-        self.I = inertia_tensor
-
+        self.I = np.asarray(inertia_tensor, dtype = float).reshape(3, 3)
+        
     def rotational_energy(self,
                          angular_velocity: ArrayLike):
         
