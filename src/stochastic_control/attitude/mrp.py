@@ -16,13 +16,13 @@ def mrp_shadow_set(mrp: ArrayLike) -> NDArray[np.float64]:
 # quaternion to modified rodrigues parameters to avoid singularity
 def quaternion_to_mrp(quaternion: ArrayLike) -> NDArray[np.float64]:
     quaternion = np.asarray(quaternion, dtype = float)
-    quaternion = normalize_quaternion(quaternion)
-    b0, b1, b2, b3 = quaternion
+    b = normalize_quaternion(quaternion)
 
     # shortest path
-    if b0 < 0:
-        b0 = -b0
+    if b[0] < 0:
+        b = - b
 
+    b0, b1, b2, b3 = b
     sigma = np.array([b1/(1 + b0) , b2/(1 + b0), b3/(1 + b0)])
 
     return sigma
