@@ -74,7 +74,7 @@ def rk4(state_derivative, state_current, K, P, I, f, KI, del_L, dt, t, omega_BR_
     k1 = state_derivative(state_current, K, P, I, f, KI, del_L, t, omega_BR_0)
     k2 = state_derivative(state_current + 0.5 * dt * k1, K, P, I, f, KI, del_L, t + 0.5 * dt, omega_BR_0)
     k3 = state_derivative(state_current + 0.5 * dt * k2, K, P, I, f, KI, del_L, t + 0.5 * dt, omega_BR_0)
-    k4 = state_derivative(state_current + dt * k3, K, P, I, f, KI, del_L, t, omega_BR_0)
+    k4 = state_derivative(state_current + dt * k3, K, P, I, f, KI, del_L, t+ 0.5 * dt, omega_BR_0)
 
     state_next = state_current + (dt/6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
