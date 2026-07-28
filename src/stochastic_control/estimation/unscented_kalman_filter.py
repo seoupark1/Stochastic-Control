@@ -32,6 +32,7 @@ class UnscentedKalmanFilter:
         kappa = 3 - n
 
         # cholesky decomposition
+        covariance = (covariance + covariance.T) / 2
         L = np.linalg.cholesky(covariance)
 
         # compute sigma points
