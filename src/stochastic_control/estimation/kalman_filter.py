@@ -45,7 +45,9 @@ class KalmanFilter:
         n = len(self.x)
 
         # extract kalman gain
-        K = self.P @ self.H.T @ np.linalg.inv(self.H @ self.P @ self.H.T + self.R)
+        A = (self.H @ self.P @ self.H.T + self.R).T
+        B = (self.P @ self.H.T).T
+        K =  np.linalg.solve(A, B).T
 
         # correction stage
         self.x = self.x + K @ (y - self.H @ self.x)
