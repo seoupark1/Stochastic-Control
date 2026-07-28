@@ -29,7 +29,8 @@ class UnscentedKalmanFilter:
 
     def get_propagated_sigma_points(self,
                                     control_vector: ArrayLike):
-        
+
+        # control vector u
         u = np.asarray(control_vector, dtype = float).reshape(-1)
         n = self.mean.shape[0]
         kappa = 3 - n
@@ -120,7 +121,9 @@ class UnscentedKalmanFilter:
             P_xy += a[i] * np.outer(diff_x, diff_y)
 
         # kalman gain
-        K = P_xy @ np.linalg.inv(P_y)
+        A = P_y.T
+        B = P_xy.T
+        K = np.linalg.solve(A, B).T
 
         # compute corrected mean & covariance
         self.mean += K @ (y - y_hat)
