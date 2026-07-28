@@ -102,7 +102,9 @@ class UnscentedKalmanFilter:
         # cross-covariance
         P_xy = np.zeros((n, m))
         for weight, sigma_point, predicted_measurement in zip(a, sigma_points, predicted_measurements):
-            P_xy += weight @ (sigma_point - self.mean) @ (predicted_measurement - predicted_measurements_mean).T
+            diff_x = sigma_point - self.mean
+            diff_y = predicted_measurement - predicted_measurements_mean
+            P_xy += weight * np.outer(diff_x, diff_y)
 
         # kalman gain
         A = P_y.T
