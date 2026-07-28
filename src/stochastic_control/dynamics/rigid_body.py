@@ -1,9 +1,8 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from numpy.linalg import inv
-from src.stochastic_control.attitude.math import skew_symmetric
-from src.stochastic_control.attitude.mrp import mrp_derivative
-from src.stochastic_control.attitude.quaternion import quaternion_derivative
+from ..attitude.math import skew_symmetric
+from ..attitude.mrp import mrp_derivative
+from ..attitude.quaternion import quaternion_derivative
 
 class RigidBody:
 
@@ -32,7 +31,7 @@ class RigidBody:
         omega = np.asarray(angular_velocity, dtype = float).reshape(3)
         gyroscopic = - skew_symmetric(omega) @ self.I @ omega
 
-        return inv(self.I) @ (gyroscopic + L)
+        return np.linalg.solve(self.I, gyroscopic + L)
 
     def mrp_state_derivatives(self,
                               t: float,
