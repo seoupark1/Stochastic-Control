@@ -66,7 +66,7 @@ class ExtendedKalmanFilter:
         
         # x_hat, P_hat, kalman gain about k step
         self.x = self.x + K @ (y - h)
-        self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ self.R @ K.T
+        self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ (self.M_jacobian @ self.R @ self.M_jacobian.T) @ K.T
         self.P = (self.P + self.P.T) / 2
 
     def extendedkalmanfilter(self,
