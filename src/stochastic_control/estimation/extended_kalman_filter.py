@@ -36,10 +36,11 @@ class ExtendedKalmanFilter:
 
     def prediction(self,
                    control_vector: ArrayLike):
-        
+
+        # control vector u
         u = np.asarray(control_vector, dtype = float).reshape(-1)
 
-        # F jacobian about k-1 step
+        # jacobian F about k-1 step
         F = np.asarray(self.F_jacobian(self.x, u, 0), dtype = float)
 
         # x_check, P_check about k step
@@ -49,20 +50,23 @@ class ExtendedKalmanFilter:
 
     def correction(self,
                    measurement_vector: ArrayLike):
-        
-        y = np.asarray(measurement_vector, dtype = float).reshape(-1)
-        state_size = self.x.size
 
-        # H jacobian & h about k step
+        # measurement
+        y = np.asarray(measurement_vector, dtype = float).reshape(-1)
+        n = self.x.size
+
+        # jacobian H & model h about k step
         H = np.asarray(self.H_jacobian(self.x, 0), dtype = float)
         h = np.asarray(self.h_model(self.x, 0), dtype = float).reshape(-1)
 
         # kalman gain
-        K = self.P @ H.T @ np.linalg.inv(H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T)
+        A = (H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T).T
+        B = (self.P @ H.T).T
+        K = np.linalg.solve(A, B).T
         
-        # x_hat, P_hat about k step
+        # x_hat, P_hat, kalman gain about k step
         self.x = self.x + K @ (y - h)
-        self.P = (np.eye(state_size) - K @ H) @ self.P
+        self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ self.R @ K.T
         self.P = (self.P + self.P.T) / 2
 
     def extendedkalmanfilter(self,
