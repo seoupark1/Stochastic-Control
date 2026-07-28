@@ -15,7 +15,7 @@ def mrp_shadow_set(mrp: ArrayLike) -> NDArray[np.float64]:
 
 # quaternion to modified rodrigues parameters to avoid singularity
 def quaternion_to_mrp(quaternion: ArrayLike) -> NDArray[np.float64]:
-    quaternion = np.asarray(quaternion, dtype = float).reshape(4,1)
+    quaternion = np.asarray(quaternion, dtype = float).reshape(4)
     b = normalize_quaternion(quaternion)
 
     # shortest path
@@ -25,7 +25,7 @@ def quaternion_to_mrp(quaternion: ArrayLike) -> NDArray[np.float64]:
     b0, b1, b2, b3 = b
     sigma = np.array([b1/(1 + b0) , b2/(1 + b0), b3/(1 + b0)])
 
-    return sigma.flatten()
+    return sigma
     
 # directional cosine matrix to modified rodrigues parameters
 def dcm_to_mrp(dcm: ArrayLike) -> NDArray[np.float64]:
@@ -37,7 +37,7 @@ def dcm_to_mrp(dcm: ArrayLike) -> NDArray[np.float64]:
 
 # modified rodrigues parameters to directional cosine matrix
 def mrp_to_dcm(sigma: ArrayLike) -> NDArray[np.float64]:
-    sigma = np.asarray(sigma, dtype = float).reshape(3,1)
+    sigma = np.asarray(sigma, dtype = float).reshape(3)
     dcm = (np.eye(3) + (8 * skew_symmetric(sigma) @ skew_symmetric(sigma) - 4 * (1 - np.vdot(sigma,sigma)) * skew_symmetric(sigma)) / (1 + np.vdot(sigma,sigma))**2)
 
     return dcm
