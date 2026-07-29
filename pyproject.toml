@@ -6,9 +6,9 @@ build_backend = "setuptools.build_meta"
 name = "stochastic-control"
 version = "0.1.0"
 description = "control everything"
-requires-python = ">=3.10"
+requires-python = ">=3.12.1"
 readme = "README.md"
-desprepencies = ["numpy>=1.26", "Scipy>=1.11"]
+dependencies = ["numpy>=2.5.1", "scipy>=1.18.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
