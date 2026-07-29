@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from stochastic_control.attitude.math import skew_symmetric
+from ..attitude.math import skew_symmetric
 
 class Inertia:
 
