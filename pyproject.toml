@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build_backend = "setuptools.build_meta"
+
+[project]
+name = "stochastic-control"
+version = "0.1.0"
+description = "stochastic control"
+requires-python = ">=3.10"
+readme = "README.md"
+desprepencies = ["numpy>=1.26", "Scipy>=1.11"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
