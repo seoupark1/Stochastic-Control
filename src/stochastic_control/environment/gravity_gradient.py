@@ -57,6 +57,6 @@ class GravityGradient:
 
         r_hat_B = r_BN_B / r
         middle_term = np.trace(self.inertia_tensor) - 5 * (r_hat_B.T @ self.inertia_tensor @ r_hat_B)
-        force = (-self.mu * self.mass / r**3) * (1 + (3/(self.mass * r**2)) * (self.inertia_tensor + (1/2) * middle_term @ np.eye(3))) @ r_BN_B
+        force = (-self.mu * self.mass / r**3) * (1 + (3/(self.mass * r**2)) * (self.inertia_tensor + (1/2) * middle_term * np.eye(3))) @ r_BN_B
 
         return force
