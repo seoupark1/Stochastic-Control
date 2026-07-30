@@ -10,3 +10,9 @@ def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn_b: ArrayLike) -> NDArr
     dcm_dot = - skew_symmetric(omega) @ c_bn
 
     return dcm_dot
+
+# check if dcm is rotational matrix
+def is_dcm(dcm: ArrayLike):
+
+    if np.linalg.det(dcm) == 1 and dcm.T == np.linalg.inv(dcm):
+        return True
