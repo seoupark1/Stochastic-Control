@@ -1,7 +1,7 @@
 import numpy as np
 from collections.abc import Callable
 
-class ReferenceProviderMRP:
+class MRPReferenceProvider:
 
     def __init__(self,
                  sigma_function: Callable,
@@ -21,7 +21,7 @@ class ReferenceProviderMRP:
 
         return sigma_RN, omega_RN, omega_RN_dot
 
-class ReferenceProviderQuaternion:
+class QuaternionReferenceProvider:
 
     def __init__(self,
                  quaternion_function: Callable,
