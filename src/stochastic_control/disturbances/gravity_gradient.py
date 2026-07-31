@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..states.context import DisturbanceContext
+from ..states.context import StateContext
 
 class GravityGradient:
 
@@ -13,7 +13,7 @@ class GravityGradient:
 
     def torque(self,
                t: float,
-               context: DisturbanceContext) -> NDArray[np.float64]:
+               context: StateContext) -> NDArray[np.float64]:
 
         if context.position_N is None:
             raise ValueError('position_N is required to compute GravityGradient')
