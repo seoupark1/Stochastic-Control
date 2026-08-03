@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike
 
-from ..providers.state import MRPStateProvider
 from ..attitude.math import skew_symmetric
 from ..attitude.mrp import mrp_to_dcm, dcm_to_mrp
 
@@ -24,10 +23,11 @@ class LyapunovControl:
                               t: float,
                               state: ArrayLike):
 
+        current_state = np.asarray(state, dtype = float).reshape(6)
+        
         # body state
-        current_state = MRPStateProvider.build_context(t, state)
-        sigma_BN = np.asarray(dcm_to_mrp(current_state.attitude_BN), dtype = float).reshape(3)
-        omega_BN_B = np.asarray(current_state.angular_velocity_BN, dtype = float).reshape(3)
+        sigma_BN = current_state[0:3]
+        omega_BN_B = current_state[3:6]
 
         # reference data
         sigma_RN_R, omega_RN_R, omega_RN_dot_R = self.reference_provider.get_reference(t)
@@ -35,7 +35,7 @@ class LyapunovControl:
         # difference between body and reference
         dcm_BN = mrp_to_dcm(sigma_BN)
         dcm_RN = mrp_to_dcm(sigma_RN_R)
-        dcm_BR = dcm_BN @ np.linalg.inv(dcm_RN)
+        dcm_BR = dcm_BN @ dcm_RN.T
 
         sigma_BR = dcm_to_mrp(dcm_BR)
         omega_BR = omega_BN_B - dcm_BR @ omega_RN_R
@@ -43,26 +43,26 @@ class LyapunovControl:
         # compute lyapunov function
         detumbling = (1/2) * omega_BR.T @ self.inertia_tensor @ omega_BR
         tracking = 2 * self.K * np.log(1 + sigma_BR.T @ sigma_BR)
-        lyapunov_function = detumbling + tracking
 
-        return lyapunov_function
+        return detumbling + tracking
 
     def mrp_control_vector(self,
                            t: float,
                            state: ArrayLike):
+
+        current_state = np.asarray(state, dtype = float).reshape(6)
         
         # body state
-        current_state = MRPStateProvider.build_context(t, state)
-        sigma_BN = np.asarray(dcm_to_mrp(current_state.attitude_BN), dtype = float).reshape(3)
-        omega_BN_B = np.asarray(current_state.angular_velocity_BN, dtype = float).reshape(3)
+        sigma_BN = current_state[0:3]
+        omega_BN_B = current_state[3:6]
 
         # reference data
-        sigma_RN_R, omega_RN_R, omega_RN_dot_R = self.reference_provider.get_reference(t)
+        sigma_RN, omega_RN_R, omega_RN_dot_R = self.reference_provider.get_reference(t)
 
         # difference between body and reference
         dcm_BN = mrp_to_dcm(sigma_BN)
-        dcm_RN = mrp_to_dcm(sigma_RN_R)
-        dcm_BR = dcm_BN @ np.linalg.inv(dcm_RN)
+        dcm_RN = mrp_to_dcm(sigma_RN)
+        dcm_BR = dcm_BN @ dcm_RN.T
 
         sigma_BR = dcm_to_mrp(dcm_BR)
         omega_BR_B = omega_BN_B - dcm_BR @ omega_RN_R
