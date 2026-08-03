@@ -36,23 +36,23 @@ class RigidBody:
 
     def mrp_state_derivatives(self,
                               t: float,
-                              state: ArrayLike,
+                              rotational_state: ArrayLike,
                               context_builder,
-                              disturbance, # disturbance는 작용하는 모든 외란을 torque 매서드로 합친 객체
+                              disturbance,
                               control_torque_func) -> NDArray[np.float64]:
 
         # context for getting data about position, velocity, sigma, omega
-        state = np.asarray(state, dtype = float).reshape(6)
-        context = context_builder.build_context(t, state)
+        rotational_state = np.asarray(rotational_state, dtype = float).reshape(6)
+        context = context_builder.build_context(t, rotational_state)
 
         # external torques
-        control_torque = control_torque_func(t, state)
+        control_torque = control_torque_func(t, rotational_state)
         disturbance_torque = disturbance.torque(t, context)
         total_torque = control_torque + disturbance_torque 
 
         # rotational state vectors
-        sigma = state[0:3]
-        omega = state[3:6]
+        sigma = rotational_state[0:3]
+        omega = rotational_state[3:6]
 
         # derivatives
         sigma_dot = mrp_derivative(sigma, omega)
@@ -60,18 +60,25 @@ class RigidBody:
 
         return np.concatenate((sigma_dot, omega_dot))
 
-    def quaternion_state_derivative(self,
+    def quaternion_state_derivatives(self,
                                     t: float,
-                                    state: ArrayLike,
-                                    disturbance, # disturbance는 작용하는 모든 외란을 torque 매서드로 합친 객체
+                                    rotational_state: ArrayLike,
+                                    context_builder,
+                                    disturbance,
                                     control_torque_func) -> NDArray[np.float64]:
 
-        state = np.asarray(state, dtype = float).reshape(7)
-        quaternion = state[0:4]
-        omega = state[4:7]
-        control_torque = control_torque_func(t, state)
-        disturbance_torque = disturbance.torque(t, state)
+        # context for getting data about position, velocity, sigma, omega
+        rotational_state = np.asarray(rotational_state, dtype = float).reshape(7)
+        context = context_builder.build_context(t, rotational_state)
+
+        # external torques
+        control_torque = control_torque_func(t, rotational_state)
+        disturbance_torque = disturbance.torque(t, context)
         total_torque = control_torque + disturbance_torque
+
+        # rotational state vectors
+        quaternion = rotational_state[0:4]
+        omega = rotational_state[4:7]
 
         # derivatives
         quaternion_dot = quaternion_derivative(quaternion, omega)
