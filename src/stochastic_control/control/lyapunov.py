@@ -48,13 +48,15 @@ class LyapunovControl:
 
     def mrp_control_vector(self,
                            t: float,
-                           state: ArrayLike):
+                           rotational_state: ArrayLike,
+                           context_builder):
 
-        current_state = np.asarray(state, dtype = float).reshape(6)
+        rotational_state = np.asarray(rotational_state, dtype = float).reshape(6)
+        context = context_builder.build_context(t, rotational_state)
         
         # body state
-        sigma_BN = current_state[0:3]
-        omega_BN_B = current_state[3:6]
+        sigma_BN = rotational_state[0:3]
+        omega_BN_B = rotational_state[3:6]
 
         # reference data
         sigma_RN, omega_RN_R, omega_RN_dot_R = self.reference_provider.get_reference(t)
@@ -70,7 +72,7 @@ class LyapunovControl:
         omega_RN_dot_B = dcm_BR @ omega_RN_dot_R
 
         # compute control vector
-        feedforward = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_BN_B) @ omega_RN_B) - self.disturbance.torque(t, state)
+        feedforward = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_BN_B) @ omega_RN_B) - self.disturbance.torque(t, context)
         control_vector = -self.K * sigma_BR - self.P @ omega_BR_B + feedforward + skew_symmetric(omega_RN_B) @ self.inertia_tensor @ omega_RN_B
         
         return control_vector
