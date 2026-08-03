@@ -15,7 +15,7 @@ class LyapunovControl:
 
         self.inertia_tensor = np.asarray(inertia_tensor, dtype = float).reshape(3,3)
         self.K = float(K)
-        self.P = float(P)
+        self.P = np.asarray(P, dtype = float).reshape(3,3)
         self.reference_provider = reference_provider
         self.disturbance = disturbance
 
