@@ -1,5 +1,13 @@
 import numpy as np
+from dataclasses import dataclass
 from collections.abc import Callable
+from numpy.typing import NDArray
+
+@dataclass(frozen = True)
+class MRPReferenceState:
+    sigma_RN : NDArray[np.float64]
+    omega_RN_R : NDArray[np.float64]
+    omega_RN_dot_R : NDArray[np.float64]
 
 class MRPReferenceProvider:
 
@@ -19,7 +27,14 @@ class MRPReferenceProvider:
         omega_RN = np.asarray(self.omega_function(t), dtype = float).reshape(3)
         omega_RN_dot = np.asarray(self.omega_dot_function(t), dtype = float).reshape(3)
 
-        return sigma_RN, omega_RN, omega_RN_dot
+        return MRPReferenceState(sigma_RN, omega_RN, omega_RN_dot)
+
+@dataclass(frozen = True)
+class QuaternionReferenceState:
+    
+    quaternion_RN : NDArray[np.float64]
+    omega_RN_R : NDArray[np.float64]
+    omega_RN_dot_R : NDArray[np.float64]
 
 class QuaternionReferenceProvider:
 
@@ -39,4 +54,4 @@ class QuaternionReferenceProvider:
         omega_RN = np.asarray(self.omega_function(t), dtype = float).reshape(3)
         omega_RN_dot = np.asarray(self.omega_dot_function(t), dtype = float).reshape(3)
 
-        return quaternion_RN, omega_RN, omega_RN_dot
+        return QuaternionReferenceState(quaternion_RN, omega_RN, omega_RN_dot)
