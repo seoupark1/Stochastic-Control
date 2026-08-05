@@ -16,12 +16,7 @@ class LyapunovController:
 
         self.inertia_tensor = np.asarray(inertia_tensor, dtype = float).reshape(3,3)
         self.K = float(K)
-
-        if KI is None:
-            self.KI = None
-        else:
-            self.KI = np.asarray(KI, dtype = float).reshape(3,3)
-
+        self.KI = None if KI is None else float(KI)
         self.P = np.asarray(P, dtype = float).reshape(3,3)
         self.reference_provider = reference_provider
         self.disturbance_model = estimated_disturbance_model
@@ -40,25 +35,22 @@ class LyapunovController:
         reference = self.reference_provider.get_reference(t)
         sigma_RN_R = reference.sigma_RN
         omega_RN_R = reference.omega_RN_R
-        omega_RN_dot_R = reference.omega_RN_dot_R
 
-        # difference between body and reference
         dcm_BN = mrp_to_dcm(sigma_BN_B)
         dcm_RN = mrp_to_dcm(sigma_RN_R)
         dcm_BR = dcm_BN @ dcm_RN.T
 
         sigma_BR_B = dcm_to_mrp(dcm_BR)
         omega_BR_B = omega_BN_B - dcm_BR @ omega_RN_R
-        omega_RN_B = dcm_BR @ omega_RN_R
-        omega_RN_dot_B = dcm_BR @ omega_RN_dot_R
 
-        return dcm_BR, sigma_BR_B, omega_BR_B, omega_RN_B, omega_RN_dot_B
+        return dcm_BR, sigma_BR_B, omega_BR_B
     
     def mrp_lyapunov_function(self,
                               t: float,
                               estimated_rotational_state: ArrayLike):
 
-        dcm_BR, sigma_BR_B, omega_BR_B, omega_RN_B, omega_RN_dot_B = self.mrp_tracking_error(t, estimated_rotational_state)
+        # tracking error
+        dcm_BR, sigma_BR_B, omega_BR_B = self.mrp_tracking_error(t, estimated_rotational_state)
 
         return (1/2) * omega_BR_B.T @ self.inertia_tensor @ omega_BR_B + 2 * self.K * np.log(1 + sigma_BR_B.T @ sigma_BR_B)
 
@@ -68,20 +60,75 @@ class LyapunovController:
                            estimated_context_builder):
 
         x_hat = np.asarray(estimated_rotational_state, dtype = float).reshape(6)
+
+        # body state
+        sigma_BN_B = x_hat[0:3]
+        omega_BN_B = x_hat[3:6]
+
+        # estimated disturbance
         estimated_context = estimated_context_builder.build_context(t, x_hat)
         estimated_disturbance = np.zeros(3)
 
         if self.disturbance_model is not None:
             estimated_disturbance = self.disturbance_model.torque(t, estimated_context)
+
+        # tracking error
+        dcm_BR, sigma_BR_B, omega_BR_B = self.mrp_tracking_error(t, estimated_rotational_state)
+
+        # reference
+        reference = self.reference_provider.get_reference(t)
+        omega_RN_B = dcm_BR @ reference.omega_RN_R
+        omega_RN_dot_B = dcm_BR @ reference.omega_RN_dot_R
+
+        # control vector
+        attitude_feedback = -self.K * sigma_BR_B
+        omega_feedback = - self.P @ omega_BR_B
+        feedforward_term = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_BN_B) @ omega_RN_B)
+        gyroscopic_term = skew_symmetric(omega_BN_B) @ self.inertia_tensor @ omega_BN_B
+        control_vector = attitude_feedback + omega_feedback + feedforward_term + gyroscopic_term - estimated_disturbance
         
+        return control_vector
+
+    def mrp_integral_control_vector(self,
+                                    t: float,
+                                    estimated_rotational_state: ArrayLike,
+                                    integral_state: ArrayLike,
+                                    initial_angular_velocity_error: ArrayLike,
+                                    estimated_context_builder):
+
+        x_hat = np.asarray(estimated_rotational_state, dtype = float).reshape(6)
+        eta = np.asarray(integral_state, dtype = float).reshape(3)
+        omega_BR_B_0 = np.asarray(initial_angular_velocity_error, dtype = float).reshape(3)
+
+        # estimated disturbance
+        estimated_context = estimated_context_builder.build_context(t, x_hat)
+        estimated_disturbance = np.zeros(3)
+
+        if self.disturbance_model is not None:
+            estimated_disturbance = self.disturbance_model.torque(t, estimated_context)
+
         # body state
         sigma_BN_B = x_hat[0:3]
         omega_BN_B = x_hat[3:6]
 
-        dcm_BR, sigma_BR_B, omega_BR_B, omega_RN_B, omega_RN_dot_B = self.mrp_tracking_error(t, estimated_rotational_state)
+        # tracking error
+        reference = self.reference_provider.get_reference(t)
+        dcm_BR, sigma_BR_B, omega_BR_B = self.mrp_tracking_error(t, x_hat)
+        omega_RN_B = dcm_BR @ reference.omega_RN_R
+        omega_RN_dot_B = dcm_BR @ reference.omega_RN_dot_R
 
-        # compute control vector
-        feedforward = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_BN_B) @ omega_RN_B) - estimated_disturbance
-        control_vector = -self.K * sigma_BR_B - self.P @ omega_BR_B + feedforward + skew_symmetric(omega_RN_B) @ self.inertia_tensor @ omega_RN_B
+        # compute z
+        z = self.K * eta + self.inertia_tensor @ (omega_BR_B - omega_BR_B_0)
+
+        # compute control vector & pass eta_dot to solve_ivp integrator and get next step's eta
+        attitude_feedback = - self.K * sigma_BR_B
+        omega_feedback = - self.P @ omega_BR_B
+        integral_feedback = - self.P @ (self.KI * z)
+        feedforward_term = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_RN_B) @ omega_RN_B)
+        gyroscopic_term = skew_symmetric(omega_BN_B) @ self.inertia_tensor @ omega_BN_B
+
+        control_vector = attitude_feedback + omega_feedback + integral_feedback + feedforward_term + gyroscopic_term - estimated_disturbance
+        eta_dot = sigma_BR_B
+
+        return control_vector, eta_dot
         
-        return control_vector
