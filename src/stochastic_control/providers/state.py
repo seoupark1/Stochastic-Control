@@ -2,8 +2,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ..states.context import StateContext
-from ..attitude.mrp import mrp_to_dcm
-from ..attitude.quaternion import quaternion_to_dcm
 
 class MRPStateProvider:
 
@@ -29,7 +27,7 @@ class MRPStateProvider:
 
         current_state = StateContext(position_N = position_N,
                                      velocity_N = velocity_N,
-                                     dcm_BN = mrp_to_dcm(sigma_BN),
+                                     attitude_BN = sigma_BN,
                                      angular_velocity_BN = omega_BN_B)
 
         return current_state
@@ -58,7 +56,7 @@ class QuaternionStateProvider:
 
         current_state = StateContext(position_N = position_N,
                                      velocity_N = velocity_N,
-                                     dcm_BN = quaternion_to_dcm(quaternion_BN),
+                                     attitude_BN = quaternion_BN,
                                      angular_velocity_BN = omega_BN_B)
 
         return current_state
