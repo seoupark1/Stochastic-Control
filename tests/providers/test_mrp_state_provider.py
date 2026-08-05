@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from stochastic_control.providers.state import MRPStateProvider
-from stochastic_control.attitude.mrp import mrp_b_matrix
+from stochastic_control.attitude.mrp import mrp_b_matrix, mrp_to_dcm
 
 def position_function(t):
     return np.array([t,
@@ -39,9 +39,9 @@ def test_mrp_state_provider(t: float):
 
     assert context.position_N is not None
     assert context.velocity_N is None
-    assert context.attitude_BN is not None
+    assert context.dcm_BN is not None
     assert context.angular_velocity_BN is not None
 
     np.testing.assert_allclose(context.position_N, position_function(t))
-    np.testing.assert_allclose(context.attitude_BN, expected_sigma)
+    np.testing.assert_allclose(context.dcm_BN, mrp_to_dcm(expected_sigma))
     np.testing.assert_allclose(context.angular_velocity_BN, expected_omega)

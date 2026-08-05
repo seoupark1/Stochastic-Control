@@ -6,5 +6,5 @@ from numpy.typing import NDArray
 class StateContext:
     position_N: NDArray[np.float64] | None = None
     velocity_N: NDArray[np.float64] | None = None
-    attitude_BN: NDArray[np.float64] | None = None
+    dcm_BN: NDArray[np.float64] | None = None
     angular_velocity_BN: NDArray[np.float64] | None = None
