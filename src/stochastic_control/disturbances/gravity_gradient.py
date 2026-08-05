@@ -18,11 +18,11 @@ class GravityGradient:
         if context.position_N is None:
             raise ValueError('position_N is required to compute GravityGradient')
 
-        if context.attitude_BN is None:
-            raise ValueError('attitude_BN is required to compute GravityGradient')
+        if context.dcm_BN is None:
+            raise ValueError('dcm_BN is required to compute GravityGradient')
 
         r_BN_N = context.position_N
-        C_BN = context.attitude_BN
+        C_BN = context.dcm_BN
 
         # displacement(r_BN) measured in the body frame
         r_BN_B = C_BN @ r_BN_N
