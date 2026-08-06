@@ -107,6 +107,9 @@ class LyapunovController:
         if self.disturbance_model is not None:
             estimated_disturbance = self.disturbance_model.torque(t, estimated_context)
 
+        if self.KI is None:
+            raise ValueError('KI is required to compute integral control vector')
+
         # body state
         sigma_BN_B = x_hat[0:3]
         omega_BN_B = x_hat[3:6]
@@ -124,7 +127,7 @@ class LyapunovController:
         attitude_feedback = - self.K * sigma_BR_B
         omega_feedback = - self.P @ omega_BR_B
         integral_feedback = - self.P @ (self.KI * z)
-        feedforward_term = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_RN_B) @ omega_RN_B)
+        feedforward_term = self.inertia_tensor @ (omega_RN_dot_B - skew_symmetric(omega_BN_B) @ omega_RN_B)
         gyroscopic_term = skew_symmetric(omega_BN_B) @ self.inertia_tensor @ omega_BN_B
 
         control_vector = attitude_feedback + omega_feedback + integral_feedback + feedforward_term + gyroscopic_term - estimated_disturbance
