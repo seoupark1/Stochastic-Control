@@ -106,7 +106,8 @@ def get_graph(time,
     plt.ylabel(ylabel)
     plt.title(graph_title)
     plt.legend()
-    plt.savefig('experiments/lyapunov_controller/' + png_title)
+    plt.grid(True)
+    plt.savefig('experiments/lyapunov_controller/compare_standard_integral_performances/' + png_title)
     plt.close()
 
 # standard controller body attitude
