@@ -55,13 +55,20 @@ damping_matrix = 10 * np.eye(3)
 integral_control_gain = 0.005
 unknown_disturbance = np.array([0.5, -0.3, 0.2])
 tspan = (0, 300)
+teval = np.linspace(0, 300, 3001)
 
-controller = LyapunovController(inertia_tensor, 
-                                control_gain, 
-                                damping_matrix, 
-                                reference_provider,
-                                estimated_disturbance_model = None)
+standard_controller = LyapunovController(inertia_tensor, 
+                                         control_gain, 
+                                         damping_matrix, 
+                                         reference_provider,
+                                         estimated_disturbance_model = None)
 
+integral_controller = LyapunovController(inertia_tensor, 
+                                         control_gain, 
+                                         damping_matrix, 
+                                         reference_provider,
+                                         integral_control_gain,
+                                         estimated_disturbance_model = None)
 
 rigid_body = RigidBody(inertia_tensor)
 state_provider = MRPStateProvider()
@@ -69,27 +76,81 @@ state_provider = MRPStateProvider()
 def performance_of_standard_controller(t,
                                        estimated_rotational_state):
 
-    control_vector = controller.mrp_control_vector(t,
-                                                   estimated_rotational_state,
-                                                   state_provider)
+    control_vector = standard_controller.mrp_control_vector(t,
+                                                            estimated_rotational_state,
+                                                            state_provider)
 
     total_torque = control_vector + unknown_disturbance
 
     return rigid_body.mrp_derivatives(estimated_rotational_state,
                                       total_torque)
 
-sol = solve_ivp(performance_of_standard_controller,
-                t_span = tspan,
-                y0 = initial_rotational_state,
-                method = 'RK45')
+standard_sol = solve_ivp(performance_of_standard_controller,
+                         t_span = tspan,
+                         y0 = initial_rotational_state,
+                         method = 'RK45',
+                         t_eval = teval)
 
-sigma_history = sol.y[0:3]
-omega_history = sol.y[3:6]
-plt.plot(sol.t, sigma_history[0], label = 'sigma_1')
-plt.plot(sol.t, sigma_history[1], label = 'sigma_2')
-plt.plot(sol.t, sigma_history[2], label = 'sigma_3')
-plt.xlabel('time')
-plt.ylabel('body attitude')
-plt.title('Standard Controller')
-plt.savefig('experiments/lyapunov_controller/standard_controller_body_attitude.png')
-plt.close()
+def get_graph(time,
+              history,
+              xlabel: str,
+              ylabel: str,
+              labels: list[str],
+              graph_title: str,
+              png_title: str):
+    
+    for i in range(3):
+        plt.plot(time, history[i], label = labels[i])
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(graph_title)
+    plt.legend()
+    plt.savefig('experiments/lyapunov_controller/' + png_title)
+    plt.close()
+
+# standard controller body attitude
+sigma_history = standard_sol.y[0:3]
+omega_history = standard_sol.y[3:6]
+get_graph(standard_sol.t, 
+          sigma_history, 
+          'time', 
+          'body attitude', 
+          ['sigma_1', 'sigma_2', 'sigma_3'],
+          'Standard Controller', 
+          'standard_controller_body_attitude.png')
+
+get_graph(standard_sol.t, 
+          omega_history, 
+          'time', 
+          'body angular velocity', 
+          ['omega_1', 'omega_2', 'omega_3'],
+          'Standard Controller', 
+          'standard_controller_body_angular_velocity.png')
+
+# standard controller tracking error
+sigma_BR_history = np.zeros((3, len(standard_sol.t)))
+omega_BR_history = np.zeros((3, len(standard_sol.t)))
+
+for i, t in enumerate(standard_sol.t):
+    rotational_state = standard_sol.y[:, i]
+
+    dcm_BR_B, sigma_BR_B, omega_BR_B = standard_controller.mrp_tracking_error(t, rotational_state)
+    sigma_BR_history[:, i] = sigma_BR_B
+    omega_BR_history[:, i] = omega_BR_B
+
+get_graph(standard_sol.t, 
+          sigma_BR_history, 
+          'time', 
+          'attitude error', 
+          ['sigma_BR_1', 'sigma_BR_2', 'sigma_BR_3'],
+          'Standard Controller', 
+          'standard_controller_attitude_error.png')
+
+get_graph(standard_sol.t, 
+          omega_BR_history, 
+          'time', 
+          'angular velocity error', 
+          ['omega_BR_1', 'omega_BR_2', 'omega_BR_3'],
+          'Standard Controller', 
+          'standard_controller_angular_velocity_error.png')
