@@ -65,7 +65,7 @@ state_provider = MRPStateProvider()
 def get_random_gains():
 
     K = np.random.uniform(0.0, 50.0)
-    KI = 10 ** np.random.uniform(-5.0, 1.0)
+    KI = 10 ** np.random.uniform(-3.0, 1.0)
     P = make_spd_matrix(3)
 
     return K, KI, P
@@ -147,7 +147,8 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 100
+num_simulations = 10
+steady_state_start = 200.0
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
 integral_sigma_rms_history = np.zeros(num_simulations)
@@ -170,8 +171,9 @@ for trial in range(num_simulations):
             standard_sigma_norm_history[i] = np.linalg.norm(sigma_BR_B)
             standard_omega_norm_history[i] = np.linalg.norm(omega_BR_B)
 
-        standard_sigma_rms_history[trial] = np.sqrt(np.mean(standard_sigma_norm_history ** 2))
-        standard_omega_rms_history[trial] = np.sqrt(np.mean(standard_omega_norm_history ** 2))
+        steady_state_time = standard_sol.t >= steady_state_start
+        standard_sigma_rms_history[trial] = np.sqrt(np.mean(standard_sigma_norm_history[steady_state_time] ** 2))
+        standard_omega_rms_history[trial] = np.sqrt(np.mean(standard_omega_norm_history[steady_state_time] ** 2))
 
         # integral controller rms history
         integral_sigma_norm_history = np.zeros(len(integral_sol.t))
@@ -184,8 +186,9 @@ for trial in range(num_simulations):
             integral_sigma_norm_history[j] = np.linalg.norm(sigma_BR_B)
             integral_omega_norm_history[j] = np.linalg.norm(omega_BR_B)
 
-        integral_sigma_rms_history[trial] = np.sqrt(np.mean(integral_sigma_norm_history ** 2))
-        integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history ** 2))
+        steady_state_time = integral_sol.t >= steady_state_start
+        integral_sigma_rms_history[trial] = np.sqrt(np.mean(integral_sigma_norm_history[steady_state_time] ** 2))
+        integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history[steady_state_time] ** 2))
 
 # get scatter
 plt.scatter(standard_sigma_rms_history, integral_sigma_rms_history)
