@@ -156,7 +156,9 @@ integral_omega_rms_history = np.zeros(num_simulations)
 
 for trial in range(num_simulations):
 
-        K, KI, P = get_random_gains()
+        K, KI, _ = get_random_gains()
+        P = 10 * np.eye(3)
+        
         standard_controller, standard_sol = simulate_standard_controller(K, P)
         integral_controller, integral_sol = simulate_integral_controller(K, P, KI)
 
