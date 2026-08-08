@@ -240,3 +240,34 @@ get_graph(integral_sol.t,
           ['omega_BR_1', 'omega_BR_2', 'omega_BR_3'],
           'Integral Controller', 
           'integral_controller_angular_velocity_error.png')
+
+# compare performance in single graph
+sigma_BR_history_1_norm = np.zeros((len(standard_sol.t)))
+omega_BR_history_1_norm = np.zeros((len(standard_sol.t)))
+sigma_BR_history_2_norm = np.zeros((len(integral_sol.t)))
+omega_BR_history_2_norm = np.zeros((len(integral_sol.t)))
+
+for i, t in enumerate(standard_sol.t):
+    sigma_BR_history_1_norm[i] = np.linalg.norm(sigma_BR_history_1[:, i])
+    omega_BR_history_1_norm[i] = np.linalg.norm(omega_BR_history_1[:, i])
+
+for i, t in enumerate(integral_sol.t):
+    sigma_BR_history_2_norm[i] = np.linalg.norm(sigma_BR_history_2[0:6, i])
+    omega_BR_history_2_norm[i] = np.linalg.norm(omega_BR_history_2[0:6, i])
+
+plt.subplot(2,1,1)
+plt.plot(standard_sol.t, sigma_BR_history_1_norm, 'b', label = 'standard controller')
+plt.plot(standard_sol.t, sigma_BR_history_2_norm, 'r', label = 'integral controller')
+plt.xlabel('time [s]')
+plt.ylabel('attitude error (mrp)')
+plt.legend()
+plt.grid(True)
+plt.subplot(2,1,2)
+plt.plot(standard_sol.t, omega_BR_history_1_norm, 'b', label = 'standard controller')
+plt.plot(standard_sol.t, omega_BR_history_2_norm, 'r', label = 'integral controller')
+plt.xlabel('time [s]')
+plt.ylabel('angular velocity error [rad/s]')
+plt.legend()
+plt.grid(True)
+plt.savefig('experiments/lyapunov_controller/compare_standard_integral_performances/final_result.png')
+plt.close()
