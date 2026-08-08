@@ -146,3 +146,61 @@ def simulate_integral_controller(K, P, KI):
 
     return integral_controller, integral_sol
 
+
+# monte carlo simulation
+num_simulations = 50
+standard_sigma_rms_history = np.zeros(num_simulations)
+standard_omega_rms_history = np.zeros(num_simulations)
+integral_sigma_rms_history = np.zeros(num_simulations)
+integral_omega_rms_history = np.zeros(num_simulations)
+
+for trial in range(num_simulations):
+
+        K, KI, P = get_random_gains()
+        standard_controller, standard_sol = simulate_standard_controller(K, P)
+        integral_controller, integral_sol = simulate_integral_controller(K, P, KI)
+
+        # standard controller rms history
+        standard_sigma_norm_history = np.zeros(len(standard_sol.t))
+        standard_omega_norm_history = np.zeros(len(standard_sol.t))
+
+        for i, t in enumerate(standard_sol.t):
+            standard_state = standard_sol.y[:, i]
+            _, sigma_BR_B, omega_BR_B = standard_controller.mrp_tracking_error(t, standard_state)
+
+            standard_sigma_norm_history[i] = np.linalg.norm(sigma_BR_B)
+            standard_omega_norm_history[i] = np.linalg.norm(omega_BR_B)
+
+        standard_sigma_rms_history[trial] = np.sqrt(np.mean(standard_sigma_norm_history ** 2))
+        standard_omega_rms_history[trial] = np.sqrt(np.mean(standard_omega_norm_history ** 2))
+
+        # integral controller rms history
+        integral_sigma_norm_history = np.zeros(len(integral_sol.t))
+        integral_omega_norm_history = np.zeros(len(integral_sol.t))
+
+        for j, t in enumerate(integral_sol.t):
+            integral_state = integral_sol.y[0:6, i]
+            _, sigma_BR_B, omega_BR_B = integral_controller.mrp_tracking_error(t, integral_state)
+
+            integral_sigma_norm_history[i] = np.linalg.norm(sigma_BR_B)
+            integral_omega_norm_history[i] = np.linalg.norm(omega_BR_B)
+
+        integral_sigma_rms_history[trial] = np.sqrt(np.mean(integral_sigma_norm_history ** 2))
+        integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history ** 2))
+
+# get scatter
+sigma_rms_difference = standard_sigma_rms_history - integral_sigma_rms_history
+omega_rms_difference = standard_omega_rms_history - integral_omega_rms_history
+trials = np.arange(num_simulations)
+plt.scatter(trials, sigma_rms_difference)
+plt.xlabel('trials')
+plt.ylabel('standard RMS - integral RMS')
+plt.title('attitude RMS difference')
+plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/attitude_rms_difference.png')
+plt.close()
+plt.scatter(trials, omega_rms_difference)
+plt.xlabel('trials')
+plt.ylabel('standard RMS - integral RMS')
+plt.title('angular velocity RMS difference')
+plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/angular_velocity_rms_difference.png')
+plt.close()
