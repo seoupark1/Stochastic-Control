@@ -141,7 +141,7 @@ def simulate_integral_controller(K, P, KI, disturbance):
 
 
 # monte carlo simulation
-num_simulations = 30
+num_simulations = 15
 steady_state_start = 250.0
 disturbance_norm_history = np.zeros(num_simulations)
 
