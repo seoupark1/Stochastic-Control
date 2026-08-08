@@ -64,8 +64,8 @@ state_provider = MRPStateProvider()
 
 def get_random_gains():
 
-    K = np.random.uniform(10.0, 50.0)
-    KI = 10 ** np.random.uniform(-2.0, 0.0)
+    K = np.random.uniform(5.0, 10.0)
+    KI = 10 ** np.random.uniform(-3.0, 0.0)
     P = make_spd_matrix(3)
 
     return K, KI, P
@@ -158,7 +158,7 @@ for trial in range(num_simulations):
 
         K, KI, _ = get_random_gains()
         P = 10 * np.eye(3)
-        
+
         standard_controller, standard_sol = simulate_standard_controller(K, P)
         integral_controller, integral_sol = simulate_integral_controller(K, P, KI)
 
