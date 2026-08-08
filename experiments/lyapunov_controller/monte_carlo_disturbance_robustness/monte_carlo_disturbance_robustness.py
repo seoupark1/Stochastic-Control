@@ -55,22 +55,17 @@ omega_BN_B_0 = np.radians(np.array([3, 1, -2]))
 initial_rotational_state = np.concatenate((sigma_BN_B_0, omega_BN_B_0))
 initial_state_for_integral_controller = np.concatenate((initial_rotational_state, np.zeros(3)))
 
-unknown_disturbance = np.array([0.5, -0.3, 0.2])
 tspan = (0, 300)
 teval = np.linspace(0, 300, 3001)
 
 rigid_body = RigidBody(inertia_tensor)
 state_provider = MRPStateProvider()
 
-def get_random_gains():
+def get_random_disturbance():
 
-    K = np.random.uniform(5.0, 10.0)
-    KI = 10 ** np.random.uniform(-3.0, 0.0)
-    P = make_spd_matrix(3)
+    return np.random.uniform(-100, 100, 3)
 
-    return K, KI, P
-
-def simulate_standard_controller(K, P):
+def simulate_standard_controller(K, P, disturbance):
 
     control_gain = float(K)
     damping_matrix = np.asarray(P, dtype = float).reshape(3,3)
@@ -88,7 +83,7 @@ def simulate_standard_controller(K, P):
                                                                 estimated_rotational_state,
                                                                 state_provider)
 
-        total_torque = control_vector + unknown_disturbance
+        total_torque = control_vector + disturbance
 
         return rigid_body.mrp_derivatives(estimated_rotational_state,
                                           total_torque)
@@ -101,7 +96,7 @@ def simulate_standard_controller(K, P):
 
     return standard_controller, standard_sol
 
-def simulate_integral_controller(K, P, KI):
+def simulate_integral_controller(K, P, KI, disturbance):
 
     control_gain = float(K)
     integral_control_gain = float(KI)
@@ -130,7 +125,7 @@ def simulate_integral_controller(K, P, KI):
                                                                                   omega_BR_B_0,
                                                                                   state_provider)
 
-        total_torque = control_vector + unknown_disturbance
+        total_torque = control_vector + disturbance
 
         sigma_dot = mrp_derivative(sigma_BN_B, omega_BN_B)
         omega_dot = rigid_body.angular_acceleration(omega_BN_B, total_torque)
@@ -147,8 +142,15 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 50
+num_simulations = 30
 steady_state_start = 250.0
+disturbance_norm_history = np.zeros(num_simulations)
+
+K = 5
+P = 10 * np.eye(3)
+KI = 0.005
+
+# only consider steady state part
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
 integral_sigma_rms_history = np.zeros(num_simulations)
@@ -156,11 +158,12 @@ integral_omega_rms_history = np.zeros(num_simulations)
 
 for trial in range(num_simulations):
 
-        K, KI, _ = get_random_gains()
-        P = 10 * np.eye(3)
+        # get random disturbance
+        disturbance = get_random_disturbance()
+        disturbance_norm_history[trial] = np.linalg.norm(disturbance)
 
-        standard_controller, standard_sol = simulate_standard_controller(K, P)
-        integral_controller, integral_sol = simulate_integral_controller(K, P, KI)
+        standard_controller, standard_sol = simulate_standard_controller(K, P, disturbance)
+        integral_controller, integral_sol = simulate_integral_controller(K, P, KI, disturbance)
 
         # standard controller rms history
         standard_sigma_norm_history = np.zeros(len(standard_sol.t))
@@ -192,21 +195,35 @@ for trial in range(num_simulations):
         integral_sigma_rms_history[trial] = np.sqrt(np.mean(integral_sigma_norm_history[steady_state_time] ** 2))
         integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history[steady_state_time] ** 2))
 
-# get scatter
+# standard attitude rms vs integral attitude rms
 plt.scatter(standard_sigma_rms_history, integral_sigma_rms_history)
 max_rms = max(np.max(standard_sigma_rms_history), np.max(integral_sigma_rms_history))
 plt.plot([0, max_rms], [0, max_rms], linestyle = '--')
 plt.xlabel('Standard Lyapunov Controller RMS')
 plt.ylabel('Integral Lyapunov Controller RMS')
-plt.title('Attitude Tracking RMS Comparison')
-plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/attitude_rms_comparison.png')
+plt.title('Standard Attitude RMS vs Integral Attitude RMS')
+plt.grid(True)
+plt.savefig('experiments/lyapunov_controller/monte_carlo_disturbance_robustness/standard_attitude_vs_integral_attitude.png')
 plt.close()
 
-plt.scatter(standard_omega_rms_history, integral_omega_rms_history)
-max_rms = max(np.max(standard_omega_rms_history), np.max(integral_omega_rms_history))
-plt.plot([0, max_rms], [0, max_rms], linestyle = '--')
-plt.xlabel('Standard Lyapunov Controller RMS')
-plt.ylabel('Integral Lyapunov Controller RMS')
-plt.title('Angular Velocity Tracking RMS Comparison')
-plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/angular_velocity_rms_comparison.png')
+# disturbance vs attitude RMS
+plt.scatter(disturbance_norm_history, standard_sigma_rms_history, label = 'Standard Controller')
+plt.scatter(disturbance_norm_history, integral_sigma_rms_history, label = 'Integral Controller')
+plt.xlabel('Disturbance Magnitude')
+plt.ylabel('Steady State Attitude RMS')
+plt.title('Disturbance vs Attitude RMS')
+plt.legend()
+plt.grid(True)
+plt.savefig('experiments/lyapunov_controller/monte_carlo_disturbance_robustness/disturbance_vs_attitude_rms.png')
+plt.close()
+
+# disturbance vs attitude RMS difference
+difference_history = standard_sigma_rms_history - integral_sigma_rms_history
+plt.scatter(disturbance_norm_history, difference_history)
+plt.xlabel('Disturbance Magnitude')
+plt.ylabel('Standard RMS - Integral RMS')
+plt.title('Disturbance vs Attitude RMS Difference')
+plt.legend()
+plt.grid(True)
+plt.savefig('experiments/lyapunov_controller/monte_carlo_disturbance_robustness/disturbance_vs_attitude_rms_difference.png')
 plt.close()
