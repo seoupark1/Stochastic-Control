@@ -62,8 +62,7 @@ rigid_body = RigidBody(inertia_tensor)
 state_provider = MRPStateProvider()
 
 def get_random_disturbance():
-
-    return np.random.uniform(-100, 100, 3)
+    return np.random.uniform(-1.0, 1.0, 3)
 
 def simulate_standard_controller(K, P, disturbance):
 
@@ -223,7 +222,6 @@ plt.scatter(disturbance_norm_history, difference_history)
 plt.xlabel('Disturbance Magnitude')
 plt.ylabel('Standard RMS - Integral RMS')
 plt.title('Disturbance vs Attitude RMS Difference')
-plt.legend()
 plt.grid(True)
 plt.savefig('experiments/lyapunov_controller/monte_carlo_disturbance_robustness/disturbance_vs_attitude_rms_difference.png')
 plt.close()
