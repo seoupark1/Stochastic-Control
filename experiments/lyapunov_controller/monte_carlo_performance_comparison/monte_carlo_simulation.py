@@ -64,8 +64,8 @@ state_provider = MRPStateProvider()
 
 def get_random_gains():
 
-    K = np.random.uniform(0.0, 50.0)
-    KI = 10 ** np.random.uniform(-3.0, 1.0)
+    K = np.random.uniform(10.0, 50.0)
+    KI = 10 ** np.random.uniform(-2.0, 0.0)
     P = make_spd_matrix(3)
 
     return K, KI, P
@@ -147,7 +147,7 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 50
+num_simulations = 20
 steady_state_start = 250.0
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
