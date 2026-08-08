@@ -147,8 +147,8 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 10
-steady_state_start = 200.0
+num_simulations = 50
+steady_state_start = 250.0
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
 integral_sigma_rms_history = np.zeros(num_simulations)
