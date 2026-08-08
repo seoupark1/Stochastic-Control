@@ -2,7 +2,6 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from sklearn.datasets import make_spd_matrix
-from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 from stochastic_control.dynamics.rigid_body import RigidBody
@@ -148,7 +147,7 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 50
+num_simulations = 500
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
 integral_sigma_rms_history = np.zeros(num_simulations)
@@ -189,18 +188,15 @@ for trial in range(num_simulations):
         integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history ** 2))
 
 # get scatter
-sigma_rms_difference = standard_sigma_rms_history - integral_sigma_rms_history
-omega_rms_difference = standard_omega_rms_history - integral_omega_rms_history
-trials = np.arange(num_simulations)
-plt.scatter(trials, sigma_rms_difference)
-plt.xlabel('trials')
-plt.ylabel('standard RMS - integral RMS')
-plt.title('attitude RMS difference')
-plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/attitude_rms_difference.png')
+plt.scatter(standard_sigma_rms_history, integral_sigma_rms_history, s = 10)
+plt.xlabel('Standard Lyapunov Controller RMS')
+plt.ylabel('Integral Lyapunov Controller RMS')
+plt.title('Attitude Tracking RMS Comparison')
+plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/attitude_rms_comparison.png')
 plt.close()
-plt.scatter(trials, omega_rms_difference)
-plt.xlabel('trials')
-plt.ylabel('standard RMS - integral RMS')
-plt.title('angular velocity RMS difference')
-plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/angular_velocity_rms_difference.png')
+plt.scatter(standard_omega_rms_history, integral_omega_rms_history, s = 10)
+plt.xlabel('Standard Lyapunov Controller RMS')
+plt.ylabel('Integral Lyapunov Controller RMS')
+plt.title('Angular Velocity Tracking RMS Comparison')
+plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/angular_velocity_rms_comparison.png')
 plt.close()
