@@ -178,11 +178,11 @@ for trial in range(num_simulations):
         integral_omega_norm_history = np.zeros(len(integral_sol.t))
 
         for j, t in enumerate(integral_sol.t):
-            integral_state = integral_sol.y[0:6, i]
+            integral_state = integral_sol.y[0:6, j]
             _, sigma_BR_B, omega_BR_B = integral_controller.mrp_tracking_error(t, integral_state)
 
-            integral_sigma_norm_history[i] = np.linalg.norm(sigma_BR_B)
-            integral_omega_norm_history[i] = np.linalg.norm(omega_BR_B)
+            integral_sigma_norm_history[j] = np.linalg.norm(sigma_BR_B)
+            integral_omega_norm_history[j] = np.linalg.norm(omega_BR_B)
 
         integral_sigma_rms_history[trial] = np.sqrt(np.mean(integral_sigma_norm_history ** 2))
         integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history ** 2))
