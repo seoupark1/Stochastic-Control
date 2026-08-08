@@ -147,7 +147,7 @@ def simulate_integral_controller(K, P, KI):
 
 
 # monte carlo simulation
-num_simulations = 500
+num_simulations = 100
 standard_sigma_rms_history = np.zeros(num_simulations)
 standard_omega_rms_history = np.zeros(num_simulations)
 integral_sigma_rms_history = np.zeros(num_simulations)
@@ -188,13 +188,18 @@ for trial in range(num_simulations):
         integral_omega_rms_history[trial] = np.sqrt(np.mean(integral_omega_norm_history ** 2))
 
 # get scatter
-plt.scatter(standard_sigma_rms_history, integral_sigma_rms_history, s = 10)
+plt.scatter(standard_sigma_rms_history, integral_sigma_rms_history)
+max_rms = max(np.max(standard_sigma_rms_history), np.max(integral_sigma_rms_history))
+plt.plot([0, max_rms], [0, max_rms], linestyle = '--')
 plt.xlabel('Standard Lyapunov Controller RMS')
 plt.ylabel('Integral Lyapunov Controller RMS')
 plt.title('Attitude Tracking RMS Comparison')
 plt.savefig('experiments/lyapunov_controller/monte_carlo_performance_comparison/attitude_rms_comparison.png')
 plt.close()
-plt.scatter(standard_omega_rms_history, integral_omega_rms_history, s = 10)
+
+plt.scatter(standard_omega_rms_history, integral_omega_rms_history)
+max_rms = max(np.max(standard_omega_rms_history), np.max(integral_omega_rms_history))
+plt.plot([0, max_rms], [0, max_rms], linestyle = '--')
 plt.xlabel('Standard Lyapunov Controller RMS')
 plt.ylabel('Integral Lyapunov Controller RMS')
 plt.title('Angular Velocity Tracking RMS Comparison')
