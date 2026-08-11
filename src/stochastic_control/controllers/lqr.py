@@ -27,7 +27,8 @@ class FiniteHorizonLQRController:
                  Q: ArrayLike, 
                  R: ArrayLike, 
                  Qf: ArrayLike, 
-                 tf: float):
+                 tf: float,
+                 reference_provider):
 
         self.A = np.asarray(A, dtype = float)
         self.B = np.asarray(B, dtype = float)
@@ -36,19 +37,20 @@ class FiniteHorizonLQRController:
         self.Qf = np.asarray(Qf, dtype = float)
 
         self.tf = float(tf)
+        self.reference_provider = reference_provider
 
-        # SPD 검증 코드
-        #
-        #
+        # Q, R, Qf SPD 검증
         #
 
 
     def differential_ricatti_equation(self,
                                       current_S: ArrayLike):
 
+        # check parameter & solve floating point errors
         S = np.asarray(current_S, dtype = float)
         S = (S + S.T) / 2
 
+        # get S derivative
         S_dot = - (S @ self.A + self.A.T @ S - S @ self.B @ inv(self.R) @ self.B.T @ S + self.Q)
 
         return S_dot.reshape(-1)
@@ -56,26 +58,29 @@ class FiniteHorizonLQRController:
     def get_S(self,
               current_t: float):
 
-        # time conditions
+        # check parameter
         current_t = float(current_t)
+
+        # conditions
         t_span = (self.tf, current_t)
         t_eval = [current_t]
-
-        # S conditions
         initial_S = self.Qf
         size_S = self.Q.shape[0]
 
+        # integrate
         sol = solve_ivp(func = self.differential_ricatti_equation, 
                         t_span = t_span, 
                         y0 = initial_S, 
                         method = 'RK45', 
                         t_eval = t_eval)
 
-        current_S = sol.y[:, 1].reshape(size_S, size_S)
-        current_S = (current_S + current_S.T) / 2
+        # reshape & solve floating point errors
+        S = sol.y[:, 1].reshape(size_S, size_S)
+        S = (S + S.T) / 2
 
-        return current_S
+        return S
 
+    # local trajectory stabilization
     def control_vector(self, 
                        t: float,
                        estimated_state: ArrayLike):
@@ -84,8 +89,13 @@ class FiniteHorizonLQRController:
         t = float(t)
         x_hat = np.asarray(estimated_state, dtype = float)
 
+        # reference trajectory
+        reference = self.reference_provider.get_reference(t)
+        reference_x = reference.reference_x
+        reference_u = reference.reference_u
+
         # get control vector
         S = self.get_S(t)
-        control_vector = -inv(self.R) @ self.B.T @ S @ x_hat
+        control_vector = reference_u - inv(self.R) @ self.B.T @ S @ (x_hat - reference_x)
 
         return control_vector
