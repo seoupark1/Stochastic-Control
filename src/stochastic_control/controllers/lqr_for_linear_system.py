@@ -4,12 +4,43 @@ from numpy.typing import ArrayLike
 from scipy.linalg import solve_continuous_are, inv
 from scipy.integrate import solve_ivp
 
+# check symmetric positive definite
 def is_SPD(matrix):
 
+    # check parameter
+    matrix = np.asarray(matrix, dtype = float)
+
+    # check symmetric positive definite
+    if matrix == matrix.T and (np.linalg.cholesky(matrix) is True):
+        return True
+
+    else:
+        return False
+
+# check symmetric positive semi-definite
+def is_PSD(matrix):
+
+    # check parameter
+    matrix = np.asarray(matrix, dtype = float)
+
+    # check symmetric positive semi-definite
+    eigenvalues = np.linalg.eigvals(matrix)
+    if matrix == matrix.T and (np.all(eigenvalues > 0) is True):
+        return True
+
+    else:
+        return False
 
 class InfiniteHorizonLQRController:
 
     def __init__(self, A, B, Q, R):
+
+        # check Q, R
+        if not is_SPD(Q):
+            raise ValueError('Q is not symmetric positive definite matrix')
+
+        if not is_PSD(R):
+            raise ValueError('R is not symmetric positive semi-definite matrix')
 
         S = solve_continuous_are(A, B, Q, R)
         self.K = np.linalg.solve(R, B.T @ S)
@@ -39,9 +70,15 @@ class FiniteHorizonLQRController:
         self.tf = float(tf)
         self.reference_provider = reference_provider
 
-        # Q, R, Qf SPD 검증
-        #
+        # check Q, Qf, R
+        if not is_SPD(self.Q):
+            raise ValueError('Q is not symmetric positive definite matrix')
 
+        if not is_SPD(self.Qf):
+                    raise ValueError('Qf is not symmetric positive definite matrix')
+
+        if not is_PSD(self.R):
+            raise ValueError('R is not symmetric positive semi-definite matrix')
 
     def differential_ricatti_equation(self,
                                       current_S: ArrayLike):
