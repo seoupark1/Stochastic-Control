@@ -8,8 +8,8 @@ class TrajectoryReferenceState:
                  reference_x: ArrayLike,
                  reference_u: ArrayLike):
         
-        reference_x = np.asarray(reference_x, dtype = float)
-        reference_u = np.asarray(reference_u, dtype = float)
+        self.reference_x = reference_x
+        self.reference_u = reference_u
 
 class TrajectoryReferenceProvider:
 
