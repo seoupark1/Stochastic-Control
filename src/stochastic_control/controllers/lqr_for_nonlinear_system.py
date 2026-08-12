@@ -7,7 +7,7 @@ from collections.abc import Callable
 from scipy.linalg import inv
 from scipy.integrate import solve_ivp
 
-from ..math_tools import is_SPD, is_PSD
+from ..math_tools import is_SPD
 
 
 class TimeVaryingLQRController:
@@ -43,10 +43,10 @@ class TimeVaryingLQRController:
             raise ValueError('R is not symmetric positive semi-definite matrix')
 
         # get time-varying A, B function
-        x_variables = sp.symbols('x0:{x_size}')
+        x_variables = sp.symbols(f'x1:{x_size + 1}')
         x = sp.Matrix(x_variables)
 
-        u_variables = sp.symbols('u0:{u_size}')
+        u_variables = sp.symbols(f'u1:{u_size + 1}')
         u = sp.Matrix(u_variables)
 
         f = sp.Matrix(self.dynamics_function(x, u))
@@ -118,28 +118,8 @@ class TimeVaryingLQRController:
 
         Sx_dot = - ( -self.Q @ x_d + (A.T - Sxx @ B @ inv(self.R) @ B.T) @ Sx + Sxx @ B @ u_d)
 
-        return Sx_dot.reshape(-1)
+        return Sx_dot
 
-    def ricatti_constant_term(self,
-                              t: float,
-                              current_Sx: ArrayLike):
-
-        # check parameters
-        t = float(t)
-        Sx = np.asarray(current_Sx, dtype = float)
-
-        # get current A, B
-        _, B = self.get_jacobians(t)
-
-        # reference trajectory
-        reference = self.reference_provider.get_reference(t)
-        x_d = reference.reference_x
-        u_d = reference.reference_u
-
-        S0_dot = - (x_d.T @ self.Q @ x_d - Sx.T @ B @ inv(self.R) @ B.T @ Sx + 2 * Sx.T @ B @ u_d)
-
-        return S0_dot.reshape(-1)
-        
     def get_Sxx_and_Sx(self,
                        t: float):
         
@@ -165,7 +145,7 @@ class TimeVaryingLQRController:
 
         Sx_sol = solve_ivp(func = self.ricatti_linear_term, 
                            t_span = t_span, 
-                           y0 = np.concatenate(self.initial_Sxx.reshape(-1), self.initial_Sx.reshape(-1)), 
+                           y0 = np.concatenate((self.initial_Sxx.reshape(-1), self.initial_Sx)), 
                            method = 'RK45', 
                            t_eval = t_eval)
 
@@ -188,8 +168,8 @@ class TimeVaryingLQRController:
         # get current A, B
         _, B = self.get_jacobians(t)
 
-        # Sxx, Sx, S0
-        Sxx, Sx, _ = self.get_Sxx_and_Sx(t)
+        # Sxx, Sx
+        Sxx, Sx = self.get_Sxx_and_Sx(t)
 
         control_vector = u_d - inv(self.R) @ B.T @ (Sxx @ x_hat + Sx)
 
