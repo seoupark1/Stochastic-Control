@@ -4,32 +4,7 @@ from numpy.typing import ArrayLike
 from scipy.linalg import solve_continuous_are, inv
 from scipy.integrate import solve_ivp
 
-# check symmetric positive definite
-def is_SPD(matrix):
-
-    # check parameter
-    matrix = np.asarray(matrix, dtype = float)
-
-    # check symmetric positive definite
-    if matrix == matrix.T and (np.linalg.cholesky(matrix) is True):
-        return True
-
-    else:
-        return False
-
-# check symmetric positive semi-definite
-def is_PSD(matrix):
-
-    # check parameter
-    matrix = np.asarray(matrix, dtype = float)
-
-    # check symmetric positive semi-definite
-    eigenvalues = np.linalg.eigvals(matrix)
-    if matrix == matrix.T and (np.all(eigenvalues > 0) is True):
-        return True
-
-    else:
-        return False
+from ..math_tools import is_PSD, is_SPD
 
 class InfiniteHorizonLQRController:
 
@@ -75,7 +50,7 @@ class FiniteHorizonLQRController:
             raise ValueError('Q is not symmetric positive definite matrix')
 
         if not is_SPD(self.Qf):
-                    raise ValueError('Qf is not symmetric positive definite matrix')
+            raise ValueError('Qf is not symmetric positive definite matrix')
 
         if not is_PSD(self.R):
             raise ValueError('R is not symmetric positive semi-definite matrix')
@@ -93,14 +68,14 @@ class FiniteHorizonLQRController:
         return S_dot.reshape(-1)
 
     def get_S(self,
-              current_t: float):
+              t: float):
 
         # check parameter
-        current_t = float(current_t)
+        t = float(t)
 
         # conditions
-        t_span = (self.tf, current_t)
-        t_eval = [current_t]
+        t_span = (self.tf, t)
+        t_eval = [t]
         initial_S = self.Qf
         size_S = self.Q.shape[0]
 
