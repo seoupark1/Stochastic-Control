@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from .math import skew_symmetric
+from ..math_tools import skew_symmetric
 from .quaternion import dcm_to_quaternion, normalize_quaternion
 
 # switch mrp to its shadow_set to avoid singularity

@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from .crp import crp_to_dcm
-from .math import skew_symmetric
+from ..math_tools import skew_symmetric
 
 # Triaxial Attitude Determination (TRIAD)
 # Assume sensor1 is more accurate than sensor2
