@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike
 
-from ..attitude.math import skew_symmetric
+from ..math_tools import skew_symmetric
 from ..attitude.mrp import mrp_derivative
 from ..attitude.quaternion import quaternion_derivative
 
