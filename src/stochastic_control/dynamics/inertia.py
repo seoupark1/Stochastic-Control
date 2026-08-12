@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..attitude.math import skew_symmetric
+from ..math_tools import skew_symmetric
 
 class Inertia:
 
@@ -30,7 +30,3 @@ class Inertia:
         r = np.asarray(displacement, dtype = float).reshape(3)
 
         return self.inertia_tensor + self.mass * skew_symmetric(r) @ skew_symmetric(r).T
-
-
-
-
