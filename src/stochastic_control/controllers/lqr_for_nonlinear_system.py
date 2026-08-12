@@ -28,6 +28,10 @@ class TimeVaryingLQRController:
         self.dynamics_function = dynamics_function
         self.reference_provider = reference_provider
 
+        # sizes
+        x_size = self.Q.shape[0]
+        u_size = self.R.shape[0]
+
         # check Q, Qf, R
         if not is_SPD(self.Q):
             raise ValueError('Q is not symmetric positive definite matrix')
@@ -35,18 +39,23 @@ class TimeVaryingLQRController:
         if not is_SPD(self.Qf):
             raise ValueError('Qf is not symmetric positive definite matrix')
 
-        if not is_PSD(self.R):
+        if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive semi-definite matrix')
 
         # get time-varying A, B function
-        x, u = sp.symbols('x u')
-        f = self.dynamics_function
+        x_variables = sp.symbols('x0:{x_size}')
+        x = sp.Matrix(x_variables)
 
-        dfdx = sp.diff(f, x)
-        dfdu = sp.diff(f, u)
+        u_variables = sp.symbols('u0:{u_size}')
+        u = sp.Matrix(u_variables)
 
-        self.A_function = sp.lambdify((x, u), dfdx, 'numpy')
-        self.B_function = sp.lambdify((x, u), dfdu, 'numpy')
+        f = sp.Matrix(self.dynamics_function(x, u))
+
+        A = f.jacobian(x)
+        B = f.jacobian(u)
+
+        self.A_function = sp.lambdify((x, u), A, 'numpy')
+        self.B_function = sp.lambdify((x, u), B, 'numpy')
 
         # initial(t = tf) trajectory
         tf_reference = self.reference_provider.get_reference(self.tf)
@@ -131,8 +140,8 @@ class TimeVaryingLQRController:
 
         return S0_dot.reshape(-1)
         
-    def get_all_S(self,
-                  t: float):
+    def get_Sxx_and_Sx(self,
+                       t: float):
         
         # check parameter
         t = float(t)
@@ -141,36 +150,28 @@ class TimeVaryingLQRController:
         t_span = (self.tf, t)
         t_eval = [t]
 
-        # sizes
+        # size
         size_Sxx = self.initial_Sxx.shape[0]
-        size_Sx = self.initial_Sx.shape[0]
 
         # integrate
         Sxx_sol = solve_ivp(func = self.ricatti_quadratic_term, 
                             t_span = t_span, 
-                            y0 = self.initial_Sxx,
+                            y0 = self.initial_Sxx.reshape(-1),
                             method = 'RK45', 
                             t_eval = t_eval)
 
-        Sxx = Sxx_sol.y[:, 1].reshape(size_Sxx, size_Sxx)
+        Sxx = Sxx_sol.y[:, 0].reshape(size_Sxx, size_Sxx)
         Sxx = (Sxx + Sxx.T) / 2
 
-        # ricatti_linear_term 함수에서 Sxx에 특정값을 대입해 t와 Sx의 함수로 만들고 싶음
-        updated_ricatti_linear_term = self.ricatti_linear_term(t, Sxx, )
-
-        Sx_sol = solve_ivp(func = updated_ricatti_linear_term, 
+        Sx_sol = solve_ivp(func = self.ricatti_linear_term, 
                            t_span = t_span, 
-                           y0 = self.initial_Sx, 
+                           y0 = np.concatenate(self.initial_Sxx.reshape(-1), self.initial_Sx.reshape(-1)), 
                            method = 'RK45', 
                            t_eval = t_eval)
 
-        Sx = Sx_sol.y[:, 1].reshape(size_Sx, size_Sx)
-        Sx = (Sx + Sx.T) / 2
+        Sx = Sx_sol.y[:, 0]
 
-        S0 = self.ricatti_constant_term(t, Sx) * (self.tf - t)
-        S0 = (S0 + S0.T) / 2
-
-        return Sxx, Sx, S0
+        return Sxx, Sx
 
     def control_vector(self,
                        t: float,
@@ -182,14 +183,13 @@ class TimeVaryingLQRController:
 
         # reference trajectory
         reference = self.reference_provider.get_reference(t)
-        x_d = reference.reference_x
         u_d = reference.reference_u
 
         # get current A, B
         _, B = self.get_jacobians(t)
 
         # Sxx, Sx, S0
-        Sxx, Sx, _ = self.get_all_S(t)
+        Sxx, Sx, _ = self.get_Sxx_and_Sx(t)
 
         control_vector = u_d - inv(self.R) @ B.T @ (Sxx @ x_hat + Sx)
 
