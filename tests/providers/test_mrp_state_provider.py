@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from stochastic_control.providers.state import MRPStateProvider
+from stochastic_control.providers.body_state import MRPStateProvider
 from stochastic_control.attitude.mrp import mrp_b_matrix, mrp_to_dcm
 
 def position_function(t):
