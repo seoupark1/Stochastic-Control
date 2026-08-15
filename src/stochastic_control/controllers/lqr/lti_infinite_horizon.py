@@ -3,8 +3,9 @@ from numpy.typing import ArrayLike
 
 from scipy.linalg import solve_continuous_are, solve
 
-from ..math_tools import is_PSD, is_SPD
+from ...math_tools import is_PSD, is_SPD
 
+# for linear time-invariant system
 class InfiniteHorizonLQRController:
 
     def __init__(self,
@@ -19,11 +20,14 @@ class InfiniteHorizonLQRController:
         self.R = np.asarray(R, dtype = float)
 
         # check Q, R
-        if not is_PSD(self.Q):
+        if not is_PSD(Q):
             raise ValueError('Q is not symmetric positive semi-definite matrix')
 
-        if not is_SPD(self.R):
+        if not is_SPD(R):
             raise ValueError('R is not symmetric positive definite matrix')
+
+        S = solve_continuous_are(A, B, Q, R)
+        self.K = solve(R, B.T @ S)
 
     def control_vector(self,
                        estimated_state: ArrayLike):
@@ -31,7 +35,4 @@ class InfiniteHorizonLQRController:
         # check parameter
         estimated_state = np.asarray(estimated_state, dtype = float).reshape(-1)
 
-        S = solve_continuous_are(self.A, self.B, self.Q, self.R)
-        K = solve(self.R, self.B.T @ S)
-
-        return -K @ estimated_state
+        return -self.K @ estimated_state
