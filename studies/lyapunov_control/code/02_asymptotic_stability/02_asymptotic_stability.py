@@ -1,5 +1,5 @@
 import numpy as np
-from stochastic_control.attitude.math import skew_symmetric
+from stochastic_control.math_tools import skew_symmetric
 from src.stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp
 
 def sigma_RN(t, f):

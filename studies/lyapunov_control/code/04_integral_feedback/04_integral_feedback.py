@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import inv
-from stochastic_control.attitude.math import skew_symmetric
+from stochastic_control.math_tools import skew_symmetric
 from src.stochastic_control.attitude.mrp import mrp_derivative, mrp_b_matrix, mrp_to_dcm, dcm_to_mrp, mrp_shadow_set
 
 def mrp_b_dot(sigma, sigma_dot):

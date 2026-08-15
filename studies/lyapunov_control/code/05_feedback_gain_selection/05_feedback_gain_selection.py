@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 from scipy.integrate import solve_ivp
-from stochastic_control.attitude.math import skew_symmetric
+from stochastic_control.math_tools import skew_symmetric
 from src.stochastic_control.attitude.mrp import mrp_derivative
 
 def control_vector(state, I, P, K):
