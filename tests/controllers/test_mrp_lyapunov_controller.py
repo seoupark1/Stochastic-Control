@@ -71,9 +71,9 @@ def test_standard_control_vector_is_0_at_equilibrium(standard_controller, contex
     controller = standard_controller
     estiamted_context_builder = context_builder
 
-    torque = controller.control_vector(0, estimated_rotational_state, estiamted_context_builder)
+    control_vector = controller.control_vector(0, estimated_rotational_state, estiamted_context_builder)
 
-    np.testing.assert_allclose(torque, np.zeros(3))
+    np.testing.assert_allclose(control_vector, np.zeros(3))
 
 def test_integral_tracking_error_is_0_at_equilibrium(integral_controller):
 
@@ -89,9 +89,16 @@ def test_integral_tracking_error_is_0_at_equilibrium(integral_controller):
 def test_integral_control_vector_is_0_at_equilibrium(integral_controller, context_builder):
 
     estimated_rotational_state = np.zeros(6)
+    integral_state = np.zeros(3)
+    initial_angular_velocity_error = np.zeros(3)
     controller = integral_controller
     estiamted_context_builder = context_builder
 
-    torque = controller.control_vector(0, estimated_rotational_state, estiamted_context_builder)
+    control_vector, eta_dot = controller.control_vector(0, 
+                                                        estimated_rotational_state, 
+                                                        integral_state, 
+                                                        initial_angular_velocity_error,
+                                                        estiamted_context_builder)
 
-    np.testing.assert_allclose(torque, np.zeros(3))
+    np.testing.assert_allclose(control_vector, np.zeros(3))
+    np.testing.assert_allclose(eta_dot, np.zeros(3))
