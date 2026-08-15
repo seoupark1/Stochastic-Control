@@ -23,7 +23,7 @@ class TrajectoryReferenceProvider:
     def get_reference(self,
                       t: float):
 
-        reference_x = np.asarray(self.reference_x_function(t), dtype = float)
-        reference_u = np.asarray(self.reference_u_function(t), dtype = float)
+        reference_x = np.asarray(self.reference_x_function(t), dtype = float).reshape(-1)
+        reference_u = np.asarray(self.reference_u_function(t), dtype = float).reshape(-1)
 
         return TrajectoryReferenceState(reference_x, reference_u)
