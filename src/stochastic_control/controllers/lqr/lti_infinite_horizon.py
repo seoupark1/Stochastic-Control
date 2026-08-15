@@ -20,14 +20,14 @@ class InfiniteHorizonLQRController:
         self.R = np.asarray(R, dtype = float)
 
         # check Q, R
-        if not is_PSD(Q):
+        if not is_PSD(self.Q):
             raise ValueError('Q is not symmetric positive semi-definite matrix')
 
-        if not is_SPD(R):
+        if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-        S = solve_continuous_are(A, B, Q, R)
-        self.K = solve(R, B.T @ S)
+        S = solve_continuous_are(self.A, self.B, self.Q, self.R)
+        self.K = solve(self.R, self.B.T @ S)
 
     def control_vector(self,
                        estimated_state: ArrayLike):
