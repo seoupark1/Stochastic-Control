@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike
-from ..states.context import StateContext
+from ..providers.body_state import BodyStateContext
 
 class ConstantDisturbance:
 
@@ -11,6 +11,6 @@ class ConstantDisturbance:
 
     def torque(self,
                t: float,
-               context: StateContext):
+               context: BodyStateContext):
 
         return self.constant_disturbance

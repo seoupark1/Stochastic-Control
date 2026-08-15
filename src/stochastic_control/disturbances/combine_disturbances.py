@@ -1,5 +1,5 @@
 import numpy as np
-from ..states.context import StateContext
+from ..providers.body_state import BodyStateContext
 
 class CombineDisturbances:
 
@@ -10,7 +10,7 @@ class CombineDisturbances:
 
     def torque(self,
                t: float,
-               context: StateContext):
+               context: BodyStateContext):
 
         total_torque = np.zeros(3)
 
