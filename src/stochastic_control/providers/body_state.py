@@ -12,10 +12,10 @@ class BodyStateContext:
                  dcm_BN: ArrayLike | None = None,
                  angular_velocity_BN: ArrayLike | None = None):
 
-        self.position_N = np.asarray(position_N, dtype = float).reshape(3)
-        self.velocity_N = np.asarray(velocity_N, dtype = float).reshape(3)
-        self.dcm_BN = np.asarray(dcm_BN, dtype = float).reshape(3, 3)
-        self.angular_velocity_BN = np.asarray(angular_velocity_BN, dtype = float).reshape(3)
+        self.position_N = None if position_N is None else np.asarray(position_N, dtype = float).reshape(3)
+        self.velocity_N = None if velocity_N is None else np.asarray(velocity_N, dtype = float).reshape(3)
+        self.dcm_BN = None if dcm_BN is None else np.asarray(dcm_BN, dtype = float).reshape(3, 3)
+        self.angular_velocity_BN = None if angular_velocity_BN is None else np.asarray(angular_velocity_BN, dtype = float).reshape(3)
 
 class MRPStateProvider:
 
