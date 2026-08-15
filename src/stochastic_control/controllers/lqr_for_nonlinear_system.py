@@ -29,8 +29,8 @@ class TimeVaryingLQRController:
         self.reference_provider = reference_provider
 
         # sizes
-        x_size = self.Q.shape[0]
-        u_size = self.R.shape[0]
+        self.x_size = self.Q.shape[0]
+        self.u_size = self.R.shape[0]
 
         # check Q, Qf, R
         if not is_SPD(self.Q):
@@ -40,13 +40,13 @@ class TimeVaryingLQRController:
             raise ValueError('Qf is not symmetric positive definite matrix')
 
         if not is_SPD(self.R):
-            raise ValueError('R is not symmetric positive semi-definite matrix')
+            raise ValueError('R is not symmetric positive definite matrix')
 
         # get time-varying A, B function
-        x_variables = sp.symbols(f'x1:{x_size + 1}')
+        x_variables = sp.symbols(f'x1:{self.x_size + 1}')
         x = sp.Matrix(x_variables)
 
-        u_variables = sp.symbols(f'u1:{u_size + 1}')
+        u_variables = sp.symbols(f'u1:{self.u_size + 1}')
         u = sp.Matrix(u_variables)
 
         f = sp.Matrix(self.dynamics_function(x, u))
@@ -61,10 +61,10 @@ class TimeVaryingLQRController:
         tf_reference = self.reference_provider.get_reference(self.tf)
         x_d_tf = tf_reference.reference_x
 
-        # initial Sxx, Sx, S0
+        # initial Sxx, Sx
         self.initial_Sxx = self.Qf
         self.initial_Sx = -self.Qf @ x_d_tf
-        self.initial_S0 = x_d_tf.T @ self.Qf @ x_d_tf
+        self.initial_Ss = np.concatenate((self.initial_Sxx.reshape(-1), self.initial_Sx))
 
     def get_jacobians(self,
                       t: float):
@@ -83,31 +83,22 @@ class TimeVaryingLQRController:
 
         return A, B
 
-    def ricatti_quadratic_term(self,
-                               t: float,
-                               current_Sxx: ArrayLike):
+    def ricatti_ode(self,
+                    t: float,
+                    Sxx_and_Sx: ArrayLike):
 
         # check parameters
         t = float(t)
-        Sxx = np.asarray(current_Sxx, dtype = float)
+        Sxx_and_Sx = np.asarray(Sxx_and_Sx, dtype = float)
 
-        # get current A, B
-        A, B = self.get_jacobians(t)
+        # current Sxx and Sx
+        n = self.x_size
+        Sxx = Sxx_and_Sx[0:n*n].reshape(n, n)
+        Sx = Sxx_and_Sx[n*n:]
 
-        Sxx_dot = - (self.Q - Sxx @ B @ inv(self.R) @ B.T @ Sxx + Sxx @ A + A.T @ Sxx)
-
-        return Sxx_dot.reshape(-1)
-
-    def ricatti_linear_term(self,
-                            t: float,
-                            current_Sxx: ArrayLike,
-                            current_Sx: ArrayLike):
-
-        # check parameters
-        t = float(t)
-        Sxx = np.asarray(current_Sxx, dtype = float)
-        Sx = np.asarray(current_Sx, dtype = float)
-
+        # check floating point error
+        Sxx = (Sxx + Sxx.T) / 2
+        
         # get current A, B
         A, B = self.get_jacobians(t)
 
@@ -116,9 +107,10 @@ class TimeVaryingLQRController:
         x_d = reference.reference_x
         u_d = reference.reference_u
 
+        Sxx_dot = - (self.Q - Sxx @ B @ inv(self.R) @ B.T @ Sxx + Sxx @ A + A.T @ Sxx)
         Sx_dot = - ( -self.Q @ x_d + (A.T - Sxx @ B @ inv(self.R) @ B.T) @ Sx + Sxx @ B @ u_d)
 
-        return Sx_dot
+        return np.concatenate((Sxx_dot.reshape(-1), Sx_dot))
 
     def get_Sxx_and_Sx(self,
                        t: float):
@@ -129,27 +121,19 @@ class TimeVaryingLQRController:
         # conditions
         t_span = (self.tf, t)
         t_eval = [t]
-
-        # size
-        size_Sxx = self.initial_Sxx.shape[0]
+        n = self.x_size
 
         # integrate
-        Sxx_sol = solve_ivp(func = self.ricatti_quadratic_term, 
-                            t_span = t_span, 
-                            y0 = self.initial_Sxx.reshape(-1),
-                            method = 'RK45', 
-                            t_eval = t_eval)
+        sol = solve_ivp(func = self.ricatti_ode, 
+                        t_span = t_span, 
+                        y0 = self.initial_Ss,
+                        method = 'RK45', 
+                        t_eval = t_eval)
 
-        Sxx = Sxx_sol.y[:, 0].reshape(size_Sxx, size_Sxx)
+        # results
+        Sxx = sol.y[0:n*n, 0].reshape(n, n)
         Sxx = (Sxx + Sxx.T) / 2
-
-        Sx_sol = solve_ivp(func = self.ricatti_linear_term, 
-                           t_span = t_span, 
-                           y0 = np.concatenate((self.initial_Sxx.reshape(-1), self.initial_Sx)), 
-                           method = 'RK45', 
-                           t_eval = t_eval)
-
-        Sx = Sx_sol.y[:, 0]
+        Sx = sol.y[n*n:, 0]
 
         return Sxx, Sx
 
