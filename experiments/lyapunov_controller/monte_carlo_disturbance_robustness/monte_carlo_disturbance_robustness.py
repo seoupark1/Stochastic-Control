@@ -5,12 +5,13 @@ from sklearn.datasets import make_spd_matrix
 from matplotlib import pyplot as plt
 
 from stochastic_control.dynamics.rigid_body import RigidBody
-from stochastic_control.controllers.lyapunov import LyapunovController
-from stochastic_control.providers.attitude_reference import MRPReferenceProvider
-from stochastic_control.providers.state import MRPStateProvider
+from stochastic_control.controllers.lyapunov.standard import StandardLyapunovController
+from stochastic_control.controllers.lyapunov.integral import IntegralLyapunovController
+from stochastic_control.providers.reference_attitude import MRPReferenceProvider
+from stochastic_control.providers.body_state import MRPStateProvider
 
 from stochastic_control.attitude.mrp import mrp_b_matrix, mrp_derivative
-from stochastic_control.attitude.math import skew_symmetric
+from stochastic_control.math_tools import skew_symmetric
 
 def mrp_b_derivative(sigma, sigma_dot):
     return (-2 * np.dot(sigma, sigma_dot) * np.eye(3)
@@ -69,18 +70,18 @@ def simulate_standard_controller(K, P, disturbance):
     control_gain = float(K)
     damping_matrix = np.asarray(P, dtype = float).reshape(3,3)
 
-    standard_controller = LyapunovController(inertia_tensor, 
-                                             control_gain, 
-                                             damping_matrix, 
-                                             reference_provider,
-                                             estimated_disturbance_model = None)
+    standard_controller = StandardLyapunovController(inertia_tensor, 
+                                                     control_gain, 
+                                                     damping_matrix, 
+                                                     reference_provider,
+                                                     estimated_disturbance_model = None)
 
     def performance_of_standard_controller(t,
                                        estimated_rotational_state):
 
-        control_vector = standard_controller.mrp_control_vector(t,
-                                                                estimated_rotational_state,
-                                                                state_provider)
+        control_vector = standard_controller.control_vector(t,
+                                                            estimated_rotational_state,
+                                                            state_provider)
 
         total_torque = control_vector + disturbance
 
@@ -101,14 +102,14 @@ def simulate_integral_controller(K, P, KI, disturbance):
     integral_control_gain = float(KI)
     damping_matrix = np.asarray(P, dtype = float).reshape(3,3)
 
-    integral_controller = LyapunovController(inertia_tensor, 
-                                             control_gain, 
-                                             damping_matrix, 
-                                             reference_provider,
-                                             integral_control_gain,
-                                             estimated_disturbance_model = None)
+    integral_controller = IntegralLyapunovController(inertia_tensor, 
+                                                     control_gain, 
+                                                     damping_matrix, 
+                                                     reference_provider,
+                                                     integral_control_gain,
+                                                     estimated_disturbance_model = None)
 
-    _, _, omega_BR_B_0 = integral_controller.mrp_tracking_error(0, initial_rotational_state)
+    _, _, omega_BR_B_0 = integral_controller.get_tracking_error(0, initial_rotational_state)
 
     def performance_of_integral_controller(t,
                                            estimated_state):
@@ -118,11 +119,11 @@ def simulate_integral_controller(K, P, KI, disturbance):
         omega_BN_B = estimated_state[3:6]
         integral_state = estimated_state[6:9]
         
-        control_vector, eta_dot = integral_controller.mrp_integral_control_vector(t,
-                                                                                  estimated_rotational_state,
-                                                                                  integral_state,
-                                                                                  omega_BR_B_0,
-                                                                                  state_provider)
+        control_vector, eta_dot = integral_controller.control_vector(t,
+                                                                     estimated_rotational_state,
+                                                                     integral_state,
+                                                                     omega_BR_B_0,
+                                                                     state_provider)
 
         total_torque = control_vector + disturbance
 
@@ -170,7 +171,7 @@ for trial in range(num_simulations):
 
         for i, t in enumerate(standard_sol.t):
             standard_state = standard_sol.y[:, i]
-            _, sigma_BR_B, omega_BR_B = standard_controller.mrp_tracking_error(t, standard_state)
+            _, sigma_BR_B, omega_BR_B = standard_controller.get_tracking_error(t, standard_state)
 
             standard_sigma_norm_history[i] = np.linalg.norm(sigma_BR_B)
             standard_omega_norm_history[i] = np.linalg.norm(omega_BR_B)
@@ -185,7 +186,7 @@ for trial in range(num_simulations):
 
         for j, t in enumerate(integral_sol.t):
             integral_state = integral_sol.y[0:6, j]
-            _, sigma_BR_B, omega_BR_B = integral_controller.mrp_tracking_error(t, integral_state)
+            _, sigma_BR_B, omega_BR_B = integral_controller.get_tracking_error(t, integral_state)
 
             integral_sigma_norm_history[j] = np.linalg.norm(sigma_BR_B)
             integral_omega_norm_history[j] = np.linalg.norm(omega_BR_B)
