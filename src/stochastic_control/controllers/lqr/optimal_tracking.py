@@ -107,7 +107,7 @@ class LinearQuadraticOptimalTrackingController:
 
         # check parameters
         t = float(t)
-        x_hat = np.asarray(estimated_state, dtype = float)
+        x_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
 
         # reference trajectory
         reference = self.reference_provider.get_reference(t)
