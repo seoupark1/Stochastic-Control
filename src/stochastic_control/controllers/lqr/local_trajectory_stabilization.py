@@ -5,7 +5,7 @@ from scipy.linalg import inv
 from scipy.integrate import solve_ivp
 from scipy.optimize._numdiff import approx_derivative
 
-from ..math_tools import is_PSD, is_SPD
+from ...math_tools import is_PSD, is_SPD
 
 # for both time variant linear & non-linear system
 class LocalTrajectoryStabilizationLQRController:
@@ -28,8 +28,8 @@ class LocalTrajectoryStabilizationLQRController:
         self.reference_provider = reference_provider
 
         self.dynamics_function = dynamics_function
-        self.A = np.asarray(A, dtype = float)
-        self.B = np.asarray(B, dtype = float)
+        self.A = None if A is None else np.asarray(A, dtype = float)
+        self.B = None if B is None else np.asarray(B, dtype = float)
 
         # check Q, Qf, R
         if not is_PSD(self.Q):
@@ -41,8 +41,7 @@ class LocalTrajectoryStabilizationLQRController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-    def get_jacobians(self,
-                      t: float):
+    def get_jacobians(self, t: ArrayLike):
 
         # linear system
         if self.A is not None and self.B is not None and self.dynamics_function is None:
@@ -50,8 +49,6 @@ class LocalTrajectoryStabilizationLQRController:
 
         # non-linear system
         elif self.A is None and self.B is None and self.dynamics_function is not None: 
-            # check parameter
-            t = float(t)
 
             # reference trajectory
             reference = self.reference_provider.get_reference(t)
@@ -60,27 +57,26 @@ class LocalTrajectoryStabilizationLQRController:
 
             # get A, B jacobians
             A = approx_derivative(fun = lambda x: self.dynamics_function(x, u_d),
-                                x0 = x_d,
-                                method = '3-point',
-                                args = u_d)
+                                  x0 = x_d,
+                                  method = '3-point')
             
             B = approx_derivative(fun = lambda u: self.dynamics_function(x_d, u),
-                                x0 = u_d,
-                                method = '3-point')
+                                  x0 = u_d,
+                                  method = '3-point')
 
             return A, B
 
         # errors
         else:
-            raise ValueError('Set A & B or dynamics function are required')
+            raise ValueError('Input Data Combination (A, B, dynamics function) Should Be Changed')
 
-    def riccati_ode(self,
-                    t: float,
+    def riccati_ode(self, 
+                    t: float, 
                     S: ArrayLike):
 
         # check parameter
-        t = float(t)
-        S = np.asarray(S, dtype = float)
+        n = self.Qf.shape[0]
+        S = np.asarray(S, dtype = float).reshape(n, n)
 
         # solve floating point error
         S = (S + S.T) / 2
@@ -93,25 +89,21 @@ class LocalTrajectoryStabilizationLQRController:
 
         return S_dot.reshape(-1)
 
-    def get_S(self,
-              t: float):
-
-        # check parameter
-        t = float(t)
+    def get_S(self, t: float):
 
         # conditions
         t_span = (self.tf, t)
         t_eval = [t]
-        size_S = self.Qf.shape[0]
+        n = self.Qf.shape[0]
 
         # integrate
         sol = solve_ivp(func = self.riccati_ode, 
                         t_span = t_span, 
-                        y0 = self.Qf, 
+                        y0 = self.Qf.reshape(-1), 
                         method = 'RK45',
                         t_eval = t_eval)
 
-        S = sol.y[:, 0].reshape(size_S, size_S)
+        S = sol.y[:, 0].reshape(n, n)
 
         return (S + S.T) / 2
 
@@ -120,8 +112,7 @@ class LocalTrajectoryStabilizationLQRController:
                        t: float,
                        estimated_state: ArrayLike):
 
-        # check parameters
-        t = float(t)
+        # check parameter
         x_hat = np.asarray(estimated_state, dtype = float)
 
         # reference trajectory
