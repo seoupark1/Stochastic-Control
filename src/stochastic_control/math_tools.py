@@ -18,7 +18,7 @@ def is_SPD(matrix: ArrayLike):
     matrix = np.asarray(matrix, dtype = float)
 
     # check symmetric 
-    if not matrix == matrix.T:
+    if not np.allclose(matrix, matrix.T):
         return False
 
     # check positive definite
@@ -36,7 +36,7 @@ def is_PSD(matrix: ArrayLike):
     matrix = np.asarray(matrix, dtype = float)
 
     # check symmetric
-    if not matrix == matrix.T:
+    if not np.allclose(matrix, matrix.T):
         return False
     
     # check positive semi-definite
