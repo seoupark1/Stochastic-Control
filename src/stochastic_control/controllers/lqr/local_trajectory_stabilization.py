@@ -41,7 +41,7 @@ class LocalTrajectoryStabilizationLQRController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-    def get_jacobians(self, t: ArrayLike):
+    def get_jacobians(self, t: float):
 
         # linear system
         if self.A is not None and self.B is not None and self.dynamics_function is None:
@@ -113,7 +113,7 @@ class LocalTrajectoryStabilizationLQRController:
                        estimated_state: ArrayLike):
 
         # check parameter
-        x_hat = np.asarray(estimated_state, dtype = float)
+        x_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
 
         # reference trajectory
         reference = self.reference_provider.get_reference(t)
