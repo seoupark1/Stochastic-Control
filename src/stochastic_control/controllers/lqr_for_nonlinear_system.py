@@ -1,5 +1,5 @@
 import numpy as np
-import sympy as sp
+from scipy.optimize._numdiff import approx_derivative
 
 from numpy.typing import ArrayLike
 from collections.abc import Callable
@@ -42,21 +42,6 @@ class TimeVaryingLQRController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-        # get time-varying A, B function
-        x_variables = sp.symbols(f'x1:{self.x_size + 1}')
-        x = sp.Matrix(x_variables)
-
-        u_variables = sp.symbols(f'u1:{self.u_size + 1}')
-        u = sp.Matrix(u_variables)
-
-        f = sp.Matrix(self.dynamics_function(x, u))
-
-        A = f.jacobian(x)
-        B = f.jacobian(u)
-
-        self.A_function = sp.lambdify((x, u), A, 'numpy')
-        self.B_function = sp.lambdify((x, u), B, 'numpy')
-
         # initial(t = tf) trajectory
         tf_reference = self.reference_provider.get_reference(self.tf)
         x_d_tf = tf_reference.reference_x
@@ -69,17 +54,20 @@ class TimeVaryingLQRController:
     def get_jacobians(self,
                       t: float):
 
-        # check parameter
-        t = float(t)
-
         # reference trajectory
         reference = self.reference_provider.get_reference(t)
         x_d = reference.reference_x
         u_d = reference.reference_u
 
-        # get current A, B jacobians
-        A = np.asarray(self.A_function(x_d, u_d), dtype = float)
-        B = np.asarray(self.B_function(x_d, u_d), dtype = float)
+        # get A, B jacobians
+        A = approx_derivative(fun = self.dynamics_function,
+                              x0 = x_d,
+                              method = '3-point',
+                              args = u_d)
+        
+        B = approx_derivative(fun = lambda u: self.dynamics_function(x_d, u),
+                              x0 = u_d,
+                              method = '3-point')
 
         return A, B
 
