@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
 
-from stochastic_control.controllers.lyapunov import LyapunovController
-from stochastic_control.providers.state import MRPStateProvider
-from stochastic_control.providers.attitude_reference import MRPReferenceProvider
+from stochastic_control.controllers.lyapunov.standard import StandardLyapunovController
+from stochastic_control.controllers.lyapunov.integral import IntegralLyapunovController
+from stochastic_control.providers.body_state import MRPStateProvider
+from stochastic_control.providers.reference_attitude import MRPReferenceProvider
 
 @pytest.fixture
 def inertia_tensor():
@@ -41,7 +42,7 @@ def standard_controller(inertia_tensor,
                         damping_matrix,
                         fixed_reference_attitude_provider):
     
-    return LyapunovController(inertia_tensor, control_gain, damping_matrix, fixed_reference_attitude_provider)
+    return StandardLyapunovController(inertia_tensor, control_gain, damping_matrix, fixed_reference_attitude_provider)
 
 @pytest.fixture
 def integral_controller(inertia_tensor,
@@ -50,7 +51,7 @@ def integral_controller(inertia_tensor,
                         fixed_reference_attitude_provider,
                         integral_control_gain):
     
-    return LyapunovController(inertia_tensor, control_gain, damping_matrix, fixed_reference_attitude_provider, integral_control_gain)
+    return IntegralLyapunovController(inertia_tensor, control_gain, damping_matrix, fixed_reference_attitude_provider, integral_control_gain)
 
 
 def test_standard_tracking_error_is_0_at_equilibrium(standard_controller):
@@ -58,7 +59,7 @@ def test_standard_tracking_error_is_0_at_equilibrium(standard_controller):
     estimated_rotational_state = np.zeros(6)
     controller = standard_controller
 
-    dcm_BR, sigma_BR, omega_BR = controller.mrp_tracking_error(0, estimated_rotational_state)
+    dcm_BR, sigma_BR, omega_BR = controller.get_tracking_error(0, estimated_rotational_state)
 
     np.testing.assert_allclose(dcm_BR, np.eye(3))
     np.testing.assert_allclose(sigma_BR, np.zeros(3))
@@ -70,7 +71,7 @@ def test_standard_control_vector_is_0_at_equilibrium(standard_controller, contex
     controller = standard_controller
     estiamted_context_builder = context_builder
 
-    torque = controller.mrp_control_vector(0, estimated_rotational_state, estiamted_context_builder)
+    torque = controller.control_vector(0, estimated_rotational_state, estiamted_context_builder)
 
     np.testing.assert_allclose(torque, np.zeros(3))
 
@@ -79,7 +80,7 @@ def test_integral_tracking_error_is_0_at_equilibrium(integral_controller):
     estimated_rotational_state = np.zeros(6)
     controller = integral_controller
 
-    dcm_BR, sigma_BR, omega_BR = controller.mrp_tracking_error(0, estimated_rotational_state)
+    dcm_BR, sigma_BR, omega_BR = controller.get_tracking_error(0, estimated_rotational_state)
 
     np.testing.assert_allclose(dcm_BR, np.eye(3))
     np.testing.assert_allclose(sigma_BR, np.zeros(3))
@@ -91,6 +92,6 @@ def test_integral_control_vector_is_0_at_equilibrium(integral_controller, contex
     controller = integral_controller
     estiamted_context_builder = context_builder
 
-    torque = controller.mrp_control_vector(0, estimated_rotational_state, estiamted_context_builder)
+    torque = controller.control_vector(0, estimated_rotational_state, estiamted_context_builder)
 
     np.testing.assert_allclose(torque, np.zeros(3))
