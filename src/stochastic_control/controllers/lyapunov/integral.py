@@ -11,7 +11,7 @@ class IntegralLyapunovController:
                  K: float,
                  P: ArrayLike,
                  reference_provider,
-                 KI = None,
+                 KI: ArrayLike,
                  estimated_disturbance_model = None):
 
         self.inertia_tensor = np.asarray(inertia_tensor, dtype = float).reshape(3,3)
