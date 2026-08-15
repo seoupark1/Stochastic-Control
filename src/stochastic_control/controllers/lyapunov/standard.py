@@ -50,7 +50,7 @@ class StandardLyapunovController:
                           estimated_rotational_state: ArrayLike):
 
         # tracking error
-        _, sigma_BR_B, omega_BR_B = self.mrp_tracking_error(t, estimated_rotational_state)
+        _, sigma_BR_B, omega_BR_B = self.get_tracking_error(t, estimated_rotational_state)
 
         return (1/2) * omega_BR_B.T @ self.inertia_tensor @ omega_BR_B + 2 * self.K * np.log(1 + sigma_BR_B.T @ sigma_BR_B)
 
