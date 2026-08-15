@@ -3,12 +3,13 @@ from scipy.integrate import solve_ivp
 from matplotlib import pyplot as plt
 
 from stochastic_control.dynamics.rigid_body import RigidBody
-from stochastic_control.controllers.lyapunov import LyapunovController
-from stochastic_control.providers.attitude_reference import MRPReferenceProvider
-from stochastic_control.providers.state import MRPStateProvider
+from stochastic_control.controllers.lyapunov.standard import StandardLyapunovController
+from stochastic_control.controllers.lyapunov.integral import IntegralLyapunovController
+from stochastic_control.providers.reference_attitude import MRPReferenceProvider
+from stochastic_control.providers.body_state import MRPStateProvider
 
 from stochastic_control.attitude.mrp import mrp_b_matrix, mrp_derivative
-from stochastic_control.attitude.math import skew_symmetric
+from stochastic_control.math_tools import skew_symmetric
 
 def mrp_b_derivative(sigma, sigma_dot):
     return (-2 * np.dot(sigma, sigma_dot) * np.eye(3)
@@ -58,20 +59,20 @@ unknown_disturbance = np.array([0.5, -0.3, 0.2])
 tspan = (0, 300)
 teval = np.linspace(0, 300, 3001)
 
-standard_controller = LyapunovController(inertia_tensor, 
-                                         control_gain, 
-                                         damping_matrix, 
-                                         reference_provider,
-                                         estimated_disturbance_model = None)
+standard_controller = StandardLyapunovController(inertia_tensor, 
+                                                 control_gain, 
+                                                 damping_matrix, 
+                                                 reference_provider,
+                                                 estimated_disturbance_model = None)
 
-_, _, omega_BR_B_0 = standard_controller.mrp_tracking_error(0, initial_rotational_state)
+_, _, omega_BR_B_0 = standard_controller.get_tracking_error(0, initial_rotational_state)
 
-integral_controller = LyapunovController(inertia_tensor, 
-                                         control_gain, 
-                                         damping_matrix, 
-                                         reference_provider,
-                                         integral_control_gain,
-                                         estimated_disturbance_model = None)
+integral_controller = IntegralLyapunovController(inertia_tensor, 
+                                                 control_gain, 
+                                                 damping_matrix, 
+                                                 reference_provider,
+                                                 integral_control_gain,
+                                                 estimated_disturbance_model = None)
 
 rigid_body = RigidBody(inertia_tensor)
 state_provider = MRPStateProvider()
@@ -79,9 +80,9 @@ state_provider = MRPStateProvider()
 def performance_of_standard_controller(t,
                                        estimated_rotational_state):
 
-    control_vector = standard_controller.mrp_control_vector(t,
-                                                            estimated_rotational_state,
-                                                            state_provider)
+    control_vector = standard_controller.control_vector(t,
+                                                        estimated_rotational_state,
+                                                        state_provider)
 
     total_torque = control_vector + unknown_disturbance
 
@@ -102,11 +103,11 @@ def performance_of_integral_controller(t,
     omega_BN_B = estimated_state[3:6]
     integral_state = estimated_state[6:9]
     
-    control_vector, eta_dot = integral_controller.mrp_integral_control_vector(t,
-                                                                              estimated_rotational_state,
-                                                                              integral_state,
-                                                                              omega_BR_B_0,
-                                                                              state_provider)
+    control_vector, eta_dot = integral_controller.control_vector(t,
+                                                                 estimated_rotational_state,
+                                                                 integral_state,
+                                                                 omega_BR_B_0,
+                                                                 state_provider)
 
     total_torque = control_vector + unknown_disturbance
 
@@ -147,7 +148,7 @@ def get_tracking_error_history(sol,
     for i, t in enumerate(sol.t):
         rotational_state = sol.y[0:6, i]
 
-        dcm_BR_B, sigma_BR_B, omega_BR_B = standard_controller.mrp_tracking_error(t, rotational_state)
+        dcm_BR_B, sigma_BR_B, omega_BR_B = standard_controller.get_tracking_error(t, rotational_state)
         sigma_BR_history[:, i] = sigma_BR_B
         omega_BR_history[:, i] = omega_BR_B
 
