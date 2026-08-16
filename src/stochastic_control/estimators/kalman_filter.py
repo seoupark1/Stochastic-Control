@@ -51,6 +51,7 @@ class KalmanFilter:
 
         # correction stage
         self.x = self.x + K @ (y - self.H @ self.x)
+        
         # joseph form 
         self.P = (np.eye(n) - K @ self.H) @ self.P @ (np.eye(n) - K @ self.H).T + K @ self.R @ K.T
         self.P = (self.P + self.P.T) / 2
