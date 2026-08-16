@@ -105,3 +105,6 @@ def test_correction():
     # test predicted state & covariance match with expected values
     np.testing.assert_allclose(expected_state, x_hat)
     np.testing.assert_allclose(expected_covariance, P_hat)
+
+    # test covariance's symmetry
+    np.testing.assert_allclose(P_hat, P_hat.T)
