@@ -74,39 +74,3 @@ def test_combined_disturbance_is_correct(torque_1, torque_2, torque_3, body_atti
     expected_torque = np.array([4, 23, 89]) + np.array([546, 32, 97]) + expected_gravity_gradient
 
     np.testing.assert_allclose(combined_torque, expected_torque)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    r_BN_B = dcm_BN @ position_N
-    r = np.linalg.norm(position_N)
-    expected_torque = (3 * mu / r**5) * np.cross(r_BN_B, inertia_tensor @ r_BN_B)
-
-    np.testing.assert_allclose(torque, expected_torque)
