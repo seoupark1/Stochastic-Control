@@ -8,7 +8,6 @@ def test_prediction():
     # conditions
     dt = 0.1 # [s]
     u_0 = np.array([-2]) # [m/s^2]
-    y_1 = np.pi / 6 # [rad]
     S = 20 # [m]
     D = 40 # [m]
 
@@ -80,3 +79,90 @@ def test_prediction():
 
     # test covariance's symmetry
     np.testing.assert_allclose(P_check, P_check.T)
+
+def test_correction():
+
+    # conditions
+    dt = 0.1 # [s]
+    u_0 = np.array([-2]) # [m/s^2]
+    y_1 = np.pi / 6 # [rad]
+    S = 20 # [m]
+    D = 40 # [m]
+
+    # state vector [position, velocity]
+    x_0_hat = np.array([0, 5]).reshape(2,1)
+
+    # initial state covariance
+    P_0_hat = np.array([[0.01, 0],
+                        [0, 1]])
+
+    # motion model
+    def f(state, control):
+        F = np.array([[1, dt], [0, 1]])
+        G = np.array([[0], [dt]])
+        w = 0
+        return F @ state + G @ control + w
+
+    # motion jacobian
+    def F(state, control):
+        return np.array([[1, dt],
+                         [0, 1]])
+
+    # measurement model
+    def h(state):
+        position = state[0]
+        v = 0
+        return np.arctan2(D - position, S) + v
+
+    # measurement jacobian
+    def H(state):
+        position = state[0]
+        return np.array([S / ((D - position)**2 + S**2), 0]).reshape(1,2)
+
+    # noise covariances
+    Q = 0.1 * np.eye(2)
+    R = np.array([0.01]).reshape(1,1)
+
+    # noise jacobians
+    L = np.eye(2)
+    M = np.array([1]).reshape(1,1)
+
+    ekf = ExtendedKalmanFilter(state = x_0_hat,
+                               covariance = P_0_hat,
+                               motion_model = f,
+                               motion_jacobian = F,
+                               motion_noise_jacobian = L,
+                               measurement_model = h,
+                               measurement_jacobian = H,
+                               measurement_noise_jacobian = M,
+                               motion_noise_covariance = Q,
+                               measurement_noise_covariance = R)
+
+    ekf.prediction(u_0)
+
+    # current H jacobian & h model result
+    H = ekf.H_jacobian(ekf.x)
+    h = ekf.h_model(ekf.x).reshape(-1)
+
+    # expected values
+    n = ekf.x.size
+
+    A = (H @ ekf.P @ H.T + ekf.M_jacobian @ ekf.R @ ekf.M_jacobian.T).T
+    B = (ekf.P @ H.T).T
+    K = np.linalg.solve(A, B).T
+        
+    expected_state = ekf.x + K @ (y_1 - h)
+    expected_covariance = (np.eye(n) - K @ H) @ ekf.P @ (np.eye(n) - K @ H).T + K @ (ekf.M_jacobian @ ekf.R @ ekf.M_jacobian.T) @ K.T
+    expected_covariance = (expected_covariance + expected_covariance.T) / 2
+
+    # corrected values
+    ekf.correction(y_1)
+    x_hat = ekf.x
+    P_hat = ekf.P
+
+    # test corrected state & covariance match with expected values
+    np.testing.assert_allclose(expected_state, x_hat)
+    np.testing.assert_allclose(expected_covariance, P_hat)
+
+    # test covariance's symmetry
+    np.testing.assert_allclose(P_hat, P_hat.T)
