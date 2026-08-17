@@ -96,8 +96,12 @@ class LocalTrajectoryStabilizationLQRController:
         t_eval = [t]
         n = self.Qf.shape[0]
 
+        # t = tf case
+        if t == self.tf:
+            return self.Qf
+
         # integrate
-        sol = solve_ivp(func = self.riccati_ode, 
+        sol = solve_ivp(fun = self.riccati_ode, 
                         t_span = t_span, 
                         y0 = self.Qf.reshape(-1), 
                         method = 'RK45',
