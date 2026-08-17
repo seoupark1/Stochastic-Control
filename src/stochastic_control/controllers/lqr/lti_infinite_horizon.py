@@ -26,8 +26,8 @@ class InfiniteHorizonLQRController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-        S = solve_continuous_are(self.A, self.B, self.Q, self.R)
-        self.K = solve(self.R, self.B.T @ S)
+        self.S = solve_continuous_are(self.A, self.B, self.Q, self.R)
+        self.K = solve(self.R, self.B.T @ self.S)
 
     def control_vector(self,
                        estimated_state: ArrayLike):
