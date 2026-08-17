@@ -87,6 +87,10 @@ class LinearQuadraticOptimalTrackingController:
         t_eval = [t]
         n = self.x_size
 
+        # t = tf case
+        if t == self.tf:
+            return self.initial_Sxx, self.initial_Sx
+
         # integrate
         sol = solve_ivp(func = self.riccati_ode, 
                         t_span = t_span, 
