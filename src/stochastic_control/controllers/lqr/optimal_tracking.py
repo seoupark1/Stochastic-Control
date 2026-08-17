@@ -92,7 +92,7 @@ class LinearQuadraticOptimalTrackingController:
             return self.initial_Sxx, self.initial_Sx
 
         # integrate
-        sol = solve_ivp(func = self.riccati_ode, 
+        sol = solve_ivp(fun = self.riccati_ode, 
                         t_span = t_span, 
                         y0 = self.initial_Ss,
                         method = 'RK45', 
