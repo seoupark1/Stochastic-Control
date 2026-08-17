@@ -77,4 +77,22 @@ def test_expected_jacobians_and_the_result_are_the_same(reference_provider, dyna
     np.testing.assert_allclose(A, expected_A)
     np.testing.assert_allclose(B, expected_B)
 
-def test_
+def test_get_S_method(reference_provider, dynamics_function):
+
+    Q = np.diag([5, 1])
+    R = np.eye(1)
+    Qf = np.diag([10, 1])
+    tf = 50
+
+    # actual value
+    controller = LocalTrajectoryStabilizationLQRController(Q = Q,
+                                                           R = R,
+                                                           Qf = Qf,
+                                                           tf = tf,
+                                                           reference_provider = reference_provider,
+                                                           dynamics_function = dynamics_function)
+
+    S = controller.get_S(tf)
+
+    # test Qf is equal to S at t = tf
+    np.testing.assert_allclose(S, Qf)
