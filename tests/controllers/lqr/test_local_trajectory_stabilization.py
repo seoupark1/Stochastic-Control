@@ -43,7 +43,7 @@ def dynamics_function():
     return dynamics
 
 @pytest.mark.parametrize('t', [5, 10, 15, 20, 25, 30, 35, 40])
-def test_expected_jacobians_and_the_result_are_the_same(reference_provider, dynamics_function, t):
+def test_get_jacobians_method(reference_provider, dynamics_function, t):
     # conditions
     m = 3 # [kg]
     l = 5 # [m]
@@ -96,3 +96,29 @@ def test_get_S_method(reference_provider, dynamics_function):
 
     # test Qf is equal to S at t = tf
     np.testing.assert_allclose(S, Qf)
+
+@pytest.mark.parametrize('t', [5, 10, 15, 20, 25, 30, 35, 40])
+def test_control_vector_method(reference_provider, dynamics_function, t):
+
+    Q = np.diag([5, 1])
+    R = np.eye(1)
+    Qf = np.diag([10, 1])
+    tf = 50
+
+    # reference state & control
+    reference = reference_provider.get_reference(t)
+    x_d = reference.reference_x
+    u_d = reference.reference_u
+
+    # actual value
+    controller = LocalTrajectoryStabilizationLQRController(Q = Q,
+                                                           R = R,
+                                                           Qf = Qf,
+                                                           tf = tf,
+                                                           reference_provider = reference_provider,
+                                                           dynamics_function = dynamics_function)
+
+    control_vector = controller.control_vector(t, x_d)
+
+    # test u is equal to u_d if estimated_state is x_d (true value)
+    np.testing.assert_allclose(control_vector, u_d)
