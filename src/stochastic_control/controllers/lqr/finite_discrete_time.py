@@ -41,18 +41,20 @@ class DiscreteTimeFiniteHorizonLQRController:
         n = self.A.shape[0]
         m = self.B.shape[1]
 
-        self.S = np.zeros((self.N + 1, n, n))
-        self.K = np.zeros((self.N, m, n))
-        self.S[N] = self.Qf
+        self.S = np.full((self.N + 1, n, n), None, dtype = object)
+        self.K = np.full((self.N, m, n), None, dtype = object)
 
-        for k in range(N-1, -1, -1):
-            # discrete time riccati equation
+        self.S[self.N] = self.Qf
+
+        # discrete time riccati equation
+        for k in range(self.N - 1, -1, -1):
+            self.K[k] = inv(self.R + self.B.T @ self.S[k+1] @ self.B) @ self.B.T @ self.S[k+1] @ self.A
+
             term1 = self.Q
             term2 = self.A.T @ self.S[k+1] @ self.A
-            term3 = self.A.T @ self.S[k+1] @ self.B @ inv(self.R + self.B.T @ self.S[k+1] @ self.B) @ self.B.T @ self.S[k+1] @ self.A
+            term3 = self.A.T @ self.S[k+1] @ self.B @ self.K[k]
 
             self.S[k] = term1 + term2 - term3
-            self.K[k] = inv(self.R + self.B.T @ self.S[k+1] @ self.B) @ self.B.T @ self.S[k+1] @ self.A
 
     def control_vector(self,
                        k_step: int,
