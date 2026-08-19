@@ -16,8 +16,8 @@ class GaussianNoise:
         if not is_PSD(covariance):
             raise ValueError('Covariance must be positive semi-definite')
 
-        self.mean = mean
-        self.covariance = covariance
+        self.mean = np.asarray(mean, dtype = float).reshape(-1)
+        self.covariance = np.asarray(covariance, dtype = float)
 
     def get_sample(self, rng):
         return rng.multivariate_normal(self.mean, self.covariance)
