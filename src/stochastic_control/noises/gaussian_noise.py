@@ -9,6 +9,7 @@ class GaussianNoise:
                  mean: ArrayLike,
                  covariance: ArrayLike):
 
+        # check symmetric positive semi-definite
         if not np.allclose(covariance, covariance.T):
             raise ValueError('Covariance must be symmetric')
 
@@ -18,6 +19,5 @@ class GaussianNoise:
         self.mean = mean
         self.covariance = covariance
 
-    def get_sample(self):
-
-        return np.random.multivariate_normal(self.mean, self.covariance)
+    def get_sample(self, rng):
+        return rng.multivariate_normal(self.mean, self.covariance)
