@@ -115,7 +115,7 @@ R = np.eye(1)
 Qf = np.diag([10, 1])
 
 # run simulation
-num_simulation = 50
+num_simulation = 200
 
 position_regulation_rmse_history = np.zeros(num_simulation)
 velocity_regulation_rmse_history = np.zeros(num_simulation)
