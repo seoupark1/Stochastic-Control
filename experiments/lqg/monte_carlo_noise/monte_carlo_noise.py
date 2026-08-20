@@ -86,13 +86,13 @@ def simulation(dt: float,
 
     # kalman filter's estimation evaluation
     estimation_error_history = estimated_state_history - true_state_history
-    position_estimation_rmse = np.sqrt(np.mean(sum(p**2 for p in estimation_error_history[0])))
-    velocity_estimation_rmse = np.sqrt(np.mean(sum(v**2 for v in estimation_error_history[1])))
+    position_error_rmse = np.sqrt(np.mean(sum(p**2 for p in estimation_error_history[0])))
+    velocity_error_rmse = np.sqrt(np.mean(sum(v**2 for v in estimation_error_history[1])))
 
     # control evaluation
     control_rms = np.sqrt(np.mean(sum(u**2 for u in control_history)))
 
-    return position_rmse, velocity_rmse, position_estimation_rmse, velocity_estimation_rmse, control_rms
+    return position_rmse, velocity_rmse, position_error_rmse, velocity_error_rmse, control_rms
 
 
 # inputs
@@ -114,8 +114,70 @@ Q = np.eye(2)
 R = np.eye(1)
 Qf = np.diag([10, 1])
 
-# simulation conditions
+# run simulation
 num_simulation = 50
-seed_list = np.random.randint(0, 1000, num_simulation)
-for seed in seed_list:
-    result = 
+seed = np.random.randint(0, 1000)
+
+position_rmse_history = np.zeros(num_simulation)
+velocity_rmse_history = np.zeros(num_simulation)
+position_error_rmse_history = np.zeros(num_simulation)
+velocity_error_rmse_history = np.zeros(num_simulation)
+control_rms_history = np.zeros(num_simulation)
+
+for trial in range(num_simulation):
+
+    results = simulation(dt, 
+                         N, 
+                         seed, 
+                         x_true, 
+                         state, 
+                         covariance, 
+                         A,
+                         B, 
+                         H, 
+                         motion_noise_covariance,
+                         measurement_noise_covariance,
+                         Q,
+                         R,
+                         Qf)
+
+    position_rmse, velocity_rmse, position_error_rmse, velocity_error_rmse, control_rms = results
+
+    position_rmse_history[trial] = position_rmse
+    velocity_rmse_history[trial] = velocity_rmse
+    position_error_rmse_history[trial] = position_error_rmse
+    velocity_error_rmse_history[trial] = velocity_error_rmse
+    control_rms_history[trial] = control_rms
+
+# scatter results
+plt.scatter(position_rmse_history, control_rms_history)
+plt.xlabel('True Position RMSE')
+plt.ylabel('Control RMS')
+plt.title('The Relationship between Position Regulation and Control')
+plt.grid(True)
+plt.savefig('experiments/lqg/monte_carlo_noise/position_regulation_control_relationship.png')
+plt.close()
+
+plt.scatter(velocity_rmse_history, control_rms_history)
+plt.xlabel('True Velocity RMSE')
+plt.ylabel('Control RMS')
+plt.title('The Relationship between Velocity Regulation and Control')
+plt.grid(True)
+plt.savefig('experiments/lqg/monte_carlo_noise/velocity_regulation_control_relationship.png')
+plt.close()
+
+plt.scatter(np.arange(num_simulation), position_error_rmse_history)
+plt.xlabel('Trials')
+plt.ylabel('Position Error RMSE')
+plt.title('The Position Estimation Performance of Kalman Filter')
+plt.grid(True)
+plt.savefig('experiments/lqg/monte_carlo_noise/position_estimation_performance.png')
+plt.close()
+
+plt.scatter(np.arange(num_simulation), velocity_error_rmse_history)
+plt.xlabel('Trials')
+plt.ylabel('Velocity Error RMSE')
+plt.title('The Velocity Estimation Performance of Kalman Filter')
+plt.grid(True)
+plt.savefig('experiments/lqg/monte_carlo_noise/velocity_estimation_performance.png')
+plt.close()
