@@ -83,8 +83,8 @@ def simulation():
         lqg.estimate(u_cmd, y)
         estimated_state_history[:, k] = kalmanfilter.x
 
-    # true vs estimated
-    plt.subplot(4, 1, 1)
+    # true vs estimated comparison
+    plt.subplot(2, 1, 1)
     plt.plot(time, true_state_history[0, :], label = 'true position')
     plt.plot(time, estimated_state_history[0, :], label = 'estimated position')
     plt.xlabel('time [s]')
@@ -92,13 +92,7 @@ def simulation():
     plt.title('Position Comparison')
     plt.legend()
     plt.grid(True)
-    plt.subplot(4, 1, 2)
-    plt.plot(time, estimated_state_history[0, :] - true_state_history[0, :])
-    plt.xlabel('time [s]')
-    plt.ylabel('position [m]')
-    plt.title('Position Error (estimated - true)')
-    plt.grid(True)
-    plt.subplot(4, 2, 1)
+    plt.subplot(2, 1, 2)
     plt.plot(time, true_state_history[1, :], label = 'true velocity')
     plt.plot(time, estimated_state_history[1, :], label = 'estimated velocity')
     plt.xlabel('time [s]')
@@ -106,14 +100,25 @@ def simulation():
     plt.title('Velocity Comparison')
     plt.legend()
     plt.grid(True)
-    plt.subplot(4, 2, 2)
+    plt.tight_layout()
+    plt.savefig('experiments/lqg/true_estimated_comparison.png')
+    plt.close()
+
+    # estimation error
+    plt.subplot(2, 1, 1)
+    plt.plot(time, estimated_state_history[0, :] - true_state_history[0, :])
+    plt.xlabel('time [s]')
+    plt.ylabel('position [m]')
+    plt.title('Position Error (estimated - true)')
+    plt.grid(True)
+    plt.subplot(2, 1, 2)
     plt.plot(time, estimated_state_history[1, :] - true_state_history[1, :])
     plt.xlabel('time [s]')
     plt.ylabel('velocity [m/s]')
     plt.title('Velocity Error (estimated - true)')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/lqg/true_vs_estimated.png')
+    plt.savefig('experiments/lqg/estimation_error.png')
     plt.close()
 
     # measurement y & control u
