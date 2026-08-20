@@ -41,8 +41,8 @@ class DiscreteTimeFiniteHorizonLQRController:
         n = self.A.shape[0]
         m = self.B.shape[1]
 
-        self.S = np.full((self.N + 1, n, n), None, dtype = object)
-        self.K = np.full((self.N, m, n), None, dtype = object)
+        self.S = np.zeros((self.N + 1, n, n))
+        self.K = np.zeros((self.N, m, n))
 
         self.S[self.N] = self.Qf
 
