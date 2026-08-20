@@ -81,18 +81,18 @@ def simulation(dt: float,
         estimated_state_history[:, k + 1] = kalmanfilter.x
 
     # lqr's regulation evaluation about nominal state x = [0, 0]
-    position_rmse = np.sqrt(np.mean(sum(p**2 for p in true_state_history[0])))
-    velocity_rmse = np.sqrt(np.mean(sum(v**2 for v in true_state_history[1])))
+    position_regulation_rmse = np.sqrt(np.mean(true_state_history[0]**2))
+    velocity_regulation_rmse = np.sqrt(np.mean(true_state_history[1]**2))
 
     # kalman filter's estimation evaluation
     estimation_error_history = estimated_state_history - true_state_history
-    position_error_rmse = np.sqrt(np.mean(sum(p**2 for p in estimation_error_history[0])))
-    velocity_error_rmse = np.sqrt(np.mean(sum(v**2 for v in estimation_error_history[1])))
+    position_error_rmse = np.sqrt(np.mean(estimation_error_history[0]**2))
+    velocity_error_rmse = np.sqrt(np.mean(estimation_error_history[1]**2))
 
     # control evaluation
-    control_rms = np.sqrt(np.mean(sum(u**2 for u in control_history)))
+    control_rms = np.sqrt(np.mean(control_history**2))
 
-    return position_rmse, velocity_rmse, position_error_rmse, velocity_error_rmse, control_rms
+    return position_regulation_rmse, velocity_regulation_rmse, position_error_rmse, velocity_error_rmse, control_rms
 
 
 # inputs
@@ -116,16 +116,16 @@ Qf = np.diag([10, 1])
 
 # run simulation
 num_simulation = 50
-seed = np.random.randint(0, 1000)
 
-position_rmse_history = np.zeros(num_simulation)
-velocity_rmse_history = np.zeros(num_simulation)
+position_regulation_rmse_history = np.zeros(num_simulation)
+velocity_regulation_rmse_history = np.zeros(num_simulation)
 position_error_rmse_history = np.zeros(num_simulation)
 velocity_error_rmse_history = np.zeros(num_simulation)
 control_rms_history = np.zeros(num_simulation)
 
 for trial in range(num_simulation):
 
+    seed = np.random.randint(0, 1000)
     results = simulation(dt, 
                          N, 
                          seed, 
@@ -141,16 +141,16 @@ for trial in range(num_simulation):
                          R,
                          Qf)
 
-    position_rmse, velocity_rmse, position_error_rmse, velocity_error_rmse, control_rms = results
+    position_regulation_rmse, velocity_regulation_rmse, position_error_rmse, velocity_error_rmse, control_rms = results
 
-    position_rmse_history[trial] = position_rmse
-    velocity_rmse_history[trial] = velocity_rmse
+    position_regulation_rmse_history[trial] = position_regulation_rmse
+    velocity_regulation_rmse_history[trial] = velocity_regulation_rmse
     position_error_rmse_history[trial] = position_error_rmse
     velocity_error_rmse_history[trial] = velocity_error_rmse
     control_rms_history[trial] = control_rms
 
 # scatter results
-plt.scatter(position_rmse_history, control_rms_history)
+plt.scatter(position_regulation_rmse_history, control_rms_history)
 plt.xlabel('True Position RMSE')
 plt.ylabel('Control RMS')
 plt.title('The Relationship between Position Regulation and Control')
@@ -158,7 +158,7 @@ plt.grid(True)
 plt.savefig('experiments/lqg/monte_carlo_noise/position_regulation_control_relationship.png')
 plt.close()
 
-plt.scatter(velocity_rmse_history, control_rms_history)
+plt.scatter(velocity_regulation_rmse_history, control_rms_history)
 plt.xlabel('True Velocity RMSE')
 plt.ylabel('Control RMS')
 plt.title('The Relationship between Velocity Regulation and Control')
