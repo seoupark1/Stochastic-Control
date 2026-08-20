@@ -20,7 +20,7 @@ def simulation():
     B = np.array([[dt**2 / 2],
                   [dt]])
     H = np.array([[1, 0]])
-    motion_noise_covariance = 5 * np.eye(2)
+    motion_noise_covariance = 0.1 * np.eye(2)
     measurement_noise_covariance = np.array([[0.01]])
 
     kalmanfilter = KalmanFilter(state = state,
