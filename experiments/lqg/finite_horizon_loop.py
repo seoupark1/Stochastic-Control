@@ -21,7 +21,7 @@ def simulation():
                   [dt]])
     H = np.array([[1, 0]])
     motion_noise_covariance = 5 * np.eye(2)
-    measurement_noise_covariance = np.array([[10]])
+    measurement_noise_covariance = np.array([[0.01]])
 
     kalmanfilter = KalmanFilter(state = state,
                                 covariance = covariance,
@@ -58,11 +58,14 @@ def simulation():
     measurement_history = np.zeros(N)
     control_history = np.zeros(N)
 
-    # initial
-    x_true = np.array([5, -3])
+    # initial state
+    x_true = np.array([3, 2])
 
     for k in range(N):
 
+        time[k] = k * dt
+
+        # create control vector
         u_cmd = lqg.control_vector(k)
         control_history[k] = u_cmd
 
@@ -82,16 +85,16 @@ def simulation():
 
     # true vs estimated
     plt.subplot(2, 1, 1)
-    plt.plot(time, true_state_history[:, 0], label = 'true position')
-    plt.plot(time, estimated_state_history[:, 0], label = 'estimated position')
+    plt.plot(time, true_state_history[0, :], label = 'true position')
+    plt.plot(time, estimated_state_history[0, :], label = 'estimated position')
     plt.xlabel('time [s]')
     plt.ylabel('position [m]')
     plt.title('Position Comparison')
     plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
-    plt.plot(time, true_state_history[:, 1], label = 'true velocity')
-    plt.plot(time, estimated_state_history[:, 1], label = 'estimated velocity')
+    plt.plot(time, true_state_history[1, :], label = 'true velocity')
+    plt.plot(time, estimated_state_history[1, :], label = 'estimated velocity')
     plt.xlabel('time [s]')
     plt.ylabel('velocity [m/s]')
     plt.title('Velocity Comparison')
@@ -106,14 +109,12 @@ def simulation():
     plt.xlabel('time [s]')
     plt.ylabel('measured position [m]')
     plt.title('Measurement History')
-    plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
     plt.plot(time, control_history)
     plt.xlabel('time [s]')
-    plt.ylabel('torque [Nm]')
+    plt.ylabel('control [m/s^2]')
     plt.title('Control History')
-    plt.legend()
     plt.grid(True)
     plt.savefig('experiments/lqg/measurement_and_control.png')
     plt.close()
