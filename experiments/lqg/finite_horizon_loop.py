@@ -113,7 +113,7 @@ def simulation():
     plt.subplot(2, 1, 2)
     plt.plot(time, control_history)
     plt.xlabel('time [s]')
-    plt.ylabel('control [m/s^2]')
+    plt.ylabel('acceleration [m/s^2]')
     plt.title('Control History')
     plt.grid(True)
     plt.savefig('experiments/lqg/measurement_and_control.png')
