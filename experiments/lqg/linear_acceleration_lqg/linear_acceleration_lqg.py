@@ -35,7 +35,7 @@ def simulation():
     Q = np.eye(2)
     R = np.eye(1)
     Qf = np.diag([10, 1])
-    N = 100
+    N = 500
 
     lqr = DiscreteTimeFiniteHorizonLQRController(A = A,
                                                  B = B,
