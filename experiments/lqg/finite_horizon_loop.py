@@ -101,7 +101,7 @@ def simulation():
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/lqg/true_estimated_comparison.png')
+    plt.savefig('experiments/lqg/true_vs_estimated.png')
     plt.close()
 
     # estimation error
