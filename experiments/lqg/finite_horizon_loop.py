@@ -67,7 +67,7 @@ def simulation():
 
         # create control vector
         u_cmd = lqg.control_vector(k)
-        control_history[k] = u_cmd
+        control_history[k] = u_cmd[0]
 
         # motion
         w = motion_noise.get_sample(rng)
@@ -77,7 +77,7 @@ def simulation():
         # measurement
         v = measurement_noise.get_sample(rng)
         y = H @ x_true + v
-        measurement_history[k] = y
+        measurement_history[k] = y[0]
 
         # estimate current state
         lqg.estimate(u_cmd, y)
