@@ -93,6 +93,7 @@ def simulation():
     total_step = int(tf / dt)
     time = np.zeros(total_step)
     true_state_history = np.zeros((2, total_step))
+    reference_state_history = np.zeros((2, total_step))
     estimated_state_history = np.zeros((2, total_step))
     control_history = np.zeros(total_step)
     measurement_history = np.zeros(total_step)
@@ -110,6 +111,7 @@ def simulation():
 
         # true values
         x_true = f(x_true, u_cmd) + motion_noise.get_sample(rng)
+        reference_state_history[:, k] = reference_state_function(t)
         true_state_history[:, k] = x_true
 
         y = h(x_true) + measurement_noise.get_sample(rng)
@@ -123,6 +125,7 @@ def simulation():
 
     # true state vs estimated state
     plt.subplot(2, 1, 1)
+    plt.plot(time, reference_state_history[0, :], label = 'reference position')
     plt.plot(time, true_state_history[0, :], label = 'true position')
     plt.plot(time, estimated_state_history[0, :], label = 'estimated position')
     plt.xlabel('time [s]')
@@ -131,6 +134,7 @@ def simulation():
     plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
+    plt.plot(time, reference_state_history[1, :], label = 'reference velocity')
     plt.plot(time, true_state_history[1, :], label = 'true velocity')
     plt.plot(time, estimated_state_history[1, :], label = 'estimated velocity')
     plt.xlabel('time [s]')
@@ -139,7 +143,7 @@ def simulation():
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/true_vs_estimated.png')
+    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/reference_vs_true_vs_estimated.png')
     plt.close()
 
     # estimation error
