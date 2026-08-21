@@ -22,4 +22,4 @@ class EKFLQRCompensator:
     def control_vector(self,
                        t: float):
         
-        return self.controller.control_vector(t, self.estimator.x)
+        return self.controller.control_vector(t, self.estimator.x).reshape(-1)
