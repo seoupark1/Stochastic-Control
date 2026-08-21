@@ -12,8 +12,8 @@ def simulation():
     # estimator properties
     dt = 0.1
     c_drag = 0.05
-    S = 20 # [m]
-    D = 40 # [m]
+    S = 200 # [m]
+    D = 100 # [m]
     state = np.array([[0], [5]])
     covariance = np.array([[0.01, 0], [0, 1]])
     motion_noise_covariance = 0.1 * np.eye(2)
