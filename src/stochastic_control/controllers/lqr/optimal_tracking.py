@@ -122,4 +122,4 @@ class LinearQuadraticOptimalTrackingController:
 
         control_vector = u_d - inv(self.R) @ self.B.T @ (Sxx @ x_hat + Sx)
 
-        return control_vector
+        return control_vector.reshape(-1)

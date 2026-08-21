@@ -87,4 +87,4 @@ class StandardLyapunovController:
         gyroscopic_term = skew_symmetric(omega_BN_B) @ self.inertia_tensor @ omega_BN_B
         control_vector = attitude_feedback + omega_feedback + feedforward_term + gyroscopic_term - estimated_disturbance
         
-        return control_vector
+        return control_vector.reshape(-1)

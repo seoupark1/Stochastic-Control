@@ -35,4 +35,4 @@ class InfiniteHorizonLQRController:
         # check parameter
         estimated_state = np.asarray(estimated_state, dtype = float).reshape(-1)
 
-        return -self.K @ estimated_state
+        return (-self.K @ estimated_state).reshape(-1)

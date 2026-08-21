@@ -62,4 +62,4 @@ class DiscreteTimeFiniteHorizonLQRController:
 
         x_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
 
-        return -self.K[k_step] @ x_hat
+        return (-self.K[k_step] @ x_hat).reshape(-1)

@@ -131,4 +131,4 @@ class LocalTrajectoryStabilizationLQRController:
         # get control vector
         control_vector = u_d - inv(self.R) @ B.T @ S @ (x_hat - x_d)
 
-        return control_vector
+        return control_vector.reshape(-1)

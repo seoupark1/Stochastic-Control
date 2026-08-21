@@ -91,4 +91,4 @@ class IntegralLyapunovController:
         control_vector = attitude_feedback + omega_feedback + integral_feedback + feedforward_term + gyroscopic_term - estimated_disturbance
         eta_dot = sigma_BR_B
 
-        return control_vector, eta_dot
+        return control_vector.reshape(-1), eta_dot
