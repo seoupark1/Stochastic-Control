@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from stochastic_control.estimators.kalman_filter import KalmanFilter
 from stochastic_control.controllers.lqr.discrete_time_finite_horizon import DiscreteTimeFiniteHorizonLQRController
-from stochastic_control.controllers.lqg.discrete_time_finite_horizon import DiscreteTimeFiniteHorizonLQGController
+from stochastic_control.compensators.lqg.discrete_time_finite_horizon import DiscreteTimeFiniteHorizonLQGController
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 
 def simulation():
