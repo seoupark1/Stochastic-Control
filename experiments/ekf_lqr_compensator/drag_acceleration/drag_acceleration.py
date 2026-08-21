@@ -113,7 +113,7 @@ def simulation():
         true_state_history[:, k] = x_true
 
         y = h(x_true) + measurement_noise.get_sample(rng)
-        measurement_history[k] = y
+        measurement_history[k] = y[0]
 
         # estimate
         compensator.estimate(u_cmd, y)
