@@ -17,7 +17,7 @@ def simulation():
     state = np.array([[0], [5]])
     covariance = np.array([[0.01, 0], [0, 1]])
     motion_noise_covariance = 0.1 * np.eye(2)
-    measurement_noise_covariance = np.array([0.01])
+    measurement_noise_covariance = np.array([[0.01]])
     motion_noise_jacobian = np.eye(2)
     measurement_noise_jacobian = np.eye(1)
 
@@ -33,11 +33,11 @@ def simulation():
 
     def F(state, control):
         velocity = state[1]
-        return np.array([[0, 1], [0, -2 * c_drag * velocity]])
+        return np.eye(2) + dt * np.array([[0, 1], [0, -2 * c_drag * abs(velocity)]])
 
     def h(state):
         position = state[0]
-        return np.arctan2(D - position, S)
+        return np.array([np.arctan2(D - position, S)])
 
     def H(state):
         position = state[0]
@@ -59,8 +59,8 @@ def simulation():
     Q = np.diag([5, 1])
     R = np.eye(1)
     Qf = np.diag([10, 1])
-    tf = 50
-    x_true = np.diag([3, 10])
+    tf = 10
+    x_true = np.array([3, 10])
 
     def reference_state_function(t):
         position = 2 * t**2 + np.sin(t)
@@ -70,7 +70,7 @@ def simulation():
     def reference_control_function(t):
         velocity = 4 * t + np.cos(t)
         acceleration = 4 - np.sin(t)
-        return acceleration + c_drag * velocity * abs(velocity)
+        return np.array([acceleration + c_drag * velocity * abs(velocity)])
 
     nominal_trajectory = TrajectoryReferenceProvider(reference_state_function, reference_control_function)
 
@@ -90,7 +90,7 @@ def simulation():
     measurement_noise = GaussianNoise(np.zeros(1), measurement_noise_covariance)
 
     # histories
-    total_step = tf / dt
+    total_step = int(tf / dt)
     time = np.zeros(total_step)
     true_state_history = np.zeros((2, total_step))
     estimated_state_history = np.zeros((2, total_step))
@@ -110,7 +110,7 @@ def simulation():
 
         # true values
         x_true = f(x_true, u_cmd) + motion_noise.get_sample(rng)
-        true_state_history[k] = x_true
+        true_state_history[:, k] = x_true
 
         y = h(x_true) + measurement_noise.get_sample(rng)
         measurement_history[k] = y
