@@ -60,7 +60,7 @@ def simulation():
     R = np.eye(1)
     Qf = np.diag([10, 1])
     tf = 10
-    x_true = np.array([3, 10])
+    x_true = np.array([0, 1]) + np.array([0.6, -0.3])
 
     def reference_state_function(t):
         position = 2 * t**2 + np.sin(t)
