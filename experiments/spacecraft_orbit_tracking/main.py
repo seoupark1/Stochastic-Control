@@ -104,8 +104,8 @@ def simulation():
     initial_covariance = np.eye(6)
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
-    motion_noise_covariance = 0.5 * np.eye(6)
-    measurement_noise_covariance = 0.01 * np.eye(6)
+    motion_noise_covariance = 0.1 * np.eye(6)
+    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.5), np.deg2rad(0.5), np.deg2rad(0.5)])
 
     ekf = ExtendedKalmanFilter(state = initial_state,
                                covariance = initial_covariance,
@@ -122,6 +122,7 @@ def simulation():
     R = 5 * np.eye(3)
     Qf = 10 * Q
     tf = 120
+    x_true = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, 0.1, 0.2, 0.3])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
                                                     R = R,
