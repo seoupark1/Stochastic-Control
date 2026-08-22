@@ -6,15 +6,15 @@ from stochastic_control.attitude.mrp import dcm_to_mrp
 class NadirPointingReference:
 
     def __init__(self,
-                 orbit_provider: Callable):
+                 orbit_function: Callable):
 
         # orbit provider must have single variable t and return r_N, v_N 
-        self.orbit_provider = orbit_provider
+        self.orbit_function = orbit_function
 
     def nadir_pointing(self,
                        t):
 
-        r_N, v_N = self.orbit_provider(t)
+        r_N, v_N = self.orbit_function(t)
 
         # mars frame
         m_1 = r_N / np.linalg.norm(r_N)
