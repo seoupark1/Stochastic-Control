@@ -56,11 +56,11 @@ class LocalTrajectoryStabilizationLQRController:
             u_d = reference.reference_u
 
             # get A, B jacobians
-            A = approx_derivative(fun = lambda x: self.dynamics_function(x, u_d),
+            A = approx_derivative(fun = lambda x: self.dynamics_function(t, x, u_d),
                                   x0 = x_d,
                                   method = '3-point')
             
-            B = approx_derivative(fun = lambda u: self.dynamics_function(x_d, u),
+            B = approx_derivative(fun = lambda u: self.dynamics_function(t, x_d, u),
                                   x0 = u_d,
                                   method = '3-point')
 
