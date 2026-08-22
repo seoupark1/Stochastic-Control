@@ -105,7 +105,7 @@ def simulation():
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
     motion_noise_covariance = np.diag([1e-8, 1e-8, 1e-8, 1e-6, 1e-6, 1e-6])
-    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.05), np.deg2rad(0.05), np.deg2rad(0.05)])
+    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.05)**2, np.deg2rad(0.05)**2, np.deg2rad(0.05)**2])
 
     ekf = ExtendedKalmanFilter(state = initial_state,
                                covariance = initial_covariance,
@@ -140,14 +140,15 @@ def simulation():
 
     # total steps
     total_step = int(tf / dt)
+    time = dt * np.arange(total_step + 1)
 
     # histories 
-    time = np.zeros(total_step + 1)
     true_state_history = np.zeros((6, total_step + 1))
     reference_state_history = np.zeros((6, total_step + 1))
     estimated_state_history = np.zeros((6, total_step + 1))
     control_history = np.zeros((3, total_step))
     measurement_history = np.zeros((6, total_step))
+
     attitude_error_angle_history = np.zeros(total_step + 1)
     attitude_estimation_error_angle_history = np.zeros(total_step + 1)
 
@@ -161,7 +162,6 @@ def simulation():
 
         # time
         t = k * dt
-        time[k] = t
 
         # control
         u_cmd = compensator.control_vector(t)
@@ -169,7 +169,7 @@ def simulation():
 
         # true value
         x_true = motion_model(t, x_true, u_cmd) + motion_noise.get_sample(rng)
-        reference_state_history[:, k + 1] = reference_x_function(t)
+        reference_state_history[:, k + 1] = reference_x_function(time[k + 1])
         true_state_history[:, k + 1] = x_true
 
         # measure
@@ -187,20 +187,22 @@ def simulation():
         sigma_RN = reference_state_history[0:3, k]
         sigma_BbarN = estimated_state_history[0:3, k]
 
-        # tracking error
+        # attitude tracking error
         dcm_BR = mrp_to_dcm(sigma_BN) @ mrp_to_dcm(sigma_RN).T
         sigma_BR = dcm_to_mrp(dcm_BR)
         attitude_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BR)))
 
-        # estimation error
+        # omega tracking error
+        omega_error_history = true_state_history[3:6, k] - dcm_BR @ reference_state_history[3:6, k]
+
+        # attitude estimation error
         dcm_BbarB =  mrp_to_dcm(sigma_BbarN) @ mrp_to_dcm(sigma_BN).T
         sigma_BbarB = dcm_to_mrp(dcm_BbarB)
         attitude_estimation_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BbarB)))
 
     # angular velocity errors
-    omega_error_history = true_state_history[3:6, :] - reference_state_history[3:6, :]
     omega_norm_error_history = np.linalg.norm(omega_error_history, axis = 0)
-    omega_estimation_error_history = estimated_state_history[3:6, :] - true_state_history[3:6, :]
+    omega_estimation_error_history = estimated_state_history[3:6, :] - dcm_BbarB @ true_state_history[3:6, :]
     omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
  
     # reference attitude vs true attitude vs estimated attitude
