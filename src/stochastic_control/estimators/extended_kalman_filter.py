@@ -40,7 +40,7 @@ class ExtendedKalmanFilter:
 
         # input parameters
         u = np.asarray(control_vector, dtype = float).reshape(-1)
-        t = None if None else float(t)
+        t = None if t is None else float(t)
 
         if t is None:
             # jacobian F about k-1 step
