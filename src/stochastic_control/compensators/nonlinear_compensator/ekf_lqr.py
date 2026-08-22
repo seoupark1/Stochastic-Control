@@ -13,10 +13,11 @@ class EKFLQRCompensator:
         self.controller = controller
 
     def estimate(self,
+                 t,
                  control_vector,
                  measurement_vector):
 
-        self.estimator.prediction(control_vector)
+        self.estimator.prediction(control_vector, t)
         self.estimator.correction(measurement_vector)
 
     def control_vector(self,
