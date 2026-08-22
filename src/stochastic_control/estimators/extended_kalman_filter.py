@@ -35,16 +35,26 @@ class ExtendedKalmanFilter:
         self.R = np.asarray(measurement_noise_covariance, dtype = float)
 
     def prediction(self,
-                   control_vector: ArrayLike):
+                   control_vector: ArrayLike,
+                   t = None):
 
-        # control vector u
+        # input parameters
         u = np.asarray(control_vector, dtype = float).reshape(-1)
+        t = None if None else float(t)
 
-        # jacobian F about k-1 step
-        F = np.asarray(self.F_jacobian(self.x, u), dtype = float)
+        if t is None:
+            # jacobian F about k-1 step
+            F = np.asarray(self.F_jacobian(self.x, u), dtype = float)
 
-        # x_check, P_check about k step
-        self.x = np.asarray(self.f_model(self.x, u), dtype = float).reshape(-1)
+            # x_check, P_check about k step
+            self.x = np.asarray(self.f_model(self.x, u), dtype = float).reshape(-1)
+        else:
+            # jacobian F about k-1 step
+            F = np.asarray(self.F_jacobian(t, self.x, u), dtype = float)
+            
+            # x_check, P_check about k step
+            self.x = np.asarray(self.f_model(t, self.x, u), dtype = float).reshape(-1)
+
         self.P = F @ self.P @ F.T + self.L_jacobian @ self.Q @ self.L_jacobian.T
         self.P = (self.P + self.P.T) / 2
 
