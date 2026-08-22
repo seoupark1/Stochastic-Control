@@ -34,5 +34,4 @@ class NadirPointingReference:
         omega_RN_N = np.cross(r_N, v_N) / np.vdot(r_N, r_N)
         omega_RN_R = dcm_RN @ omega_RN_N
 
-        return np.concatenate((sigma_RN, omega_RN_R)), dcm_RN
-
+        return np.concatenate((sigma_RN, omega_RN_R))
