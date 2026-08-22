@@ -34,11 +34,11 @@ def simulation():
 
     def dynamics(t, state, control):
 
-        # orbit properties
+        # orbit property
         r_N, v_N = orbit_provider.get_state(t)
-        nadir = nadir_provider.nadir_pointing(t)
-        sigma_BN = nadir[0:3]
-        omega_BN_B = nadir[3:6]
+
+        sigma_BN = state[0:3]
+        omega_BN_B = state[3:6]
 
         # gravity gradient disturbance
         body_state = BodyStateContext(position_N = r_N,
@@ -70,15 +70,21 @@ def simulation():
     def measurement_jacobian(state):
         return np.eye(6)
 
-    state = 
-    covariance = 
+    # reference trajectory (state, control)
+    reference_x_function = nadir_provider.nadir_pointing
+    reference_u_function = 
+    reference_provider = TrajectoryReferenceProvider
+
+    # ekf properties
+    initial_state = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, 0.1, 0.2, 0.3])
+    initial_covariance = np.eye(6)
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
     motion_noise_covariance = 0.5 * np.eye(6)
     measurement_noise_covariance = 0.01 * np.eye(6)
 
-    ekf = ExtendedKalmanFilter(state = state,
-                               covariance = covariance,
+    ekf = ExtendedKalmanFilter(state = initial_state,
+                               covariance = initial_covariance,
                                motion_model = motion_model,
                                motion_jacobian = motion_jacobian,
                                motion_noise_jacobian = motion_noise_jacobian,
@@ -88,21 +94,16 @@ def simulation():
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
-    # reference trajectory (state, control)
-    reference_x_function = nadir_provider.nadir_pointing
-    reference_u_function = 
-    reference_provider = TrajectoryReferenceProvider
+    Q = np.diag([50, 50, 50, 10, 10, 10])
+    R = 5 * np.eye(3)
+    Qf = 10 * Q
+    tf = 120
 
-    Q = 
-    R = 
-    Qf = 
-    tf = 
-
-    controller = LocalTrajectoryStabilizationLQRController(Q = ,
-                                                           R = ,
-                                                           Qf = ,
-                                                           tf = ,
-                                                           reference_provider = reference_provider,
-                                                           dynamics_function = dynamics)
+    lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
+                                                    R = R,
+                                                    Qf = Qf,
+                                                    tf = tf,
+                                                    reference_provider = reference_provider,
+                                                    dynamics_function = dynamics)
 
 
