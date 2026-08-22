@@ -6,11 +6,11 @@ from .desired_orbit import CircularOrbit
 from .nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp
 from stochastic_control.dynamics.rigid_body import RigidBody
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
-from stochastic_control.providers import TrajectoryReferenceProvider, MRPStateProvider, BodyStateContext
+from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
 from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQRCompensator
@@ -138,20 +138,25 @@ def simulation():
     motion_noise = GaussianNoise(np.zeros(6), motion_noise_covariance)
     measurement_noise = GaussianNoise(np.zeros(6), measurement_noise_covariance)
 
-    # run compensator
+    # total steps
     total_step = int(tf / dt)
-    time = np.zeros(total_step + 1)
 
+    # histories 
+    time = np.zeros(total_step + 1)
     true_state_history = np.zeros((6, total_step + 1))
     reference_state_history = np.zeros((6, total_step + 1))
     estimated_state_history = np.zeros((6, total_step + 1))
     control_history = np.zeros((3, total_step))
     measurement_history = np.zeros((6, total_step))
+    attitude_error_angle_history = np.zeros(total_step + 1)
+    attitude_estimation_error_angle_history = np.zeros(total_step + 1)
 
+    # history at t = 0
     true_state_history[:, 0] = x_true
     reference_state_history[:, 0] = reference_x_function(0)
     estimated_state_history[:, 0] = ekf.x
 
+    # run simulation
     for k in range(total_step):
 
         # time
@@ -162,11 +167,12 @@ def simulation():
         u_cmd = compensator.control_vector(t)
         control_history[:, k] = u_cmd
 
-        # true values
+        # true value
         x_true = motion_model(t, x_true, u_cmd) + motion_noise.get_sample(rng)
         reference_state_history[:, k + 1] = reference_x_function(t)
         true_state_history[:, k + 1] = x_true
 
+        # measure
         y = measurement_model(x_true) + measurement_noise.get_sample(rng)
         measurement_history[:, k] = y
 
@@ -174,8 +180,28 @@ def simulation():
         compensator.estimate(t, u_cmd, y)
         estimated_state_history[:, k + 1] = ekf.x
 
-    state_error_history = estimated_state_history - true_state_history
-    tracking_error_history = true_state_history - reference_state_history
+    # attitude errors
+    for k in range(total_step + 1):
+
+        sigma_BN = true_state_history[0:3, k]
+        sigma_RN = reference_state_history[0:3, k]
+        sigma_BbarN = estimated_state_history[0:3, k]
+
+        # tracking error
+        dcm_BR = mrp_to_dcm(sigma_BN) @ mrp_to_dcm(sigma_RN).T
+        sigma_BR = dcm_to_mrp(dcm_BR)
+        attitude_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BR)))
+
+        # estimation error
+        dcm_BbarB =  mrp_to_dcm(sigma_BbarN) @ mrp_to_dcm(sigma_BN).T
+        sigma_BbarB = dcm_to_mrp(dcm_BbarB)
+        attitude_estimation_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BbarB)))
+
+    # angular velocity errors
+    omega_error_history = true_state_history[3:6, :] - reference_state_history[3:6, :]
+    omega_norm_error_history = np.linalg.norm(omega_error_history, axis = 0)
+    omega_estimation_error_history = estimated_state_history[3:6, :] - true_state_history[3:6, :]
+    omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
  
     # reference attitude vs true attitude vs estimated attitude
     plt.subplot(3, 1, 1)
@@ -184,7 +210,6 @@ def simulation():
     plt.plot(time, estimated_state_history[0, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('sigma_1')
-    plt.title('Attitude(sigma_1) Comparison')
     plt.legend()
     plt.grid(True)
     plt.subplot(3, 1, 2)
@@ -193,7 +218,6 @@ def simulation():
     plt.plot(time, estimated_state_history[1, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('sigma_2')
-    plt.title('Attitude(sigma_2) Comparison')
     plt.legend()
     plt.grid(True)
     plt.subplot(3, 1, 3)
@@ -202,21 +226,20 @@ def simulation():
     plt.plot(time, estimated_state_history[2, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('sigma_3')
-    plt.title('Attitude(sigma_3) Comparison')
     plt.legend()
     plt.grid(True)
+    plt.suptitle('Nadir Pointing Attitude Comparison')
     plt.tight_layout()
     plt.savefig('experiments/spacecraft_orbit_tracking/results/reference_vs_true_vs_estimated_attitude.png')
     plt.close()
 
-    # reference attitude vs true attitude vs estimated attitude
+    # reference omega vs true omega vs estimated omega
     plt.subplot(3, 1, 1)
     plt.plot(time, reference_state_history[3, :], label = 'reference')
     plt.plot(time, true_state_history[3, :], label = 'true')
     plt.plot(time, estimated_state_history[3, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('omega_1')
-    plt.title('Angular Velocity (omega_1) Comparison')
     plt.legend()
     plt.grid(True)
     plt.subplot(3, 1, 2)
@@ -225,7 +248,6 @@ def simulation():
     plt.plot(time, estimated_state_history[4, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('omega_2')
-    plt.title('Angular Velocity (omega_2) Comparison')
     plt.legend()
     plt.grid(True)
     plt.subplot(3, 1, 3)
@@ -234,45 +256,67 @@ def simulation():
     plt.plot(time, estimated_state_history[5, :], label = 'estimated')
     plt.xlabel('time [s]')
     plt.ylabel('omega_3')
-    plt.title('Angular Velocity (omega_3) Comparison')
+    plt.legend()
+    plt.grid(True)
+    plt.suptitle('Nadir Pointing Angular Velocity Comparison')
+    plt.tight_layout()
+    plt.savefig('experiments/spacecraft_orbit_tracking/results/reference_vs_true_vs_estimated_omega.png')
+    plt.close()
+
+    # tracking errors
+    plt.subplot(2, 1, 1)
+    plt.plot(time, attitude_error_angle_history, label = 'true - reference')
+    plt.xlabel('time [s]')
+    plt.ylabel('attitude error [deg]')
+    plt.title('Nadir Pointing Attitude Tracking Error')
+    plt.legend()
+    plt.grid(True)
+    plt.subplot(2, 1, 2)
+    plt.plot(time, omega_norm_error_history, label = 'true - reference')
+    plt.xlabel('time [s]')
+    plt.ylabel('angular velocity error [deg/s]')
+    plt.title('Nadir Pointing Angular Velocity Tracking Error')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/spacecraft_orbit_tracking/results/reference_vs_true_vs_estimated_angular_velocity.png')
-    plt.close()
-'''
-    # estimation error
-    plt.subplot(2, 1, 1)
-    plt.plot(time, state_error_history[0, :])
-    plt.xlabel('time [s]')
-    plt.ylabel('position [m]')
-    plt.title('Position Error (estimated - true)')
-    plt.grid(True)
-    plt.subplot(2, 1, 2)
-    plt.plot(time, state_error_history[1, :])
-    plt.xlabel('time [s]')
-    plt.ylabel('velocity [m/s]')
-    plt.title('Velocity Error (estimated - true)')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/estimation_error.png')
+    plt.savefig('experiments/spacecraft_orbit_tracking/results/tracking_error.png')
     plt.close()
 
-    # measurement y & control u
+    # attitude estimation error
     plt.subplot(2, 1, 1)
-    plt.plot(time, measurement_history)
+    plt.plot(time, attitude_estimation_error_angle_history, label = 'estimated - true')
     plt.xlabel('time [s]')
-    plt.ylabel('measured angle [rad]')
-    plt.title('Measurement History')
+    plt.ylabel('attitude error [deg]')
+    plt.title('Nadir Pointing Estimation Error')
+    plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
-    plt.plot(time, control_history)
+    plt.plot(time, omega_estimation_norm_error_history, label = 'estimated - true')
     plt.xlabel('time [s]')
-    plt.ylabel('acceleration [m/s^2]')
-    plt.title('Control History')
+    plt.ylabel('angular velocity error [deg/s]')
+    plt.title('Nadir Pointing Angular Velocity Estimation Error')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('experiments/spacecraft_orbit_tracking/results/estimation_error.png')
+    plt.close()
+
+    # control 
+    plt.subplot(2, 1, 1)
+    plt.plot(time[0:-1], control_history[0], label = 'u_1')
+    plt.plot(time[0:-1], control_history[1], label = 'u_2')
+    plt.plot(time[0:-1], control_history[2], label = 'u_3')
+    plt.xlabel('time [s]')
+    plt.ylabel('torque [Nm]')
+    plt.title('Nadir Pointing Control')
+    plt.grid(True)
+    plt.subplot(2, 1, 2)
+    plt.plot(time[0:-1], np.linalg.norm(control_history, axis = 0))
+    plt.xlabel('time [s]')
+    plt.ylabel('torque [Nm]')
+    plt.title('Nadir Pointing Control Norm')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/measurement_and_control.png')
+    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/control.png')
     plt.close()
-'''
+
 simulation()
