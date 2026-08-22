@@ -64,7 +64,7 @@ def simulation():
                               x0 = state,
                               method = '3-point')
 
-        return np.eye(3) + dt * A
+        return np.eye(6) + dt * A
 
     def measurement_model(state):
         return state
@@ -104,8 +104,8 @@ def simulation():
     initial_covariance = np.eye(6)
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
-    motion_noise_covariance = 0.1 * np.eye(6)
-    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.5), np.deg2rad(0.5), np.deg2rad(0.5)])
+    motion_noise_covariance = np.diag([1e-8, 1e-8, 1e-8, 1e-6, 1e-6, 1e-6])
+    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.05), np.deg2rad(0.05), np.deg2rad(0.05)])
 
     ekf = ExtendedKalmanFilter(state = initial_state,
                                covariance = initial_covariance,
@@ -121,7 +121,7 @@ def simulation():
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
     Qf = 10 * Q
-    tf = 120
+    tf = 50
     x_true = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, 0.1, 0.2, 0.3])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
@@ -140,12 +140,17 @@ def simulation():
 
     # run compensator
     total_step = int(tf / dt)
-    time = np.zeros(total_step)
-    true_state_history = np.zeros((6, total_step))
-    reference_state_history = np.zeros((6, total_step))
-    estimated_state_history = np.zeros((6, total_step))
+    time = np.zeros(total_step + 1)
+
+    true_state_history = np.zeros((6, total_step + 1))
+    reference_state_history = np.zeros((6, total_step + 1))
+    estimated_state_history = np.zeros((6, total_step + 1))
     control_history = np.zeros((3, total_step))
     measurement_history = np.zeros((6, total_step))
+
+    true_state_history[:, 0] = x_true
+    reference_state_history[:, 0] = reference_x_function(0)
+    estimated_state_history[:, 0] = ekf.x
 
     for k in range(total_step):
 
@@ -159,17 +164,18 @@ def simulation():
 
         # true values
         x_true = motion_model(t, x_true, u_cmd) + motion_noise.get_sample(rng)
-        reference_state_history[:, k] = reference_x_function(t)
-        true_state_history[:, k] = x_true
+        reference_state_history[:, k + 1] = reference_x_function(t)
+        true_state_history[:, k + 1] = x_true
 
         y = measurement_model(x_true) + measurement_noise.get_sample(rng)
         measurement_history[:, k] = y
 
         # estimate
-        compensator.estimate(u_cmd, y)
-        estimated_state_history[:, k] = ekf.x
+        compensator.estimate(t, u_cmd, y)
+        estimated_state_history[:, k + 1] = ekf.x
 
     state_error_history = estimated_state_history - true_state_history
+    tracking_error_history = true_state_history - reference_state_history
  
     # reference attitude vs true attitude vs estimated attitude
     plt.subplot(3, 1, 1)
