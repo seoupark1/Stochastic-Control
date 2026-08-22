@@ -22,9 +22,9 @@ class NadirPointingReference:
         dcm_NP = np.column_stack((p_1, p_2, p_3))
 
         # spacecraft reference frame
-        dcm_RP = np.array([-1, 0, 0],
-                        [0, 1, 0],
-                        [0, 0, -1])
+        dcm_RP = np.array([[-1, 0, 0],
+                           [0, 1, 0],
+                           [0, 0, -1]])
         dcm_RN = dcm_RP @ dcm_NP.T
 
         # spacecraft reference mrp
