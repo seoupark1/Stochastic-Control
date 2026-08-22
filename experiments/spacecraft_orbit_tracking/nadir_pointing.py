@@ -6,32 +6,31 @@ from stochastic_control.attitude.mrp import dcm_to_mrp
 class NadirPointingReference:
 
     def __init__(self,
-                 orbit_function: Callable):
+                 orbit_provider: Callable):
 
-        # orbit provider must have single variable t and return r_N, v_N 
-        self.orbit_function = orbit_function
+        self.orbit_provider = orbit_provider
 
     def nadir_pointing(self,
-                       t):
+                       t: float):
 
-        r_N, v_N = self.orbit_function(t)
+        r_N, v_N = self.orbit_provider.get_state(t)
 
-        # mars frame
-        m_1 = r_N / np.linalg.norm(r_N)
-        m_2 = np.cross(r_N, v_N) / np.linalg.norm(np.cross(r_N, v_N))
-        m_3 = np.cross(m_1, m_2)
-        dcm_NM = np.column_stack((m_1, m_2, m_3))
+        # planet frame
+        p_1 = r_N / np.linalg.norm(r_N)
+        p_2 = np.cross(r_N, v_N) / np.linalg.norm(np.cross(r_N, v_N))
+        p_3 = np.cross(p_1, p_2)
+        dcm_NP = np.column_stack((p_1, p_2, p_3))
 
-        # reference frame
-        dcm_RM = np.array([-1, 0, 0],
+        # spacecraft reference frame
+        dcm_RP = np.array([-1, 0, 0],
                         [0, 1, 0],
                         [0, 0, -1])
-        dcm_RN = dcm_RM @ dcm_NM.T
+        dcm_RN = dcm_RP @ dcm_NP.T
 
-        # reference mrp
+        # spacecraft reference mrp
         sigma_RN = dcm_to_mrp(dcm_RN)
 
-        # reference omega
+        # spacecraft reference angular velocity
         omega_RN_N = np.cross(r_N, v_N) / np.vdot(r_N, r_N)
         omega_RN_R = dcm_RN @ omega_RN_N
 
