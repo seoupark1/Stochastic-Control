@@ -6,7 +6,7 @@ from .desired_orbit import CircularOrbit
 from .nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set
 from stochastic_control.dynamics.rigid_body import RigidBody
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
@@ -65,12 +65,12 @@ def simulation():
     def dynamics(t, state, control):
 
         # tracking error
-        sigma_BR = state[0:3]
+        sigma_BR = mrp_shadow_set(state[0:3])
         omega_BR_B = state[3:6]
 
         # reference attitude & omega
         reference_state = nadir_provider.nadir_pointing(t)
-        sigma_RN = reference_state[0:3]
+        sigma_RN = mrp_shadow_set(reference_state[0:3])
         omega_RN_R = reference_state[3:6]
         omega_RN_R_dot = nadir_provider.angular_acceleration(t)
 
@@ -99,7 +99,7 @@ def simulation():
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
     def motion_model(t, state, control):
-        return state + dt * dynamics(t, state, control)
+        return np.concatenate((mrp_shadow_set(state[0:3]), state[3:6])) + dt * dynamics(t, state, control)
 
     def motion_jacobian(t, state, control):
 
@@ -116,7 +116,7 @@ def simulation():
         return np.eye(6)
 
     # ekf properties
-    initial_state = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
+    initial_state = np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
     initial_covariance = np.eye(6)
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
@@ -138,7 +138,7 @@ def simulation():
     R = 5 * np.eye(3)
     Qf = 10 * Q
     tf = 10
-    x_true = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
+    x_true = np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
                                                     R = R,
