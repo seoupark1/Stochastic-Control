@@ -18,7 +18,7 @@ class EKFLQRCompensator:
                  measurement_vector):
 
         self.estimator.prediction(control_vector, t)
-        self.estimator.correction(measurement_vector)
+        self.estimator.correction(measurement_vector, t)
 
     def control_vector(self,
                        t: float):
