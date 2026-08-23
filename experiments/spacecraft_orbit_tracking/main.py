@@ -218,7 +218,7 @@ def simulation():
         true_state_history[:, k + 1] = x_true
 
         # measurement using star tracker & gyroscope
-        ideal_y = measurement_model(t, x_true)
+        ideal_y = measurement_model(time[k + 1], x_true)
         ideal_attitude = ideal_y[0:3]
         ideal_omega = ideal_y[3:6]
 
@@ -229,7 +229,7 @@ def simulation():
         measurement_history[:, k] = y
 
         # estimate
-        compensator.estimate(t, u_cmd, y)
+        compensator.estimate(time[k + 1], u_cmd, y)
         ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
         estimated_state_history[:, k + 1] = ekf.x
 
