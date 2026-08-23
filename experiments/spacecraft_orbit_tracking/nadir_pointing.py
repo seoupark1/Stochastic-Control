@@ -35,3 +35,13 @@ class NadirPointingReference:
         omega_RN_R = dcm_RN @ omega_RN_N
 
         return np.concatenate((sigma_RN, omega_RN_R))
+
+    def angular_acceleration(self,
+                             t: float):
+        
+        r_N, v_N = self.orbit_provider.get_state(t)
+        omega_RN_R = self.nadir_pointing(t)[3:6]
+        
+        omega_RN_R_dot = (-2) * np.vdot(r_N, v_N) / np.vdot(r_N, r_N) * omega_RN_R
+
+        return omega_RN_R_dot
