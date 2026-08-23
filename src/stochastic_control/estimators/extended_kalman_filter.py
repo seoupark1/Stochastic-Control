@@ -48,6 +48,7 @@ class ExtendedKalmanFilter:
 
             # x_check, P_check about k step
             self.x = np.asarray(self.f_model(self.x, u), dtype = float).reshape(-1)
+
         else:
             # jacobian F about k-1 step
             F = np.asarray(self.F_jacobian(t, self.x, u), dtype = float)
@@ -59,15 +60,22 @@ class ExtendedKalmanFilter:
         self.P = (self.P + self.P.T) / 2
 
     def correction(self,
-                   measurement_vector: ArrayLike):
+                   measurement_vector: ArrayLike,
+                   t = None):
 
         # measurement
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
         n = self.x.size
 
-        # jacobian H & model h about k step
-        H = np.asarray(self.H_jacobian(self.x), dtype = float)
-        h = np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
+        if t is None:
+            # jacobian H & model h about k step
+            H = np.asarray(self.H_jacobian(self.x), dtype = float)
+            h = np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
+
+        else:
+            # jacobian H & model h about k step
+            H = np.asarray(self.H_jacobian(t, self.x), dtype = float)
+            h = np.asarray(self.h_model(t, self.x), dtype = float).reshape(-1)
 
         # kalman gain
         A = (H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T).T
@@ -80,11 +88,12 @@ class ExtendedKalmanFilter:
         self.P = (self.P + self.P.T) / 2
 
     def extendedkalmanfilter(self,
+                             t: ArrayLike,
                              control_vector: ArrayLike,
                              measurement_vector: ArrayLike):
         
-        self.prediction(control_vector)
-        self.correction(measurement_vector)
+        self.prediction(control_vector, t = None)
+        self.correction(measurement_vector, t = None)
     
     @property
     def state(self):
