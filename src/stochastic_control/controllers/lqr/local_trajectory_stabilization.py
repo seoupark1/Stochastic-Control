@@ -99,11 +99,11 @@ class LocalTrajectoryStabilizationLQRController:
 
         t_span = (self.tf, 0.0)
 
-        self._riccati_solution = solve_ivp(fun = self.riccati_ode,
-                                            t_span = t_span,
-                                            y0 = self.Qf.reshape(-1),
-                                            method = 'RK45',
-                                            dense_output = True)
+        self.riccati_solution = solve_ivp(fun = self.riccati_ode,
+                                          t_span = t_span,
+                                          y0 = self.Qf.reshape(-1),
+                                          method = 'RK45',
+                                          dense_output = True)
 
     def get_S(self, t: float):
 
