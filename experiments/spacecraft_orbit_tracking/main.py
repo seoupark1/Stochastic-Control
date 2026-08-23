@@ -141,7 +141,7 @@ def simulation():
         return H
 
     # ekf properties
-    initial_state = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
+    initial_state = np.array([-0.05, -0.10, -0.15, np.deg2rad(5), np.deg2rad(-3.5), np.deg2rad(2.5)])
     initial_covariance = np.diag([1e-4, 1e-4, 1e-4, np.deg2rad(1)**2, np.deg2rad(1)**2, np.deg2rad(1)**2])
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
@@ -162,7 +162,7 @@ def simulation():
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
     Qf = 10 * Q
-    tf = 100
+    tf = 30
     x_true = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
