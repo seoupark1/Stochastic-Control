@@ -16,7 +16,7 @@ from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQR
 
 def simulation():
 
-    dt = 0.1
+    dt = 0.01
     inertia_tensor = np.diag([0.2507, 0.2507, 0.0136])
     mu = 4.2828 * 10**13
 
@@ -40,7 +40,7 @@ def simulation():
         r_N, v_N = orbit_provider.get_state(t)
         reference_state = nadir_provider.nadir_pointing(t)
 
-        sigma_RN = reference_state[0:3]
+        sigma_RN = mrp_shadow_set(reference_state[0:3])
         omega_RN_R = reference_state[3:6]
         omega_RN_R_dot = nadir_provider.angular_acceleration(t)
 
@@ -140,7 +140,7 @@ def simulation():
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
     Qf = 10 * Q
-    tf = 10
+    tf = 2
     x_true = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
