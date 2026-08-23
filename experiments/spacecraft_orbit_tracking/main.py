@@ -7,7 +7,6 @@ from .nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
 from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set
-from stochastic_control.dynamics.rigid_body import RigidBody
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
@@ -23,8 +22,6 @@ def simulation():
 
     gravity_gradient = GravityGradient(inertia_tensor = inertia_tensor,
                                        gravitational_parameter = mu)
-    
-    spacecraft = RigidBody(inertia_tensor = inertia_tensor)
 
     orbit_provider = CircularOrbit(RAAN = np.deg2rad(20),
                                    inclination = np.deg2rad(30),
@@ -99,7 +96,13 @@ def simulation():
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
     def motion_model(t, state, control):
-        return np.concatenate((mrp_shadow_set(state[0:3]), state[3:6])) + dt * dynamics(t, state, control)
+
+        next_model = state + dt * dynamics(t, state, control)
+
+        # shadow set transfer
+        next_model[0:3] = mrp_shadow_set(next_model[0:3])
+
+        return next_model
 
     def motion_jacobian(t, state, control):
 
@@ -116,7 +119,7 @@ def simulation():
         return np.eye(6)
 
     # ekf properties
-    initial_state = np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
+    initial_state = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
     initial_covariance = np.eye(6)
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
@@ -138,7 +141,7 @@ def simulation():
     R = 5 * np.eye(3)
     Qf = 10 * Q
     tf = 10
-    x_true = np.array([-0.1, -0.2, -0.3, np.deg2rad(10), np.deg2rad(-7), np.deg2rad(5)])
+    x_true = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
                                                     R = R,
@@ -204,7 +207,7 @@ def simulation():
         omega_BR_B = true_state_history[3:6, k]
 
         sigma_BhatR = estimated_state_history[0:3, k]
-        omega_BhatR_B = estimated_state_history[3:6, k]
+        omega_BhatR_Bhat = estimated_state_history[3:6, k]
 
         # angle difference
         dcm_BR = mrp_to_dcm(sigma_BR)
@@ -216,14 +219,14 @@ def simulation():
         angle_BhatB = 4 * np.arctan(np.linalg.norm(sigma_BhatB))
 
         # omega
-        omega_Bhat_B = omega_BhatR_B - omega_BR_B
+        omega_BhatB_B = dcm_BhatB.T @ omega_BhatR_Bhat - omega_BR_B
 
         # attitude tracking error
         attitude_norm_error_history[k] = angle_BR
 
         # estimation error
         attitude_estimation_error_angle_history[k] = angle_BhatB
-        omega_estimation_error_history[:, k] = omega_Bhat_B
+        omega_estimation_error_history[:, k] = omega_BhatB_B
 
     # omega estimation norm error
     omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
@@ -237,14 +240,12 @@ def simulation():
     plt.xlabel('Time [s]')
     plt.ylabel('Attitude Error [rad]')
     plt.title('Nadir Pointing Attitude Tracking Error')
-    plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
     plt.plot(time, omega_norm_error_history)
     plt.xlabel('Time [s]')
-    plt.ylabel('Angular Velocity Error [deg/s]')
+    plt.ylabel('Angular Velocity Error [rad/s]')
     plt.title('Nadir Pointing Angular Velocity Tracking Error')
-    plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.savefig('experiments/spacecraft_orbit_tracking/results/tracking_error.png')
@@ -256,14 +257,12 @@ def simulation():
     plt.xlabel('Time [s]')
     plt.ylabel('Attitude Error [rad]')
     plt.title('Nadir Pointing Attitude Estimation Error')
-    plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
     plt.plot(time, omega_estimation_norm_error_history)
     plt.xlabel('time [s]')
     plt.ylabel('Angular Velocity Error [rad/s]')
-    plt.title('Nadir Pointing Omegs Estimation Error')
-    plt.legend()
+    plt.title('Nadir Pointing Omega Estimation Error')
     plt.grid(True)
     plt.tight_layout()
     plt.savefig('experiments/spacecraft_orbit_tracking/results/estimation_error.png')
