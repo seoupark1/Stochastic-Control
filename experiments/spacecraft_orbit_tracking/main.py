@@ -120,7 +120,7 @@ def simulation():
 
     # ekf properties
     initial_state = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
-    initial_covariance = np.eye(6)
+    initial_covariance = np.diag([1e-4, 1e-4, 1e-4, np.deg2rad(1)**2, np.deg2rad(1)**2, np.deg2rad(1)**2])
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
     motion_noise_covariance = np.diag([1e-8, 1e-8, 1e-8, 1e-6, 1e-6, 1e-6])
