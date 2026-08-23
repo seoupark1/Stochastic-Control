@@ -187,8 +187,10 @@ def simulation():
         u_cmd = compensator.control_vector(t)
         control_history[:, k] = u_cmd
 
-        # true value
+        # true value mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise.get_sample(rng)
+        x_true[0:3] = mrp_shadow_set(x_true[0:3])
+
         reference_state_history[:, k + 1] = reference_x_function(time[k + 1])
         true_state_history[:, k + 1] = x_true
 
@@ -198,6 +200,7 @@ def simulation():
 
         # estimate
         compensator.estimate(t, u_cmd, y)
+        ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
         estimated_state_history[:, k + 1] = ekf.x
 
     # compute tracking & estimation error
