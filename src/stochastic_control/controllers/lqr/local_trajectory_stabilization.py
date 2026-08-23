@@ -41,6 +41,9 @@ class LocalTrajectoryStabilizationLQRController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
+        self.riccati_solution = None
+        self.R_inv = inv(self.R)
+
     def get_jacobians(self, t: float):
 
         # linear system
@@ -85,29 +88,36 @@ class LocalTrajectoryStabilizationLQRController:
         A, B = self.get_jacobians(t)
 
         # get S derivative
-        S_dot = - (S @ A + A.T @ S - S @ B @ inv(self.R) @ B.T @ S + self.Q)
+        S_dot = - (S @ A + A.T @ S - S @ B @ self.R_inv @ B.T @ S + self.Q)
 
         return S_dot.reshape(-1)
 
-    def get_S(self, t: float):
+    def solve_riccati_ode(self):
 
-        # conditions
-        t_span = (self.tf, t)
-        t_eval = [t]
-        n = self.Qf.shape[0]
+        if self.riccati_solution is not None:
+
+            t_span = (self.tf, 0.0)
+
+            self._riccati_solution = solve_ivp(fun = self.riccati_ode,
+                                               t_span = t_span,
+                                               y0 = self.Qf.reshape(-1),
+                                               method = 'RK45',
+                                               dense_output = True)
+        else:
+            raise ValueError('Riccati ODE had already solved')
+
+    def get_S(self, t: float):
 
         # t = tf case
         if t == self.tf:
             return self.Qf
 
         # integrate
-        sol = solve_ivp(fun = self.riccati_ode, 
-                        t_span = t_span, 
-                        y0 = self.Qf.reshape(-1), 
-                        method = 'RK45',
-                        t_eval = t_eval)
+        self.solve_riccati_ode()
+    
+        n = self.Qf.shape[0]
 
-        S = sol.y[:, 0].reshape(n, n)
+        S = self.riccati_solution.sol(t).reshape(n, n)
 
         return (S + S.T) / 2
 
@@ -129,6 +139,6 @@ class LocalTrajectoryStabilizationLQRController:
         S = self.get_S(t)
 
         # get control vector
-        control_vector = u_d - inv(self.R) @ B.T @ S @ (x_hat - x_d)
+        control_vector = u_d - self.R_inv @ B.T @ S @ (x_hat - x_d)
 
         return control_vector.reshape(-1)
