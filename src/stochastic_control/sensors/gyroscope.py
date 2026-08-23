@@ -1,9 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike
 
-from stochastic_control.attitude.mrp import mrp_shadow_set
-
-class StarTracker:
+class Gyroscope:
 
     def __init__(self,
                  mean: ArrayLike,
@@ -13,10 +11,10 @@ class StarTracker:
         self.noise_covariance = np.asarray(noise_covariance, dtype = float)
 
     def measure(self,
-                ideal_mrp: ArrayLike,
+                ideal_omega_BN_B: ArrayLike,
                 rng):
 
-        measured_mrp = ideal_mrp + rng.multivariate_normal(self.mean, self.noise_covariance)
+        measured_omega_BN_B = ideal_omega_BN_B + rng.multivariate_normal(self.mean, self.noise_covariance)
 
-        return mrp_shadow_set(measured_mrp)
+        return measured_omega_BN_B
     
