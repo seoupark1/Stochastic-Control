@@ -6,7 +6,7 @@ from .desired_orbit import CircularOrbit
 from .nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative
 from stochastic_control.dynamics.rigid_body import RigidBody
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
@@ -34,26 +34,69 @@ def simulation():
 
     nadir_provider = NadirPointingReference(orbit_provider)
 
+    # reference state and control
+    def reference_x_function(t):
+        return np.zeros(6)
+
+    def reference_u_function(t):
+
+        r_N, v_N = orbit_provider.get_state(t)
+        reference_state = nadir_provider.nadir_pointing(t)
+
+        sigma_RN = reference_state[0:3]
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        reference_body_state = BodyStateContext(position_N = r_N,
+                                                velocity_N = v_N,
+                                                dcm_BN = mrp_to_dcm(sigma_RN),
+                                                angular_velocity_BN = omega_RN_R)
+        
+        disturbance = gravity_gradient.torque(t, reference_body_state)
+
+        control = inertia_tensor @ omega_RN_R_dot + skew_symmetric(omega_RN_R) @ inertia_tensor @ omega_RN_R - disturbance
+
+        return control
+    
+    reference_provider = TrajectoryReferenceProvider(reference_x_function = reference_x_function, 
+                                                     reference_u_function = reference_u_function)
+
+    # output : sigma_BR_dot, omega_BR_B_dot
     def dynamics(t, state, control):
 
-        # orbit property
+        # tracking error
+        sigma_BR = state[0:3]
+        omega_BR_B = state[3:6]
+
+        # reference attitude & omega
+        reference_state = nadir_provider.nadir_pointing(t)
+        sigma_RN = reference_state[0:3]
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        dcm_BR = mrp_to_dcm(sigma_BR)
+        dcm_RN = mrp_to_dcm(sigma_RN)
+
+        # true attitude & omega
+        dcm_BN = dcm_BR @ dcm_RN
+        omega_BN_B = omega_BR_B + dcm_BR @ omega_RN_R
+
         r_N, v_N = orbit_provider.get_state(t)
 
-        sigma_BN = state[0:3]
-        omega_BN_B = state[3:6]
-
-        # gravity gradient disturbance
         body_state = BodyStateContext(position_N = r_N,
                                       velocity_N = v_N,
-                                      dcm_BN = mrp_to_dcm(sigma_BN),
+                                      dcm_BN = dcm_BN,
                                       angular_velocity_BN = omega_BN_B)
 
-        disturbance = gravity_gradient.torque(t, body_state)
+        total_torque = gravity_gradient.torque(t, body_state) + control
 
-        # external torques
-        total_torque = disturbance + control
+        omega_BN_B_dot = np.linalg.solve(inertia_tensor, total_torque - skew_symmetric(omega_BN_B) @ inertia_tensor @ omega_BN_B)
 
-        return spacecraft.mrp_derivatives(state, total_torque)
+        # outputs
+        sigma_BR_dot = mrp_derivative(sigma_BR, omega_BR_B)
+        omega_BR_B_dot = omega_BN_B_dot + np.cross(omega_BR_B, dcm_BR @ omega_RN_R) - dcm_BR @ omega_RN_R_dot
+
+        return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
     def motion_model(t, state, control):
         return state + dt * dynamics(t, state, control)
@@ -71,33 +114,6 @@ def simulation():
     
     def measurement_jacobian(state):
         return np.eye(6)
-
-    # reference trajectory (state, control)
-    reference_x_function = nadir_provider.nadir_pointing
-
-    def reference_u_function(t):
-
-        r_N, v_N = orbit_provider.get_state(t)
-        reference_state = nadir_provider.nadir_pointing(t)
-
-        sigma_RN = reference_state[0:3]
-        omega_RN_R = reference_state[3:6]
-        omega_RN_R_dot = (-2) * np.dot(r_N, v_N) / np.dot(r_N, r_N) * omega_RN_R
-
-        # gravity gradient disturbance
-        body_state = BodyStateContext(position_N = r_N,
-                                      velocity_N = v_N,
-                                      dcm_BN = mrp_to_dcm(sigma_RN),
-                                      angular_velocity_BN = omega_RN_R)
-
-        disturbance = gravity_gradient.torque(t, body_state)
-
-        control = inertia_tensor @ omega_RN_R_dot + skew_symmetric(omega_RN_R) @ inertia_tensor @ omega_RN_R - disturbance
-
-        return control
-    
-    reference_provider = TrajectoryReferenceProvider(reference_x_function = reference_x_function, 
-                                                     reference_u_function = reference_u_function)
 
     # ekf properties
     initial_state = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, 0.1, 0.2, 0.3])
@@ -121,7 +137,7 @@ def simulation():
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
     Qf = 10 * Q
-    tf = 50
+    tf = 10
     x_true = reference_x_function(0) + np.array([-0.1, -0.2, -0.3, 0.1, 0.2, 0.3])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
@@ -199,7 +215,7 @@ def simulation():
         attitude_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BR, axis = 0)))
 
         # omega tracking error
-        omega_error_history[:, k] = omega_hat_BN_B - omega_BN_B
+        omega_error_history[:, k] = omega_BN_B - dcm_BR @ omega_RN_R
 
         # attitude estimation error
         dcm_BB =  mrp_to_dcm(sigma_hat_BN) @ mrp_to_dcm(sigma_BN).T
