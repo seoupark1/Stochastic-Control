@@ -10,6 +10,8 @@ from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivati
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
+from stochastic_control.sensors import Gyroscope, StarTracker
+
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
 from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQRCompensator
@@ -172,10 +174,11 @@ def simulation():
 
     compensator = EKFLQRCompensator(ekf, lqr)
 
-    # measurement noises
+    # noises & sensors
     rng = np.random.default_rng(seed = 2026)
-    motion_noise = GaussianNoise(np.zeros(6), motion_noise_covariance)
-    measurement_noise = GaussianNoise(np.zeros(6), measurement_noise_covariance)
+    motion_noise_provider = GaussianNoise(np.zeros(6), motion_noise_covariance)
+    star_tracker = StarTracker(np.zeros(3), measurement_noise_covariance[0:3, 0:3])
+    gyroscope = Gyroscope(np.zeros(3), measurement_noise_covariance[3:6, 3:6])
 
     # total steps
     total_step = int(tf / dt)
@@ -208,14 +211,21 @@ def simulation():
         control_history[:, k] = u_cmd
 
         # true value mrp shadow set transfer
-        x_true = motion_model(t, x_true, u_cmd) + motion_noise.get_sample(rng)
+        x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
 
         reference_state_history[:, k + 1] = reference_x_function(time[k + 1])
         true_state_history[:, k + 1] = x_true
 
-        # measure
-        y = measurement_model(x_true) + measurement_noise.get_sample(rng)
+        # measurement using star tracker & gyroscope
+        ideal_y = measurement_model(t, x_true)
+        ideal_attitude = ideal_y[0:3]
+        ideal_omega = ideal_y[3:6]
+
+        measured_attitude = star_tracker.measure(ideal_attitude, rng)
+        measured_omega = gyroscope.measure(ideal_omega, rng)
+
+        y = np.concatenate((measured_attitude, measured_omega))
         measurement_history[:, k] = y
 
         # estimate
