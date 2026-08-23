@@ -92,8 +92,8 @@ class ExtendedKalmanFilter:
                              control_vector: ArrayLike,
                              measurement_vector: ArrayLike):
         
-        self.prediction(control_vector, t = None)
-        self.correction(measurement_vector, t = None)
+        self.prediction(control_vector, t)
+        self.correction(measurement_vector, t)
     
     @property
     def state(self):
