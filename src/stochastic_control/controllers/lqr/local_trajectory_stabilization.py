@@ -95,16 +95,15 @@ class LocalTrajectoryStabilizationLQRController:
     def solve_riccati_ode(self):
 
         if self.riccati_solution is not None:
+            return
 
-            t_span = (self.tf, 0.0)
+        t_span = (self.tf, 0.0)
 
-            self._riccati_solution = solve_ivp(fun = self.riccati_ode,
-                                               t_span = t_span,
-                                               y0 = self.Qf.reshape(-1),
-                                               method = 'RK45',
-                                               dense_output = True)
-        else:
-            raise ValueError('Riccati ODE had already solved')
+        self._riccati_solution = solve_ivp(fun = self.riccati_ode,
+                                            t_span = t_span,
+                                            y0 = self.Qf.reshape(-1),
+                                            method = 'RK45',
+                                            dense_output = True)
 
     def get_S(self, t: float):
 
