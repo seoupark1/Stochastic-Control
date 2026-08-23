@@ -151,6 +151,8 @@ def simulation():
 
     attitude_error_angle_history = np.zeros(total_step + 1)
     attitude_estimation_error_angle_history = np.zeros(total_step + 1)
+    omega_error_history = np.zeros((3, total_step + 1))
+    omega_estimation_error_history = np.zeros((3, total_step + 1))
 
     # history at t = 0
     true_state_history[:, 0] = x_true
@@ -185,24 +187,29 @@ def simulation():
 
         sigma_BN = true_state_history[0:3, k]
         sigma_RN = reference_state_history[0:3, k]
-        sigma_BbarN = estimated_state_history[0:3, k]
+        sigma_hat_BN = estimated_state_history[0:3, k]
+
+        omega_BN_B = true_state_history[3:6, k]
+        omega_RN_R = reference_state_history[3:6, k]
+        omega_hat_BN_B = estimated_state_history[3:6, k]
 
         # attitude tracking error
         dcm_BR = mrp_to_dcm(sigma_BN) @ mrp_to_dcm(sigma_RN).T
         sigma_BR = dcm_to_mrp(dcm_BR)
-        attitude_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BR)))
+        attitude_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BR, axis = 0)))
 
         # omega tracking error
-        omega_error_history = true_state_history[3:6, k] - dcm_BR @ reference_state_history[3:6, k]
+        omega_error_history[:, k] = omega_hat_BN_B - omega_BN_B
 
         # attitude estimation error
-        dcm_BbarB =  mrp_to_dcm(sigma_BbarN) @ mrp_to_dcm(sigma_BN).T
-        sigma_BbarB = dcm_to_mrp(dcm_BbarB)
-        attitude_estimation_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BbarB)))
+        dcm_BB =  mrp_to_dcm(sigma_hat_BN) @ mrp_to_dcm(sigma_BN).T
+        sigma_BB = dcm_to_mrp(dcm_BB)
+        attitude_estimation_error_angle_history[k] = np.rad2deg(4 * np.arctan(np.linalg.norm(sigma_BB)))
+
+        omega_estimation_error_history[:, k] = omega_hat_BN_B - omega_BN_B
 
     # angular velocity errors
     omega_norm_error_history = np.linalg.norm(omega_error_history, axis = 0)
-    omega_estimation_error_history = estimated_state_history[3:6, :] - dcm_BbarB @ true_state_history[3:6, :]
     omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
  
     # reference attitude vs true attitude vs estimated attitude
@@ -310,6 +317,7 @@ def simulation():
     plt.xlabel('time [s]')
     plt.ylabel('torque [Nm]')
     plt.title('Nadir Pointing Control')
+    plt.legend()
     plt.grid(True)
     plt.subplot(2, 1, 2)
     plt.plot(time[0:-1], np.linalg.norm(control_history, axis = 0))
@@ -318,7 +326,7 @@ def simulation():
     plt.title('Nadir Pointing Control Norm')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('experiments/ekf_lqr_compensator/drag_acceleration/control.png')
+    plt.savefig('experiments/spacecraft_orbit_tracking/results/control.png')
     plt.close()
 
 simulation()
