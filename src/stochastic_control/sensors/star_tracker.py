@@ -21,7 +21,7 @@ class StarTracker:
 
         # change noise to small rotation
         noise = rng.multivariate_normal(self.mean, self.noise_covariance)
-        noise_sigma = noise / 4
+        noise_sigma = np.tan(noise / 4)
         noise_dcm = mrp_to_dcm(noise_sigma)
 
         measured_mrp = dcm_to_mrp(noise_dcm @ ideal_dcm_BN)
