@@ -112,11 +112,31 @@ def simulation():
 
         return np.eye(6) + dt * A
 
-    def measurement_model(state):
-        return state
+    def measurement_model(t, state):
+
+        sigma_BR = state[0:3]
+        omega_BR_B = state[3:6]
+
+        reference_state = nadir_provider.nadir_pointing(t)
+        sigma_RN = reference_state[0:3]
+        omega_RN_R = reference_state[3:6]
+
+        dcm_BR = mrp_to_dcm(sigma_BR)
+        dcm_RN = mrp_to_dcm(sigma_RN)
+        dcm_BN = dcm_BR @ dcm_RN
+
+        sigma_BN = mrp_shadow_set(dcm_to_mrp(dcm_BN))
+        omega_BN_B = omega_BR_B + dcm_BR @ omega_RN_R
+
+        return np.concatenate((sigma_BN, omega_BN_B))
     
-    def measurement_jacobian(state):
-        return np.eye(6)
+    def measurement_jacobian(t, state):
+
+        H = approx_derivative(fun = lambda x: measurement_model(t, x),
+                              x0 = state,
+                              method = '3-point')
+
+        return H
 
     # ekf properties
     initial_state = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
@@ -140,7 +160,7 @@ def simulation():
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
     Qf = 10 * Q
-    tf = 2
+    tf = 100
     x_true = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
