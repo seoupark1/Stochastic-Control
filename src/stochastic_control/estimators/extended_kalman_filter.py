@@ -61,7 +61,10 @@ class ExtendedKalmanFilter:
 
     def correction(self,
                    measurement_vector: ArrayLike,
-                   t = None):
+                   t = None,
+                   measurement_model = None,
+                   measurement_jacobian = None,
+                   measurement_noise_covariance = None):
 
         # measurement
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
@@ -69,22 +72,24 @@ class ExtendedKalmanFilter:
 
         if t is None:
             # jacobian H & model h about k step
-            H = np.asarray(self.H_jacobian(self.x), dtype = float)
-            h = np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
+            H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(self.x), dtype = float)
+            h = measurement_model if measurement_model is not None else np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
+            R = measurement_noise_covariance if measurement_noise_covariance is not None else self.R
 
         else:
             # jacobian H & model h about k step
-            H = np.asarray(self.H_jacobian(t, self.x), dtype = float)
-            h = np.asarray(self.h_model(t, self.x), dtype = float).reshape(-1)
+            H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(t, self.x), dtype = float)
+            h = measurement_model if measurement_model is not None else np.asarray(self.h_model(t, self.x), dtype = float).reshape(-1)
+            R = measurement_noise_covariance if measurement_noise_covariance is not None else self.R
 
         # kalman gain
-        A = (H @ self.P @ H.T + self.M_jacobian @ self.R @ self.M_jacobian.T).T
+        A = (H @ self.P @ H.T + self.M_jacobian @ R @ self.M_jacobian.T).T
         B = (self.P @ H.T).T
         K = np.linalg.solve(A, B).T
         
         # x_hat, P_hat, kalman gain about k step
         self.x = self.x + K @ (y - h)
-        self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ (self.M_jacobian @ self.R @ self.M_jacobian.T) @ K.T
+        self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ (self.M_jacobian @ R @ self.M_jacobian.T) @ K.T
         self.P = (self.P + self.P.T) / 2
 
     def extendedkalmanfilter(self,
