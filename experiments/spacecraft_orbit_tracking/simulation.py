@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 from scipy.optimize._numdiff import approx_derivative
+from scipy.integrate import solve_ivp
 
 from .desired_orbit import CircularOrbit
 from .nadir_pointing import NadirPointingReference
@@ -18,7 +20,7 @@ from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQR
 
 def simulation():
 
-    dt = 0.05
+    dt = 0.01
     inertia_tensor = np.diag([0.2507, 0.2507, 0.0136])
     mu = 4.2828 * 10**13
 
@@ -99,12 +101,18 @@ def simulation():
 
     def motion_model(t, state, control):
 
-        next_model = state + dt * dynamics(t, state, control)
+        # runge-kutta 4th order method
+        k1 = dynamics(t, state, control)
+        k2 = dynamics(t + dt / 2, state + dt * k1 / 2, control)
+        k3 = dynamics(t + dt / 2, state + dt * k2 / 2, control)
+        k4 = dynamics(t + dt, state + dt * k3, control)
+
+        next_state = state + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         # shadow set transfer
-        next_model[0:3] = mrp_shadow_set(next_model[0:3])
+        next_state[:3] = mrp_shadow_set(next_state[:3])
 
-        return next_model
+        return next_state
 
     def motion_jacobian(t, state, control):
 
