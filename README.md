@@ -13,11 +13,13 @@ Nonlinear MRP control under Noise and Saturation
 
 LQR 말고 lyapunov controller를 활용. K, P, KI에 따라 standard가 좋을 수도 있고 integral이 좋을 수도 있음. 
 
-< EKF & LQR Conditions >
+# < EKF & LQR Conditions >
 [Normal Case: Small initial tracking error + trustworthy EKF]
+
 Initial Attitude Tracking Error = around 7 degrees
 Initial Angular Velocity Tracking Error = around 4 degrees
 
 [Extreme Case: Large initial tracking error + uncertain EKF]
+
 Initial Attitude Tracking Error = around 35 degrees
 Initial Angular Velocity Tracking Error = around 30 degrees
