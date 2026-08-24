@@ -18,7 +18,7 @@ from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQR
 
 def simulation():
 
-    dt = 0.01
+    dt = 0.05
     inertia_tensor = np.diag([0.2507, 0.2507, 0.0136])
     mu = 4.2828 * 10**13
 
@@ -140,13 +140,22 @@ def simulation():
 
         return H
 
-    # ekf properties
-    initial_state = np.array([-0.05, -0.10, -0.15, np.deg2rad(5), np.deg2rad(-3.5), np.deg2rad(2.5)])
-    initial_covariance = np.diag([1e-4, 1e-4, 1e-4, np.deg2rad(1)**2, np.deg2rad(1)**2, np.deg2rad(1)**2])
+    # initial true tracking error
+    x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
+
+    # ekf properties (trustworthy case)
+    mrp_std = np.tan(np.deg2rad(10) / 4) / np.sqrt(3)
+    omega_std = np.deg2rad(5) / np.sqrt(3)
+
+    initial_state = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
+    initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
-    motion_noise_covariance = np.diag([1e-8, 1e-8, 1e-8, 1e-6, 1e-6, 1e-6])
-    measurement_noise_covariance = np.diag([1e-6, 1e-6, 1e-6, np.deg2rad(0.05)**2, np.deg2rad(0.05)**2, np.deg2rad(0.05)**2])
+    motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
+    star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
+    gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
+    measurement_noise_covariance = np.block([[star_tracker_noise_covariance, np.zeros((3, 3))],
+                                             [np.zeros((3, 3)), gyroscope_noise_covariance]])
 
     ekf = ExtendedKalmanFilter(state = initial_state,
                                covariance = initial_covariance,
@@ -163,7 +172,6 @@ def simulation():
     R = 5 * np.eye(3)
     Qf = 10 * Q
     tf = 30
-    x_true = np.array([-0.01, -0.02, -0.03, np.deg2rad(1), np.deg2rad(-0.7), np.deg2rad(0.5)])
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
                                                     R = R,
