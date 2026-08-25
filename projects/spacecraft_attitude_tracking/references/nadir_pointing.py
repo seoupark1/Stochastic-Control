@@ -10,8 +10,8 @@ class NadirPointingReference:
 
         self.orbit_provider = orbit_provider
 
-    def nadir_pointing(self,
-                       t: float):
+    def get_state(self,
+                  t: float):
 
         r_N, v_N = self.orbit_provider.get_state(t)
 
