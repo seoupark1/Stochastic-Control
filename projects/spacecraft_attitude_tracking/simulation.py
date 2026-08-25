@@ -77,9 +77,8 @@ def simulation(initial_x_true: ArrayLike,
     reference_provider = TrajectoryReferenceProvider(reference_x_function = reference_x_function, 
                                                      reference_u_function = reference_u_function)
 
-    # output : sigma_BR_dot, omega_BR_B_dot
-    def dynamics(t, state, control):
-
+    def gravity_gradient_torque(t, state):
+                
         # tracking error
         sigma_BR = mrp_shadow_set(state[0:3])
         omega_BR_B = state[3:6]
@@ -88,7 +87,6 @@ def simulation(initial_x_true: ArrayLike,
         reference_state = nadir_provider.get_state(t)
         sigma_RN = mrp_shadow_set(reference_state[0:3])
         omega_RN_R = reference_state[3:6]
-        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
 
         dcm_BR = mrp_to_dcm(sigma_BR)
         dcm_RN = mrp_to_dcm(sigma_RN)
@@ -104,7 +102,24 @@ def simulation(initial_x_true: ArrayLike,
                                       dcm_BN = dcm_BN,
                                       angular_velocity_BN = omega_BN_B)
 
-        total_torque = gravity_gradient.torque(t, body_state) + control
+        return gravity_gradient.torque(t, body_state)
+
+    # output : sigma_BR_dot, omega_BR_B_dot
+    def dynamics(t, state, control):
+
+        # tracking error
+        sigma_BR = mrp_shadow_set(state[0:3])
+        omega_BR_B = state[3:6]
+
+        # reference attitude & omega
+        reference_state = nadir_provider.get_state(t)
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        dcm_BR = mrp_to_dcm(sigma_BR)
+        omega_BN_B = omega_BR_B + dcm_BR @ omega_RN_R
+
+        total_torque = gravity_gradient_torque(t, state) + control
 
         omega_BN_B_dot = np.linalg.solve(inertia_tensor, total_torque - skew_symmetric(omega_BN_B) @ inertia_tensor @ omega_BN_B)
 
@@ -212,11 +227,13 @@ def simulation(initial_x_true: ArrayLike,
     true_state_history = np.zeros((6, total_step + 1))
     reference_state_history = np.zeros((6, total_step + 1))
     estimated_state_history = np.zeros((6, total_step + 1))
+    true_gravity_gradient_history = np.zeros((3, total_step + 1))
 
     # state history at t = 0
     true_state_history[:, 0] = x_true
     reference_state_history[:, 0] = reference_x_function(0)
     estimated_state_history[:, 0] = ekf.x
+    true_gravity_gradient_history[:, 0] = gravity_gradient_torque(0, x_true)
 
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
@@ -297,6 +314,7 @@ def simulation(initial_x_true: ArrayLike,
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
         estimated_state_history[:, k + 1] = ekf.x
+        true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
         cmd_control_history[:, k] = u_cmd
         actual_control_history[:, k] = u_actual
         measurement_history[:, k] = measured_y
@@ -339,6 +357,7 @@ def simulation(initial_x_true: ArrayLike,
             'true_state': true_state_history,
             'reference_state': reference_state_history,
             'estimated_state': estimated_state_history,
+            'true_gravity_gradient_torque' : true_gravity_gradient_history,
             'commanded_control': cmd_control_history,
             'actual_control': actual_control_history,
             'measurement': measurement_history,
