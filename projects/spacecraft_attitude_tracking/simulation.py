@@ -367,7 +367,7 @@ def simulation(initial_x_true: ArrayLike,
     omega_tracking_error_norm_history = np.linalg.norm(true_state_history[3:6, :], axis = 0)
 
     # max commanded control
-    max_u_cmd = np.max(np.abs(cmd_control_history), axis = 1)       
+    max_u_cmd_abs = np.max(np.abs(cmd_control_history), axis = 1)       
 
     return {'time': time,
             'true_state': true_state_history,
@@ -377,7 +377,7 @@ def simulation(initial_x_true: ArrayLike,
             'covariance_P' : covariance_history,
             'standard_deviation_P' : standard_deviation_history,
             'commanded_control': cmd_control_history,
-            'max_commanded_control': max_u_cmd,
+            'max_abs_commanded_control': max_u_cmd_abs,
             'actual_control': actual_control_history,
             'measurement_y': measurement_history,
             'star_tracker_correction_steps': star_tracker_correction_steps_history,
