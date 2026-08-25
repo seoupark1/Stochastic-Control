@@ -24,9 +24,18 @@ def simulation(initial_x_true: ArrayLike,
                star_tracker_noise_covariance: ArrayLike,
                gyroscope_noise_covariance: ArrayLike,
                tf: float,
+               star_tracker_sampling_rate: float,
+               gyroscope_sampling_rate: float,
                control_limiter = None):
 
+    # sampling rates
     dt = 0.01
+    star_tracker_dt = 1 / star_tracker_sampling_rate
+    gyroscope_dt = 1 / gyroscope_sampling_rate
+    star_tracker_time = 0
+    gyroscope_time = 0
+
+    # spacecraft & planet properties
     inertia_tensor = np.diag([1448.3, 1346.2, 689.8])
     mu = 4.2828 * 10**13
 
@@ -186,14 +195,8 @@ def simulation(initial_x_true: ArrayLike,
     # noises & sensors
     rng = np.random.default_rng(seed = 2026)
     motion_noise_provider = GaussianNoise(np.zeros(6), motion_noise_covariance)
-    star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance, 20)
-    gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance, 50)
-
-    # sampling rate
-    star_tracker_dt = 1 / star_tracker.sampling_rate
-    gyroscope_dt = 1 / gyroscope.sampling_rate
-    star_tracker_time = 0
-    gyroscope_time = 0
+    star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance)
+    gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance)
 
     if star_tracker.sampling_rate > 1/dt:
         raise ValueError(f'Star tracker sampling rate should be smaller than {float(1/dt)}')
@@ -230,6 +233,7 @@ def simulation(initial_x_true: ArrayLike,
 
         t = k * dt
         next_t = time[k + 1]
+        measured_y = np.full(6, np.nan)
 
         # control with saturation
         u_cmd = compensator.control_vector(t)
@@ -247,25 +251,23 @@ def simulation(initial_x_true: ArrayLike,
         # prediction
         ekf.prediction(u_actual, next_t)
 
-        # create each sensor's jacobian and model for different sampling
-        star_tracker_jacobian = measurement_jacobian(next_t, x_true)[0:3, :]
-        gyroscope_jacobian = measurement_jacobian(next_t, x_true)[3:6, :]
-        star_tracker_measurement_model = measurement_model(next_t, x_true)[0:3]
-        gyroscope_measurement_model = measurement_model(next_t, x_true)[3:6]
-        measured_y = np.full(6, np.nan)
-
         # measure attitude & correction
         if next_t >= star_tracker_time:
         
-            ideal_attitude = star_tracker_measurement_model
+            ideal_attitude = measurement_model(next_t, x_true)[0:3]
             y = star_tracker.measure(ideal_attitude, rng)
             measured_y[0:3] = y
 
+            # predicted model & jacobian
+            predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
+            predicted_star_tracker_jacobian = measurement_jacobian(next_t, ekf.x)[0:3, :]
+
             ekf.correction(measurement_vector = y,
                            t = next_t,
-                           measurement_model = star_tracker_measurement_model,
-                           measurement_jacobian = star_tracker_jacobian,
-                           measurement_covariance = star_tracker_noise_covariance)
+                           measurement_model = predicted_star_tracker_measurement_model,
+                           measurement_jacobian = predicted_star_tracker_jacobian,
+                           measurement_noise_covariance = star_tracker_noise_covariance,
+                           measurement_noise_jacobian = np.eye(3))
             
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             star_tracker_time += star_tracker_dt
@@ -273,15 +275,20 @@ def simulation(initial_x_true: ArrayLike,
         # measure omega & correction
         if next_t >= gyroscope_time:
 
-            ideal_omega = gyroscope_measurement_model
+            ideal_omega = measurement_model(next_t, x_true)[3:6]
             y = gyroscope.measure(ideal_omega, rng)
             measured_y[3:6] = y
 
+            # predicted model & jacobian
+            predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.x)[3:6]
+            predicted_gyroscope_jacobian = measurement_jacobian(next_t, ekf.x)[3:6, :]
+
             ekf.correction(measurement_vector = y,
                            t = next_t,
-                           measurement_model = gyroscope_measurement_model,
-                           measurement_jacobian = gyroscope_jacobian,
-                           measurement_covariance = gyroscope_noise_covariance)
+                           measurement_model = predicted_gyroscope_measurement_model,
+                           measurement_jacobian = predicted_gyroscope_jacobian,
+                           measurement_noise_covariance = gyroscope_noise_covariance,
+                           measurement_noise_jacobian = np.eye(3))
 
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             gyroscope_time += gyroscope_dt
@@ -339,76 +346,3 @@ def simulation(initial_x_true: ArrayLike,
             'omega_tracking_error': omega_tracking_error_norm_history,
             'attitude_estimation_error': attitude_estimation_error_angle_history,
             'omega_estimation_error': omega_estimation_norm_error_history}
-
-
-'''
-# initial true tracking error
-x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
-
-# ekf properties (trustworthy case)
-mrp_std = np.tan(np.deg2rad(10) / 4) / np.sqrt(3)
-omega_std = np.deg2rad(5) / np.sqrt(3)
-
-initial_x_hat = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
-initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
-
-motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
-gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
-
-
-# tracking error
-plt.subplot(2, 1, 1)
-plt.plot(time, attitude_tracking_error_norm_history)
-plt.xlabel('Time [s]')
-plt.ylabel('Attitude Error [rad]')
-plt.title('Nadir Pointing Attitude Tracking Error')
-plt.grid(True)
-plt.subplot(2, 1, 2)
-plt.plot(time, omega_tracking_error_norm_history)
-plt.xlabel('Time [s]')
-plt.ylabel('Angular Velocity Error [rad/s]')
-plt.title('Nadir Pointing Angular Velocity Tracking Error')
-plt.grid(True)
-plt.tight_layout()
-plt.savefig('experiments/spacecraft_orbit_tracking/results/tracking_error.png')
-plt.close()
-
-# estimation error
-plt.subplot(2, 1, 1)
-plt.plot(time, attitude_estimation_error_angle_history)
-plt.xlabel('Time [s]')
-plt.ylabel('Attitude Error [rad]')
-plt.title('Nadir Pointing Attitude Estimation Error')
-plt.grid(True)
-plt.subplot(2, 1, 2)
-plt.plot(time, omega_estimation_norm_error_history)
-plt.xlabel('time [s]')
-plt.ylabel('Angular Velocity Error [rad/s]')
-plt.title('Nadir Pointing Omega Estimation Error')
-plt.grid(True)
-plt.tight_layout()
-plt.savefig('experiments/spacecraft_orbit_tracking/results/estimation_error.png')
-plt.close()
-
-# control effort
-plt.subplot(2, 1, 1)
-plt.plot(time[0:-1], actual_control_history[0], label = 'u_1')
-plt.plot(time[0:-1], actual_control_history[1], label = 'u_2')
-plt.plot(time[0:-1], actual_control_history[2], label = 'u_3')
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.title('Nadir Pointing Control Effort')
-plt.legend()
-plt.grid(True)
-plt.subplot(2, 1, 2)
-plt.plot(time[0:-1], np.linalg.norm(actual_control_history, axis = 0))
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.title('Nadir Pointing Control Effort Norm')
-plt.grid(True)
-plt.tight_layout()
-plt.savefig('experiments/spacecraft_orbit_tracking/results/control_effort.png')
-plt.close()
-
-'''
