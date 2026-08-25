@@ -32,8 +32,8 @@ def simulation(initial_x_true: ArrayLike,
     dt = 0.01
     star_tracker_dt = 1 / star_tracker_sampling_rate
     gyroscope_dt = 1 / gyroscope_sampling_rate
-    star_tracker_time = 0
-    gyroscope_time = 0
+    star_tracker_time = star_tracker_dt
+    gyroscope_time = gyroscope_dt
 
     # spacecraft & planet properties
     inertia_tensor = np.diag([1448.3, 1346.2, 689.8])
@@ -213,11 +213,11 @@ def simulation(initial_x_true: ArrayLike,
     star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance)
     gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance)
 
-    if star_tracker.sampling_rate > 1/dt:
-        raise ValueError(f'Star tracker sampling rate should be smaller than {float(1/dt)}')
+    if star_tracker_sampling_rate > 1 / dt:
+        raise ValueError(f'Star tracker sampling rate should be smaller than {float(1/dt)} Hz')
 
-    if gyroscope.sampling_rate > 1/dt:
-        raise ValueError(f'Gyroscope sampling rate should be smaller than {float(1/dt)}')
+    if gyroscope_sampling_rate > 1 / dt:
+        raise ValueError(f'Gyroscope sampling rate should be smaller than {float(1/dt)} Hz')
 
     # total steps
     total_step = int(tf / dt)
@@ -243,7 +243,7 @@ def simulation(initial_x_true: ArrayLike,
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
     actual_control_history = np.zeros((3, total_step))
-    measurement_history = np.zeros((6, total_step))
+    measurement_history = np.full((6, total_step), np.nan)
     star_tracker_correction_steps_history = np.zeros(total_step + 1)
     gyroscope_correction_steps_history = np.zeros(total_step + 1)
 
@@ -257,7 +257,6 @@ def simulation(initial_x_true: ArrayLike,
 
         t = k * dt
         next_t = time[k + 1]
-        measured_y = np.full(6, np.nan)
 
         # control with saturation
         u_cmd = compensator.control_vector(t)
@@ -273,14 +272,14 @@ def simulation(initial_x_true: ArrayLike,
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
 
         # prediction
-        ekf.prediction(u_actual, next_t)
+        ekf.prediction(u_actual, t)
 
         # measure attitude & correction
         if next_t >= star_tracker_time:
         
             ideal_attitude = measurement_model(next_t, x_true)[0:3]
             y = star_tracker.measure(ideal_attitude, rng)
-            measured_y[0:3] = y
+            measurement_history[0:3, k] = y
 
             # predicted model & jacobian
             predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
@@ -303,7 +302,7 @@ def simulation(initial_x_true: ArrayLike,
 
             ideal_omega = measurement_model(next_t, x_true)[3:6]
             y = gyroscope.measure(ideal_omega, rng)
-            measured_y[3:6] = y
+            measurement_history[3:6, k] = y
 
             # predicted model & jacobian
             predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.x)[3:6]
@@ -329,7 +328,6 @@ def simulation(initial_x_true: ArrayLike,
         covariance_history[:, :, k + 1] = ekf.P
         cmd_control_history[:, k] = u_cmd
         actual_control_history[:, k] = u_actual
-        measurement_history[:, k] = measured_y
 
     # compute tracking error & estimation error & standard deviation
     for k in range(total_step + 1):
@@ -369,8 +367,7 @@ def simulation(initial_x_true: ArrayLike,
     omega_tracking_error_norm_history = np.linalg.norm(true_state_history[3:6, :], axis = 0)
 
     # max commanded control
-    for row in cmd_control_history:
-        max_u_cmd = max(row)       
+    max_u_cmd = np.max(np.abs(cmd_control_history), axis = 1)       
 
     return {'time': time,
             'true_state': true_state_history,
