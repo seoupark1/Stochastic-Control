@@ -5,12 +5,10 @@ class Gyroscope:
 
     def __init__(self,
                  mean: ArrayLike,
-                 noise_covariance: ArrayLike,
-                 sampling_rate: float):
+                 noise_covariance: ArrayLike):
 
         self.mean = np.asarray(mean, dtype = float)
         self.noise_covariance = np.asarray(noise_covariance, dtype = float)
-        self.sampling_rate = float(sampling_rate)
 
     def measure(self,
                 ideal_omega_BN_B: ArrayLike,
