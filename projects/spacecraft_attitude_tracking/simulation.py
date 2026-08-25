@@ -1,7 +1,6 @@
 import numpy as np
-from numpy.typing import ArrayLike
 
-import matplotlib.pyplot as plt
+from numpy.typing import ArrayLike
 from scipy.optimize._numdiff import approx_derivative
 
 from .references.circular_orbit import CircularOrbit
@@ -25,17 +24,9 @@ def simulation(initial_x_true: ArrayLike,
                star_tracker_noise_covariance: ArrayLike,
                gyroscope_noise_covariance: ArrayLike,
                tf: float,
-               star_tracker_sampling_rate: float,
-               gyroscope_sampling_rate: float,
                control_limiter = None):
 
-    # sampling period
     dt = 0.01
-    star_tracker_dt = 1 / star_tracker_sampling_rate
-    gyroscope_dt = 1 / gyroscope_sampling_rate
-    star_tracker_time = 0
-    gyroscope_time = 0
-
     inertia_tensor = np.diag([1448.3, 1346.2, 689.8])
     mu = 4.2828 * 10**13
 
@@ -195,8 +186,20 @@ def simulation(initial_x_true: ArrayLike,
     # noises & sensors
     rng = np.random.default_rng(seed = 2026)
     motion_noise_provider = GaussianNoise(np.zeros(6), motion_noise_covariance)
-    star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance)
-    gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance)
+    star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance, 20)
+    gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance, 50)
+
+    # sampling rate
+    star_tracker_dt = 1 / star_tracker.sampling_rate
+    gyroscope_dt = 1 / gyroscope.sampling_rate
+    star_tracker_time = 0
+    gyroscope_time = 0
+
+    if star_tracker.sampling_rate > 1/dt:
+        raise ValueError(f'Star tracker sampling rate should be smaller than {float(1/dt)}')
+
+    if gyroscope.sampling_rate > 1/dt:
+        raise ValueError(f'Gyroscope sampling rate should be smaller than {float(1/dt)}')
 
     # total steps
     total_step = int(tf / dt)
@@ -249,7 +252,7 @@ def simulation(initial_x_true: ArrayLike,
         gyroscope_jacobian = measurement_jacobian(next_t, x_true)[3:6, :]
         star_tracker_measurement_model = measurement_model(next_t, x_true)[0:3]
         gyroscope_measurement_model = measurement_model(next_t, x_true)[3:6]
-        measured_y = np.zeros(6)
+        measured_y = np.full(6, np.nan)
 
         # measure attitude & correction
         if next_t >= star_tracker_time:
@@ -338,7 +341,7 @@ def simulation(initial_x_true: ArrayLike,
             'omega_estimation_error': omega_estimation_norm_error_history}
 
 
-
+'''
 # initial true tracking error
 x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
 
@@ -408,4 +411,4 @@ plt.tight_layout()
 plt.savefig('experiments/spacecraft_orbit_tracking/results/control_effort.png')
 plt.close()
 
-simulation()
+'''
