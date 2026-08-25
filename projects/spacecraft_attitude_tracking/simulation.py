@@ -235,10 +235,17 @@ def simulation(initial_x_true: ArrayLike,
     estimated_state_history[:, 0] = ekf.x
     true_gravity_gradient_history[:, 0] = gravity_gradient_torque(0, x_true)
 
+    # ekf covariance P history
+    covariance_history = np.zeros((6, 6, total_step + 1))
+    standard_deviation_history = np.zeros((6, total_step + 1))
+    covariance_history[:, :, 0] = ekf.P
+
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
     actual_control_history = np.zeros((3, total_step))
     measurement_history = np.zeros((6, total_step))
+    star_tracker_correction_steps_history = np.zeros(total_step + 1)
+    gyroscope_correction_steps_history = np.zeros(total_step + 1)
 
     # tracking error & estimation error histories
     attitude_tracking_error_norm_history = np.zeros(total_step + 1)
@@ -289,6 +296,8 @@ def simulation(initial_x_true: ArrayLike,
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             star_tracker_time += star_tracker_dt
 
+            star_tracker_correction_steps_history[k + 1] = 1
+
         # measure omega & correction
         if next_t >= gyroscope_time:
 
@@ -310,16 +319,19 @@ def simulation(initial_x_true: ArrayLike,
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             gyroscope_time += gyroscope_dt
 
-        # update history
+            gyroscope_correction_steps_history[k + 1] = 1
+
+        # update histories
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
         estimated_state_history[:, k + 1] = ekf.x
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
+        covariance_history[:, :, k + 1] = ekf.P
         cmd_control_history[:, k] = u_cmd
         actual_control_history[:, k] = u_actual
         measurement_history[:, k] = measured_y
 
-    # compute tracking error & estimation error
+    # compute tracking error & estimation error & standard deviation
     for k in range(total_step + 1):
 
         sigma_BR = true_state_history[0:3, k]
@@ -347,20 +359,32 @@ def simulation(initial_x_true: ArrayLike,
         attitude_estimation_error_angle_history[k] = angle_BhatB
         omega_estimation_error_history[:, k] = omega_BhatB_B
 
+        # standard deviation corresponding with covariance P
+        standard_deviation_history[:, k] = np.sqrt(np.diag(covariance_history[:, :, k]))
+
     # omega estimation error norm
     omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
 
     # omega tracking error
     omega_tracking_error_norm_history = np.linalg.norm(true_state_history[3:6, :], axis = 0)
 
+    # max commanded control
+    for row in cmd_control_history:
+        max_u_cmd = max(row)       
+
     return {'time': time,
             'true_state': true_state_history,
             'reference_state': reference_state_history,
             'estimated_state': estimated_state_history,
             'true_gravity_gradient_torque' : true_gravity_gradient_history,
+            'covariance_P' : covariance_history,
+            'standard_deviation_P' : standard_deviation_history,
             'commanded_control': cmd_control_history,
+            'max_commanded_control': max_u_cmd,
             'actual_control': actual_control_history,
-            'measurement': measurement_history,
+            'measurement_y': measurement_history,
+            'star_tracker_correction_steps': star_tracker_correction_steps_history,
+            'gyroscope_correction_steps': gyroscope_correction_steps_history,
             'attitude_tracking_error': attitude_tracking_error_norm_history,
             'omega_tracking_error': omega_tracking_error_norm_history,
             'attitude_estimation_error': attitude_estimation_error_angle_history,
