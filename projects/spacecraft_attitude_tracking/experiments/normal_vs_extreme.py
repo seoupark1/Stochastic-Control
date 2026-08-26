@@ -94,7 +94,7 @@ gyroscope_sampling_rate = 100 # [Hz]
 gyroscope_std = 4.3633 * 1e-4 # [rad/s]
 gyroscope_noise_covariance = gyroscope_std**2 * np.eye(3)
 
-# Normal case
+# Normal case conditions
 x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
 initial_x_hat = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
 initial_covariance = np.block([[star_tracker_noise_covariance, np.eye(3)],
