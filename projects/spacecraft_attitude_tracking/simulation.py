@@ -291,7 +291,7 @@ def simulation(initial_x_true: ArrayLike,
                            measurement_jacobian = predicted_star_tracker_jacobian,
                            measurement_noise_covariance = star_tracker_noise_covariance / 4,
                            measurement_noise_jacobian = np.eye(3))
-            git 
+
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             star_tracker_time += star_tracker_dt
 
