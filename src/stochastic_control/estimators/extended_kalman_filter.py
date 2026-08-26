@@ -65,10 +65,13 @@ class ExtendedKalmanFilter:
                    measurement_model = None,
                    measurement_jacobian = None,
                    measurement_noise_covariance = None,
-                   measurement_noise_jacobian = None):
+                   measurement_noise_jacobian = None,
+                   innovation_function = None):
 
-        # measurement
+        # input parameters
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
+        R = measurement_noise_covariance if measurement_noise_covariance is not None else self.R
+        M = measurement_noise_jacobian if measurement_noise_jacobian is not None else self.M_jacobian
         n = self.x.size
 
         if t is None:
@@ -81,9 +84,12 @@ class ExtendedKalmanFilter:
             H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(t, self.x), dtype = float)
             h = measurement_model if measurement_model is not None else np.asarray(self.h_model(t, self.x), dtype = float).reshape(-1)
 
-        # measurement noise properties
-        R = measurement_noise_covariance if measurement_noise_covariance is not None else self.R
-        M = measurement_noise_jacobian if measurement_noise_jacobian is not None else self.M_jacobian
+        # innovation
+        if innovation_function is None:
+            # measured - predicted
+            innovation = y - h
+        else:
+            innovation = innovation_function(y, h)
 
         # kalman gain
         A = (H @ self.P @ H.T + M @ R @ M.T).T
@@ -91,7 +97,7 @@ class ExtendedKalmanFilter:
         K = np.linalg.solve(A, B).T
         
         # x_hat, P_hat, kalman gain about k step
-        self.x = self.x + K @ (y - h)
+        self.x = self.x + K @ innovation
         self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ (M @ R @ M.T) @ K.T
         self.P = (self.P + self.P.T) / 2
 
