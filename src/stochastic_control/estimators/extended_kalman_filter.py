@@ -66,25 +66,35 @@ class ExtendedKalmanFilter:
                    measurement_jacobian = None,
                    measurement_noise_covariance = None,
                    measurement_noise_jacobian = None,
-                   innovation_function = None):
+                   innovation_function = None,
+                   innovation_jacobian = None):
 
         # input parameters
         y = np.asarray(measurement_vector, dtype = float).reshape(-1)
         R = measurement_noise_covariance if measurement_noise_covariance is not None else self.R
         M = measurement_noise_jacobian if measurement_noise_jacobian is not None else self.M_jacobian
+
         n = self.x.size
 
+        # determine H jacobian
+        if innovation_jacobian is not None:
+            H = np.asarray(innovation_jacobian, dtype = float)
+
+        else:
+            if t is None:
+                H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(self.x), dtype = float)
+
+            else:
+                H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(t, self.x), dtype = float)
+
+        # determine h model
         if t is None:
-            # jacobian H & model h about k step
-            H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(self.x), dtype = float)
             h = measurement_model if measurement_model is not None else np.asarray(self.h_model(self.x), dtype = float).reshape(-1)
 
         else:
-            # jacobian H & model h about k step
-            H = measurement_jacobian if measurement_jacobian is not None else np.asarray(self.H_jacobian(t, self.x), dtype = float)
             h = measurement_model if measurement_model is not None else np.asarray(self.h_model(t, self.x), dtype = float).reshape(-1)
 
-        # innovation
+        # determine innovation
         if innovation_function is None:
             # measured - predicted
             innovation = y - h
@@ -117,8 +127,3 @@ class ExtendedKalmanFilter:
     def covariance(self):
         return self.P.copy()
 
-
-
-
-
-    
