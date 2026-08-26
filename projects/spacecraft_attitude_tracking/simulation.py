@@ -189,12 +189,7 @@ def simulation(initial_x_true: ArrayLike,
 
         predicted_sigma = measurement_model(t, state)[0:3]
 
-        def innovation(t, measured_state):
-            measured_sigma = measurement_model(t, measured_state)[0:3]
-
-            return innovation_function(measured_sigma, predicted_sigma)
-
-        jacobian = approx_derivative(fun = innovation,
+        jacobian = approx_derivative(fun = lambda nearby_state: innovation_function(measurement_model(t, nearby_state)[0:3], predicted_sigma),
                                      x0 = predicted_sigma,
                                      method = '3-point')
 
@@ -306,7 +301,7 @@ def simulation(initial_x_true: ArrayLike,
 
             # predicted model & jacobian
             predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
-            star_tracker_jacobian = innovation_jacobian(next_t, ekf.x)[0:3, :]
+            star_tracker_jacobian = innovation_jacobian(next_t, ekf.x)
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
