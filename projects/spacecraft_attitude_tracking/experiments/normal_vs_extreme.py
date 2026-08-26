@@ -109,8 +109,8 @@ def plot_graphs(results,
 # Normal case
 x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
 initial_x_hat = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
-mrp_std = np.tan(np.deg2rad(10) / 4) / np.sqrt(3)
-omega_std = np.deg2rad(5) / np.sqrt(3)
+mrp_std = np.tan(np.deg2rad(15) / 4) / np.sqrt(3)
+omega_std = np.deg2rad(10) / np.sqrt(3)
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
@@ -122,8 +122,8 @@ normal_result = simulation(initial_x_true = x_true,
                            motion_noise_covariance = motion_noise_covariance,
                            star_tracker_noise_covariance = star_tracker_noise_covariance,
                            gyroscope_noise_covariance = gyroscope_noise_covariance,
-                           tf = 30,
-                           star_tracker_sampling_rate = 20,
+                           tf = 50,
+                           star_tracker_sampling_rate = 10,
                            gyroscope_sampling_rate = 50)
 
 get_max_abs_u_cmd(normal_result)
@@ -135,12 +135,8 @@ plot_graphs(normal_result, 'normal_case')
 x_true = np.array([0.09, -0.09, -0.03, np.deg2rad(-15), np.deg2rad(-12), np.deg2rad(9)])
 initial_x_hat = x_true + np.array([-0.06, 0.06, -0.03, np.deg2rad(9), np.deg2rad(-6), np.deg2rad(-4.5)])
 mrp_std = np.tan(np.deg2rad(30) / 4) / np.sqrt(3)
-omega_std = np.deg2rad(15) / np.sqrt(3)
+omega_std = np.deg2rad(25) / np.sqrt(3)
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
 gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
-
-
-
-
