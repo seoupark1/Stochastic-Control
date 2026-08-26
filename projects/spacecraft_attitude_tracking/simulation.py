@@ -7,7 +7,7 @@ from .references.circular_orbit import CircularOrbit
 from .references.nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
@@ -23,7 +23,8 @@ def simulation(initial_x_true: ArrayLike,
                motion_noise_covariance: ArrayLike,
                star_tracker_noise_covariance: ArrayLike,
                gyroscope_noise_covariance: ArrayLike,
-               tf: float,
+               simulation_tf: float,
+               controller_tf: float,
                star_tracker_sampling_rate: float,
                gyroscope_sampling_rate: float,
                control_limiter = None):
@@ -146,12 +147,10 @@ def simulation(initial_x_true: ArrayLike,
 
     def motion_jacobian(t, state, control):
 
-        A = approx_derivative(fun = lambda x: dynamics(t, x, control),
-                              x0 = state,
-                              method = '3-point')
-
-        return np.eye(6) + dt * A
-
+        return approx_derivative(fun = lambda x: motion_model(t, x, control),
+                                 x0 = state,
+                                 method = '3-point')
+    
     def measurement_model(t, state):
 
         sigma_BR = state[0:3]
@@ -176,6 +175,7 @@ def simulation(initial_x_true: ArrayLike,
                                  x0 = state,
                                  method = '3-point')
 
+    # output: rotation vector
     def innovation_function(measured_mrp, predicted_mrp):
         # change mrp to dcm for (y - h) calculation
         measured_dcm = mrp_to_dcm(measured_mrp)
@@ -183,8 +183,23 @@ def simulation(initial_x_true: ArrayLike,
 
         innovation = measured_dcm @ predicted_dcm.T
 
-        return dcm_to_mrp(innovation)
+        return mrp_to_rotation_vector(dcm_to_mrp(innovation))
+    
+    def innovation_jacobian(t, state):
 
+        predicted_sigma = measurement_model(t, state)[0:3]
+
+        def innovation(t, measured_state):
+            measured_sigma = measurement_model(t, measured_state)[0:3]
+
+            return innovation_function(measured_sigma, predicted_sigma)
+
+        jacobian = approx_derivative(fun = innovation,
+                                     x0 = predicted_sigma,
+                                     method = '3-point')
+
+        return jacobian
+    
     # ekf properties
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
@@ -202,15 +217,15 @@ def simulation(initial_x_true: ArrayLike,
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
-    Q = np.diag([500, 500, 500, 300, 300, 300])
-    R = 0.5 * np.eye(3)
+    Q = np.diag([10000, 10000, 10000, 5000, 5000, 5000])
+    R = 0.005 * np.eye(3)
     Qf = 10 * Q
     x_true = initial_x_true
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
                                                     R = R,
                                                     Qf = Qf,
-                                                    tf = tf,
+                                                    tf = controller_tf,
                                                     reference_provider = reference_provider,
                                                     dynamics_function = dynamics)
 
@@ -229,7 +244,7 @@ def simulation(initial_x_true: ArrayLike,
         raise ValueError(f'Gyroscope sampling rate should be smaller than {float(1/dt)} Hz')
 
     # total steps
-    total_step = int(tf / dt)
+    total_step = int(simulation_tf / dt)
     time = dt * np.arange(total_step + 1)
 
     # state histories 
@@ -251,7 +266,7 @@ def simulation(initial_x_true: ArrayLike,
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
     actual_control_history = np.zeros((3, total_step))
-    measurement_history = np.full((6, total_step), np.nan)
+    measurement_history = np.full((6, total_step + 1), np.nan)
     star_tracker_correction_steps_history = np.zeros(total_step + 1)
     gyroscope_correction_steps_history = np.zeros(total_step + 1)
 
@@ -287,19 +302,19 @@ def simulation(initial_x_true: ArrayLike,
         
             ideal_attitude = measurement_model(next_t, x_true)[0:3]
             y = star_tracker.measure(ideal_attitude, rng)
-            measurement_history[0:3, k] = y
+            measurement_history[0:3, k + 1] = y
 
             # predicted model & jacobian
             predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
-            predicted_star_tracker_jacobian = measurement_jacobian(next_t, ekf.x)[0:3, :]
+            star_tracker_jacobian = innovation_jacobian(next_t, ekf.x)[0:3, :]
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
                            measurement_model = predicted_star_tracker_measurement_model,
-                           measurement_jacobian = predicted_star_tracker_jacobian,
                            measurement_noise_covariance = star_tracker_noise_covariance,
                            measurement_noise_jacobian = np.eye(3),
-                           innovation_function = innovation_function)
+                           innovation_function = innovation_function,
+                           innovation_jacobian = star_tracker_jacobian)
 
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             star_tracker_time += star_tracker_dt
@@ -311,7 +326,7 @@ def simulation(initial_x_true: ArrayLike,
 
             ideal_omega = measurement_model(next_t, x_true)[3:6]
             y = gyroscope.measure(ideal_omega, rng)
-            measurement_history[3:6, k] = y
+            measurement_history[3:6, k + 1] = y
 
             # predicted model & jacobian
             predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.x)[3:6]
