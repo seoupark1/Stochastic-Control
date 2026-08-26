@@ -195,7 +195,7 @@ def simulation(initial_x_true: ArrayLike,
 
     Q = np.diag([50, 50, 50, 10, 10, 10])
     R = 5 * np.eye(3)
-    Qf = 10 * Q
+    Qf = 2 * Q
     x_true = initial_x_true
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,

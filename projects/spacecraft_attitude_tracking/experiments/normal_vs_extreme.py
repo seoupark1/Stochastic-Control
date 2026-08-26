@@ -123,7 +123,7 @@ normal_result = simulation(initial_x_true = x_true,
                            star_tracker_noise_covariance = star_tracker_noise_covariance,
                            gyroscope_noise_covariance = gyroscope_noise_covariance,
                            tf = 50,
-                           star_tracker_sampling_rate = 10,
+                           star_tracker_sampling_rate = 1,
                            gyroscope_sampling_rate = 50)
 
 get_max_abs_u_cmd(normal_result)
