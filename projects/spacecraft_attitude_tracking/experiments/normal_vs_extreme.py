@@ -113,8 +113,8 @@ mrp_std = np.tan(np.deg2rad(15) / 4) / np.sqrt(3)
 omega_std = np.deg2rad(10) / np.sqrt(3)
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
-gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
+star_tracker_noise_covariance = (5.3 * 1e-9) * np.eye(3)
+gyroscope_noise_covariance = (1.5 * 1e-4) * np.eye(3)
 
 normal_result = simulation(initial_x_true = x_true,
                            initial_x_hat = initial_x_hat,
