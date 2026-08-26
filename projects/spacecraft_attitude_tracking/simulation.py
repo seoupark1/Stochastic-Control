@@ -176,6 +176,15 @@ def simulation(initial_x_true: ArrayLike,
                                  x0 = state,
                                  method = '3-point')
 
+    def innovation_function(measured_mrp, predicted_mrp):
+        # change mrp to dcm for (y - h) calculation
+        measured_dcm = mrp_to_dcm(measured_mrp)
+        predicted_dcm = mrp_to_dcm(predicted_mrp)
+
+        innovation = measured_dcm @ predicted_dcm.T
+
+        return dcm_to_mrp(innovation)
+
     # ekf properties
     motion_noise_jacobian = np.eye(6)
     measurement_noise_jacobian = np.eye(6)
@@ -290,7 +299,8 @@ def simulation(initial_x_true: ArrayLike,
                            measurement_model = predicted_star_tracker_measurement_model,
                            measurement_jacobian = predicted_star_tracker_jacobian,
                            measurement_noise_covariance = star_tracker_noise_covariance,
-                           measurement_noise_jacobian = np.eye(3))
+                           measurement_noise_jacobian = np.eye(3),
+                           innovation_function = innovation_function)
 
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             star_tracker_time += star_tracker_dt
@@ -313,7 +323,8 @@ def simulation(initial_x_true: ArrayLike,
                            measurement_model = predicted_gyroscope_measurement_model,
                            measurement_jacobian = predicted_gyroscope_jacobian,
                            measurement_noise_covariance = gyroscope_noise_covariance,
-                           measurement_noise_jacobian = np.eye(3))
+                           measurement_noise_jacobian = np.eye(3),
+                           innovation_function = innovation_function)
 
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             gyroscope_time += gyroscope_dt
