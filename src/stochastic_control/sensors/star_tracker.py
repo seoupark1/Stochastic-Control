@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike
 
-from stochastic_control.attitude.mrp import mrp_shadow_set, mrp_to_dcm, dcm_to_mrp
+from stochastic_control.attitude.mrp import mrp_shadow_set, mrp_to_dcm, dcm_to_mrp, rotation_vector_to_mrp
 
 class StarTracker:
 
@@ -20,8 +20,8 @@ class StarTracker:
         ideal_dcm_BN = mrp_to_dcm(ideal_sigma_BN)
 
         # change noise to small rotation
-        noise = rng.multivariate_normal(self.mean, self.noise_covariance)
-        noise_sigma = np.tan(noise / 4)
+        noise_rotation_vector = rng.multivariate_normal(self.mean, self.noise_covariance)
+        noise_sigma = rotation_vector_to_mrp(noise_rotation_vector)
         noise_dcm = mrp_to_dcm(noise_sigma)
 
         measured_mrp = dcm_to_mrp(noise_dcm @ ideal_dcm_BN)
