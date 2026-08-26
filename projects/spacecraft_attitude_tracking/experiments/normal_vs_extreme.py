@@ -82,33 +82,6 @@ def plot_graphs(results,
     plt.tight_layout()
     plt.savefig(f'projects/spacecraft_attitude_tracking/results/normal_vs_extreme/{path}/true_gravity_gradient.png')
     plt.close()
-    
-    mrp_std = results['standard_deviation_P'][0:3]
-    omega_std = results['standard_deviation_P'][3:6]
-    mrp_std_to_angle_std = np.rad2deg(4 * np.arctan(mrp_std))
-    omega_rad_to_deg = np.rad2deg(omega_std)
-
-    # ekf uncertainty
-    plt.subplot(2, 1, 1)
-    plt.plot(results['time'], mrp_std_to_angle_std[0], label = 'mrp_1')
-    plt.plot(results['time'], mrp_std_to_angle_std[1], label = 'mrp_2')
-    plt.plot(results['time'], mrp_std_to_angle_std[2], label = 'mrp_3')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Standard Deviation [deg]')
-    plt.title('Estimated Attitude Uncertainty During Star Tracker Updates')
-    plt.legend()
-    plt.grid(True)
-    plt.subplot(2, 1, 2)
-    plt.plot(results['time'], omega_rad_to_deg[0], label = 'omega_1')
-    plt.plot(results['time'], omega_rad_to_deg[1], label = 'omega_2')
-    plt.plot(results['time'], omega_rad_to_deg[2], label = 'omega_3')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Standard Deviation [deg/s]')
-    plt.title('Estimated Attitude Uncertainty During Gyroscope Updates')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f'projects/spacecraft_attitude_tracking/results/normal_vs_extreme/{path}/ekf_uncertainty.png')
-    plt.close()
 
 # Normal case
 x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
@@ -117,7 +90,7 @@ mrp_std = np.tan(np.deg2rad(15) / 4) / np.sqrt(3)
 omega_std = np.deg2rad(10) / np.sqrt(3)
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-star_tracker_noise_covariance = (4.76 * 1e-6) * np.eye(3)
+star_tracker_noise_covariance = (5.88 * 1e-10) * np.eye(3)
 gyroscope_noise_covariance = (1.5 * 1e-4) * np.eye(3)
 
 normal_result = simulation(initial_x_true = x_true,
@@ -126,7 +99,7 @@ normal_result = simulation(initial_x_true = x_true,
                            motion_noise_covariance = motion_noise_covariance,
                            star_tracker_noise_covariance = star_tracker_noise_covariance,
                            gyroscope_noise_covariance = gyroscope_noise_covariance,
-                           tf = 50,
+                           tf = 100,
                            star_tracker_sampling_rate = 1,
                            gyroscope_sampling_rate = 50)
 
