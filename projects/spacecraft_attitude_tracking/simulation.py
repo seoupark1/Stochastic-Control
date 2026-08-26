@@ -202,9 +202,9 @@ def simulation(initial_x_true: ArrayLike,
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
-    Q = np.diag([50, 50, 50, 10, 10, 10])
-    R = 5 * np.eye(3)
-    Qf = 2 * Q
+    Q = np.diag([500, 500, 500, 300, 300, 300])
+    R = 0.5 * np.eye(3)
+    Qf = 10 * Q
     x_true = initial_x_true
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
@@ -246,7 +246,6 @@ def simulation(initial_x_true: ArrayLike,
 
     # ekf covariance P history
     covariance_history = np.zeros((6, 6, total_step + 1))
-    standard_deviation_history = np.zeros((6, total_step + 1))
     covariance_history[:, :, 0] = ekf.P
 
     # control & measurement histories
@@ -323,8 +322,7 @@ def simulation(initial_x_true: ArrayLike,
                            measurement_model = predicted_gyroscope_measurement_model,
                            measurement_jacobian = predicted_gyroscope_jacobian,
                            measurement_noise_covariance = gyroscope_noise_covariance,
-                           measurement_noise_jacobian = np.eye(3),
-                           innovation_function = innovation_function)
+                           measurement_noise_jacobian = np.eye(3))
 
             ekf.x[0:3] = mrp_shadow_set(ekf.x[0:3])
             gyroscope_time += gyroscope_dt
@@ -368,9 +366,6 @@ def simulation(initial_x_true: ArrayLike,
         attitude_estimation_error_angle_history[k] = angle_BhatB
         omega_estimation_error_history[:, k] = omega_BhatB_B
 
-        # standard deviation corresponding with covariance P
-        standard_deviation_history[:, k] = np.sqrt(np.diag(covariance_history[:, :, k]))
-
     # omega estimation error norm
     omega_estimation_norm_error_history = np.linalg.norm(omega_estimation_error_history, axis = 0)
 
@@ -386,7 +381,6 @@ def simulation(initial_x_true: ArrayLike,
             'estimated_state': estimated_state_history,
             'true_gravity_gradient_torque' : true_gravity_gradient_history,
             'covariance_P' : covariance_history,
-            'standard_deviation_P' : standard_deviation_history,
             'commanded_control': cmd_control_history,
             'max_abs_commanded_control': max_u_cmd_abs,
             'actual_control': actual_control_history,
