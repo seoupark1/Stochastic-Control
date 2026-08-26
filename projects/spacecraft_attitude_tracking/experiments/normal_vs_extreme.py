@@ -83,15 +83,23 @@ def plot_graphs(results,
     plt.savefig(f'projects/spacecraft_attitude_tracking/results/normal_vs_extreme/{path}/true_gravity_gradient.png')
     plt.close()
 
+# star tracker performance
+star_tracker_sampling_rate = 10 # [Hz]
+star_tracker_accuracy = 5 # [arcsec]
+star_tracker_std = np.deg2rad(star_tracker_accuracy / 3600)
+star_tracker_noise_covariance = star_tracker_std**2 * np.eye(3)
+
+# gyroscope performance
+gyroscope_sampling_rate = 100 # [Hz]
+gyroscope_std = 4.3633 * 1e-4 # [rad/s]
+gyroscope_noise_covariance = gyroscope_std**2 * np.eye(3)
+
 # Normal case
 x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
 initial_x_hat = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
-mrp_std = np.tan(np.deg2rad(15) / 4) / np.sqrt(3)
-omega_std = np.deg2rad(10) / np.sqrt(3)
-initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
-motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-star_tracker_noise_covariance = (5.88 * 1e-10) * np.eye(3)
-gyroscope_noise_covariance = (1.5 * 1e-4) * np.eye(3)
+initial_covariance = np.block([[star_tracker_noise_covariance, np.eye(3)],
+                               [np.eye(3), gyroscope_noise_covariance]])
+motion_noise_covariance = np.diag([1e-10, 1e-10, 1e-10, 1e-8, 1e-8, 1e-8])
 
 normal_result = simulation(initial_x_true = x_true,
                            initial_x_hat = initial_x_hat,
@@ -99,15 +107,16 @@ normal_result = simulation(initial_x_true = x_true,
                            motion_noise_covariance = motion_noise_covariance,
                            star_tracker_noise_covariance = star_tracker_noise_covariance,
                            gyroscope_noise_covariance = gyroscope_noise_covariance,
-                           tf = 100,
-                           star_tracker_sampling_rate = 1,
-                           gyroscope_sampling_rate = 50)
+                           simulation_tf = 100,
+                           controller_tf = 120,
+                           star_tracker_sampling_rate = star_tracker_sampling_rate,
+                           gyroscope_sampling_rate = gyroscope_sampling_rate)
 
 get_max_abs_u_cmd(normal_result)
 plot_graphs(normal_result, 'normal_case')
 
 
-
+'''
 # Extreme case (aboout 3 times tracking error and estimation error of the normal case)
 x_true = np.array([0.09, -0.09, -0.03, np.deg2rad(-15), np.deg2rad(-12), np.deg2rad(9)])
 initial_x_hat = x_true + np.array([-0.06, 0.06, -0.03, np.deg2rad(9), np.deg2rad(-6), np.deg2rad(-4.5)])
@@ -117,3 +126,4 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
 gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
+'''
