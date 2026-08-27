@@ -27,14 +27,16 @@ def plot_graphs(results,
     plt.close()
 
     # estimation error
+    estimation_tf = 5
+    time_range = results['time'] <= estimation_tf
     plt.subplot(2, 1, 1)
-    plt.plot(results['time'], results['attitude_estimation_error'])
+    plt.plot(results['time'][time_range], results['attitude_estimation_error'][time_range])
     plt.xlabel('Time [s]')
     plt.ylabel('Attitude Error [rad]')
     plt.title('Nadir Pointing Attitude Estimation Error')
     plt.grid(True)
     plt.subplot(2, 1, 2)
-    plt.plot(results['time'], results['omega_estimation_error'])
+    plt.plot(results['time'][time_range], results['omega_estimation_error'][time_range])
     plt.xlabel('time [s]')
     plt.ylabel('Angular Velocity Error [rad/s]')
     plt.title('Nadir Pointing Omega Estimation Error')
@@ -95,11 +97,10 @@ gyroscope_std = 4.3633 * 1e-4 # [rad/s]
 gyroscope_noise_covariance = gyroscope_std**2 * np.eye(3)
 
 # Normal case conditions
-x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-5), np.deg2rad(-4), np.deg2rad(3)])
-initial_x_hat = x_true + np.array([-0.02, 0.02, -0.01, np.deg2rad(3), np.deg2rad(-2), np.deg2rad(-1.5)])
-initial_covariance = np.block([[star_tracker_noise_covariance, np.eye(3)],
-                               [np.eye(3), gyroscope_noise_covariance]])
-motion_noise_covariance = np.diag([1e-10, 1e-10, 1e-10, 1e-8, 1e-8, 1e-8])
+x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-2.5), np.deg2rad(-2), np.deg2rad(1)])
+initial_x_hat = x_true + np.array([-0.005, 0.005, -0.002, np.deg2rad(0.5), np.deg2rad(-0.3), np.deg2rad(0.2)])
+initial_covariance = np.diag([star_tracker_std**2, star_tracker_std**2, star_tracker_std**2, gyroscope_std**2, gyroscope_std**2, gyroscope_std**2])
+motion_noise_covariance = np.diag([1e-12, 1e-12, 1e-12, 1e-10, 1e-10, 1e-10])
 
 normal_result = simulation(initial_x_true = x_true,
                            initial_x_hat = initial_x_hat,
@@ -107,7 +108,7 @@ normal_result = simulation(initial_x_true = x_true,
                            motion_noise_covariance = motion_noise_covariance,
                            star_tracker_noise_covariance = star_tracker_noise_covariance,
                            gyroscope_noise_covariance = gyroscope_noise_covariance,
-                           simulation_tf = 100,
+                           simulation_tf = 60,
                            controller_tf = 120,
                            star_tracker_sampling_rate = star_tracker_sampling_rate,
                            gyroscope_sampling_rate = gyroscope_sampling_rate)
