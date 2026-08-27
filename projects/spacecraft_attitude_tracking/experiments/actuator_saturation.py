@@ -19,16 +19,11 @@ gyroscope_noise_covariance = gyroscope_std**2 * np.eye(3)
 mrp_std = np.tan(np.deg2rad(9) / 4) / np.sqrt(3)
 omega_std = np.deg2rad(3) / np.sqrt(3)
 
-# extreme case
+# follow previous extreme case
 initial_x_true = np.array([0.09, -0.09, -0.03, np.deg2rad(-7.5), np.deg2rad(-6), np.deg2rad(3)])
 initial_x_hat = initial_x_true + np.array([-0.015, 0.006, -0.03, np.deg2rad(1.5), np.deg2rad(-0.9), np.deg2rad(0.6)])
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-
-# control limiter
-max_u_cmd_abs = np.array([38.3882, 49.6486, 12.2470])
-u_max = max_u_cmd_abs / 3
-actuator = ReactionWheel(u_max)
 
 unsaturated_result = simulation(initial_x_true = initial_x_true,
                                 initial_x_hat = initial_x_hat,
@@ -40,6 +35,11 @@ unsaturated_result = simulation(initial_x_true = initial_x_true,
                                 controller_tf = 120,
                                 star_tracker_sampling_rate = star_tracker_sampling_rate,
                                 gyroscope_sampling_rate = gyroscope_sampling_rate)
+
+# control limiter
+max_u_cmd_abs = unsaturated_result['max_abs_commanded_control']
+u_max = max_u_cmd_abs / 2
+actuator = ReactionWheel(u_max)
 
 saturated_result = simulation(initial_x_true = initial_x_true,
                               initial_x_hat = initial_x_hat,
@@ -59,18 +59,18 @@ u_actual = saturated_result['actual_control']
 
 # tracking error
 plt.subplot(2, 1, 1)
-plt.plot(time, saturated_result['attitude_tracking_error'], label = 'saturated')
-plt.plot(time, unsaturated_result['attitude_tracking_error'], label = 'unsaturated')
+plt.plot(time, np.rad2deg(saturated_result['attitude_tracking_error']), label = 'saturated')
+plt.plot(time, np.rad2deg(unsaturated_result['attitude_tracking_error']), label = 'unsaturated')
 plt.xlabel('Time [s]')
-plt.ylabel('Attitude Error [rad]')
+plt.ylabel('Attitude Error [deg]')
 plt.title('Nadir Pointing Attitude Tracking Error')
 plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, saturated_result['omega_tracking_error'], label = 'saturated')
-plt.plot(time, unsaturated_result['omega_tracking_error'], label = 'unsaturated')
+plt.plot(time, np.rad2deg(saturated_result['omega_tracking_error']), label = 'saturated')
+plt.plot(time, np.rad2deg(unsaturated_result['omega_tracking_error']), label = 'unsaturated')
 plt.xlabel('Time [s]')
-plt.ylabel('Angular Velocity Error [rad/s]')
+plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('Nadir Pointing Angular Velocity Tracking Error')
 plt.legend()
 plt.grid(True)
@@ -82,18 +82,18 @@ plt.close()
 estimation_tf = 5
 time_range = time <= estimation_tf
 plt.subplot(2, 1, 1)
-plt.plot(time[time_range], saturated_result['attitude_estimation_error'][time_range], label = 'saturated')
-plt.plot(time[time_range], unsaturated_result['attitude_estimation_error'][time_range], label = 'unsaturated')
+plt.plot(time[time_range], np.rad2deg(saturated_result['attitude_estimation_error'][time_range]), label = 'saturated')
+plt.plot(time[time_range], np.rad2deg(unsaturated_result['attitude_estimation_error'][time_range]), label = 'unsaturated')
 plt.xlabel('Time [s]')
-plt.ylabel('Attitude Error [rad]')
+plt.ylabel('Attitude Error [deg]')
 plt.title('Nadir Pointing Attitude Estimation Error')
 plt.grid(True)
 plt.legend()
 plt.subplot(2, 1, 2)
-plt.plot(time[time_range], saturated_result['omega_estimation_error'][time_range], label = 'saturated')
-plt.plot(time[time_range], unsaturated_result['omega_estimation_error'][time_range], label = 'unsaturated')
+plt.plot(time[time_range], np.rad2deg(saturated_result['omega_estimation_error'][time_range]), label = 'saturated')
+plt.plot(time[time_range], np.rad2deg(unsaturated_result['omega_estimation_error'][time_range]), label = 'unsaturated')
 plt.xlabel('time [s]')
-plt.ylabel('Angular Velocity Error [rad/s]')
+plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('Nadir Pointing Omega Estimation Error')
 plt.grid(True)
 plt.legend()
