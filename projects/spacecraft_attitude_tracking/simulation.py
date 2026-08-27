@@ -212,9 +212,9 @@ def simulation(initial_x_true: ArrayLike,
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
-    Q = np.diag([10000, 10000, 10000, 5000, 5000, 5000])
-    R = 0.005 * np.eye(3)
-    Qf = 10 * Q
+    Q = np.diag([100, 100, 100, 500, 500, 500])
+    R = 0.01 * np.eye(3)
+    Qf = 2 * Q
     x_true = initial_x_true
 
     lqr = LocalTrajectoryStabilizationLQRController(Q = Q,
