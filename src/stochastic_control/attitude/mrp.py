@@ -63,6 +63,9 @@ def rotation_vector_to_mrp(rotation_vector: ArrayLike):
     rotation_vector = np.asarray(rotation_vector, dtype = float).reshape(3)
     angle = np.linalg.norm(rotation_vector)
 
+    if angle < 1e-8:
+        return rotation_vector / 4
+
     rotation_axis = rotation_vector / angle
     sigma = np.tan(angle / 4) * rotation_axis
 
@@ -73,8 +76,13 @@ def mrp_to_rotation_vector(mrp: ArrayLike):
     sigma = np.asarray(mrp, dtype = float).reshape(3)
 
     sigma = mrp_shadow_set(sigma)
-    angle = 4 * np.arctan(np.linalg.norm(sigma))
-    rotation_axis = sigma / np.linalg.norm(sigma)
+    sigma_norm = np.linalg.norm(sigma)
+
+    if sigma_norm < 1e-8:
+        return 4 * sigma
+    
+    angle = 4 * np.arctan(sigma_norm)
+    rotation_axis = sigma / sigma_norm
 
     return angle * rotation_axis
 
