@@ -79,7 +79,7 @@ plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/
 plt.close()
 
 # estimation error
-estimation_tf = 5
+estimation_tf = 0.5
 time_range = time <= estimation_tf
 plt.subplot(2, 1, 1)
 plt.plot(time[time_range], np.rad2deg(saturated_result['attitude_estimation_error'][time_range]), label = 'saturated')
@@ -102,18 +102,18 @@ plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/
 plt.close()
 
 # control
-fig, axes = plt.subplots(3, 1, figsize = (6.4, 11), sharex = True)
+fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
 
 for i in range(3):
     axes[i].plot(time[0:-1], u_actual[i], label = 'u_actual')
     axes[i].plot(time[0:-1], u_cmd[i], label = 'u_cmd')
-    axes[i].axhline(u_max[i], linestyle = '--')
-    axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].axhline(u_max[i], linestyle = '--', color = 'red')
+    axes[i].axhline(-u_max[i], linestyle = '--', color = 'red')
+    axes[i].set_xlabel('Time [s]')
     axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
     axes[i].legend()
     axes[i].grid(True)
 
-axes[2].set_xlabel('Time [s]')
 fig.suptitle('Actual Control vs Commanded Control')
 fig.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/saturated_control.png')
