@@ -190,7 +190,7 @@ def simulation(initial_x_true: ArrayLike,
         predicted_sigma = measurement_model(t, state)[0:3]
 
         jacobian = approx_derivative(fun = lambda nearby_state: innovation_function(measurement_model(t, nearby_state)[0:3], predicted_sigma),
-                                     x0 = predicted_sigma,
+                                     x0 = state,
                                      method = '3-point')
 
         return jacobian
