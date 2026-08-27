@@ -96,13 +96,17 @@ gyroscope_sampling_rate = 100 # [Hz]
 gyroscope_std = 4.3633 * 1e-4 # [rad/s]
 gyroscope_noise_covariance = gyroscope_std**2 * np.eye(3)
 
+# mrp & omega uncertainty
+mrp_std = np.tan(np.deg2rad(3) / 4) / np.sqrt(3)
+omega_std = np.deg2rad(1) / np.sqrt(3)
+
 # Normal case conditions
-x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-2.5), np.deg2rad(-2), np.deg2rad(1)])
-initial_x_hat = x_true + np.array([-0.005, 0.005, -0.002, np.deg2rad(0.5), np.deg2rad(-0.3), np.deg2rad(0.2)])
-initial_covariance = np.diag([star_tracker_std**2, star_tracker_std**2, star_tracker_std**2, gyroscope_std**2, gyroscope_std**2, gyroscope_std**2])
+initial_x_true = np.array([0.03, -0.03, -0.01, np.deg2rad(-2.5), np.deg2rad(-2), np.deg2rad(1)])
+initial_x_hat = initial_x_true + np.array([-0.005, 0.005, -0.002, np.deg2rad(0.5), np.deg2rad(-0.3), np.deg2rad(0.2)])
+initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-12, 1e-12, 1e-12, 1e-10, 1e-10, 1e-10])
 
-normal_result = simulation(initial_x_true = x_true,
+normal_result = simulation(initial_x_true = initial_x_true,
                            initial_x_hat = initial_x_hat,
                            initial_covariance = initial_covariance,
                            motion_noise_covariance = motion_noise_covariance,
@@ -116,15 +120,26 @@ normal_result = simulation(initial_x_true = x_true,
 get_max_abs_u_cmd(normal_result)
 plot_graphs(normal_result, 'normal_case')
 
+# mrp & omega uncertainty
+mrp_std = np.tan(np.deg2rad(9) / 4) / np.sqrt(3)
+omega_std = np.deg2rad(3) / np.sqrt(3)
 
-'''
-# Extreme case (aboout 3 times tracking error and estimation error of the normal case)
-x_true = np.array([0.09, -0.09, -0.03, np.deg2rad(-15), np.deg2rad(-12), np.deg2rad(9)])
-initial_x_hat = x_true + np.array([-0.06, 0.06, -0.03, np.deg2rad(9), np.deg2rad(-6), np.deg2rad(-4.5)])
-mrp_std = np.tan(np.deg2rad(30) / 4) / np.sqrt(3)
-omega_std = np.deg2rad(25) / np.sqrt(3)
+# Extreme case (has 3 times error compared to the normal case)
+initial_x_true = np.array([0.09, -0.09, -0.03, np.deg2rad(-7.5), np.deg2rad(-6), np.deg2rad(3)])
+initial_x_hat = initial_x_true + np.array([-0.015, 0.006, -0.03, np.deg2rad(1.5), np.deg2rad(-0.9), np.deg2rad(0.6)])
 initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, omega_std**2, omega_std**2])
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
-star_tracker_noise_covariance = np.diag([5.88 * 1e-10, 5.88 * 1e-10, 5.88 * 1e-10])
-gyroscope_noise_covariance = np.diag([1.5 * 1e-4, 1.5 * 1e-4, 1.5 * 1e-4])
-'''
+
+extreme_result = simulation(initial_x_true = initial_x_true,
+                            initial_x_hat = initial_x_hat,
+                            initial_covariance = initial_covariance,
+                            motion_noise_covariance = motion_noise_covariance,
+                            star_tracker_noise_covariance = star_tracker_noise_covariance,
+                            gyroscope_noise_covariance = gyroscope_noise_covariance,
+                            simulation_tf = 60,
+                            controller_tf = 120,
+                            star_tracker_sampling_rate = star_tracker_sampling_rate,
+                            gyroscope_sampling_rate = gyroscope_sampling_rate)
+
+get_max_abs_u_cmd(extreme_result)
+plot_graphs(extreme_result, 'extreme_case')
