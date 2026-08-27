@@ -26,35 +26,53 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 
 # control limiter
-max_u_cmd_abs = [38.3882, 49.6486, 12.2470]
-actuator = ReactionWheel((1/3) * max_u_cmd_abs)
+max_u_cmd_abs = np.array([38.3882, 49.6486, 12.2470])
+u_max = max_u_cmd_abs / 3
+actuator = ReactionWheel(u_max)
 
-extreme_result = simulation(initial_x_true = initial_x_true,
-                            initial_x_hat = initial_x_hat,
-                            initial_covariance = initial_covariance,
-                            motion_noise_covariance = motion_noise_covariance,
-                            star_tracker_noise_covariance = star_tracker_noise_covariance,
-                            gyroscope_noise_covariance = gyroscope_noise_covariance,
-                            simulation_tf = 60,
-                            controller_tf = 120,
-                            star_tracker_sampling_rate = star_tracker_sampling_rate,
-                            gyroscope_sampling_rate = gyroscope_sampling_rate,
-                            control_limiter = actuator)
+unsaturated_result = simulation(initial_x_true = initial_x_true,
+                                initial_x_hat = initial_x_hat,
+                                initial_covariance = initial_covariance,
+                                motion_noise_covariance = motion_noise_covariance,
+                                star_tracker_noise_covariance = star_tracker_noise_covariance,
+                                gyroscope_noise_covariance = gyroscope_noise_covariance,
+                                simulation_tf = 60,
+                                controller_tf = 120,
+                                star_tracker_sampling_rate = star_tracker_sampling_rate,
+                                gyroscope_sampling_rate = gyroscope_sampling_rate)
 
-time = extreme_result['time']
+saturated_result = simulation(initial_x_true = initial_x_true,
+                              initial_x_hat = initial_x_hat,
+                              initial_covariance = initial_covariance,
+                              motion_noise_covariance = motion_noise_covariance,
+                              star_tracker_noise_covariance = star_tracker_noise_covariance,
+                              gyroscope_noise_covariance = gyroscope_noise_covariance,
+                              simulation_tf = 60,
+                              controller_tf = 120,
+                              star_tracker_sampling_rate = star_tracker_sampling_rate,
+                              gyroscope_sampling_rate = gyroscope_sampling_rate,
+                              control_limiter = actuator)
+
+time = saturated_result['time']
+u_cmd = saturated_result['commanded_control']
+u_actual = saturated_result['actual_control']
 
 # tracking error
 plt.subplot(2, 1, 1)
-plt.plot(time, extreme_result['attitude_tracking_error'])
+plt.plot(time, saturated_result['attitude_tracking_error'], label = 'saturated')
+plt.plot(time, unsaturated_result['attitude_tracking_error'], label = 'unsaturated')
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [rad]')
 plt.title('Nadir Pointing Attitude Tracking Error')
+plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, extreme_result['omega_tracking_error'])
+plt.plot(time, saturated_result['omega_tracking_error'], label = 'saturated')
+plt.plot(time, unsaturated_result['omega_tracking_error'], label = 'unsaturated')
 plt.xlabel('Time [s]')
 plt.ylabel('Angular Velocity Error [rad/s]')
 plt.title('Nadir Pointing Angular Velocity Tracking Error')
+plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/tracking_error.png')
@@ -64,68 +82,55 @@ plt.close()
 estimation_tf = 5
 time_range = time <= estimation_tf
 plt.subplot(2, 1, 1)
-plt.plot(time[time_range], extreme_result['attitude_estimation_error'][time_range])
+plt.plot(time[time_range], saturated_result['attitude_estimation_error'][time_range], label = 'saturated')
+plt.plot(time[time_range], unsaturated_result['attitude_estimation_error'][time_range], label = 'unsaturated')
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [rad]')
 plt.title('Nadir Pointing Attitude Estimation Error')
 plt.grid(True)
+plt.legend()
 plt.subplot(2, 1, 2)
-plt.plot(time[time_range], extreme_result['omega_estimation_error'][time_range])
+plt.plot(time[time_range], saturated_result['omega_estimation_error'][time_range], label = 'saturated')
+plt.plot(time[time_range], unsaturated_result['omega_estimation_error'][time_range], label = 'unsaturated')
 plt.xlabel('time [s]')
 plt.ylabel('Angular Velocity Error [rad/s]')
 plt.title('Nadir Pointing Omega Estimation Error')
 plt.grid(True)
+plt.legend()
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/estimation_error.png')
 plt.close()
 
-# saturated control (actual control)
-plt.subplot(2, 1, 1)
-plt.plot(time[0:-1], extreme_result['actual_control'][0], label = 'u_1')
-plt.axhline(y = max_u_cmd_abs[0], linestyle = '-')
-plt.axhline(y = - max_u_cmd_abs[0], linestyle = '-')
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.subplot(2, 1, 2)
-plt.plot(time[0:-1], extreme_result['actual_control'][1], label = 'u_2')
-plt.axhline(y = max_u_cmd_abs[1], linestyle = '-')
-plt.axhline(y = - max_u_cmd_abs[1], linestyle = '-')
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.subplot(2, 1, 3)
-plt.plot(time[0:-1], extreme_result['actual_control'][2], label = 'u_3')
-plt.axhline(y = max_u_cmd_abs[2], linestyle = '-')
-plt.axhline(y = - max_u_cmd_abs[2], linestyle = '-')
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.suptitle('Nadir Pointing Actual Control')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/saturated_control.png')
-plt.close()
+# control
+fig, axes = plt.subplots(3, 1, figsize = (6.4, 11), sharex = True)
 
-# saturated control norm
-plt.plot(time[0:-1], np.linalg.norm(extreme_result['actual_control'], axis = 0))
-plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.title('Nadir Pointing Actual Control Norm')
-plt.grid(True)
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/saturated_control_norm.png')
+for i in range(3):
+    axes[i].plot(time[0:-1], u_actual[i], label = 'u_actual')
+    axes[i].plot(time[0:-1], u_cmd[i], label = 'u_cmd')
+    axes[i].axhline(u_max[i], linestyle = '--')
+    axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
+    axes[i].legend()
+    axes[i].grid(True)
+
+axes[2].set_xlabel('Time [s]')
+fig.suptitle('Actual Control vs Commanded Control')
+fig.tight_layout()
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/saturated_control.png')
 plt.close()
 
 # true gravity gradient
 plt.subplot(2, 1, 1)
-plt.plot(time, extreme_result['true_gravity_gradient_torque'][0], label = 'gg_1')
-plt.plot(time, extreme_result['true_gravity_gradient_torque'][1], label = 'gg_2')
-plt.plot(time, extreme_result['true_gravity_gradient_torque'][2], label = 'gg_3')
+plt.plot(time, saturated_result['true_gravity_gradient_torque'][0], label = 'gg_1')
+plt.plot(time, saturated_result['true_gravity_gradient_torque'][1], label = 'gg_2')
+plt.plot(time, saturated_result['true_gravity_gradient_torque'][2], label = 'gg_3')
 plt.xlabel('Time [s]')
 plt.ylabel('Torque [Nm]')
 plt.title('True Gravity Gradient Torque of Spacecraft')
 plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, np.linalg.norm(extreme_result['true_gravity_gradient_torque'], axis = 0))
+plt.plot(time, np.linalg.norm(saturated_result['true_gravity_gradient_torque'], axis = 0))
 plt.xlabel('Time [s]')
 plt.ylabel('Torque [Nm]')
 plt.title('True Gravity Gradient Torque Norm of Spacecraft')
