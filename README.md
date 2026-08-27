@@ -1,12 +1,16 @@
 # Stochastic-Control
 
 ## Project
-Spacecraft Attitude Control Under Stochastic Uncertainty
+< Risk-aware Stochastic Spacecraft Nadir Pointing Attitude Tracking Under Actuator Contraints >
+Nadir Pointing은 행성 궤도를 공전하는 물체의 방향이 항상 행성 쪽을 바라보도록 
+우주선의 자세표현법으로 Modified Rodrigues Parameter를 사용함. 
+
+# Project Result Simulation GIF
+gif
 
 # Experiment 1
-LQG output-feedback baseline
+EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error,  추출
 
-linear system에 대해서만 성립. 가장 쉽게 접근 가능하고 공부할 수 있는 LQG로 시작하는 것이 loop의 전체 구조를 잡는데 유리하다. Gaussian Noise가 고려된 x를 plant가 받고 x_hat 내놓는 것으로 시작.
 
 # Experiment 2
 Nonlinear MRP control under Noise and Saturation
