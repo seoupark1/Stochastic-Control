@@ -1,9 +1,10 @@
 import numpy as np
+import scipy as sp
+import cvxpy as cp
 
+from scipy.linalg import block_diag
 from numpy.typing import ArrayLike
 from collections.abc import Callable
-
-from scipy.optimize._numdiff import approx_derivative
 
 class NMPCController:
 
@@ -14,7 +15,7 @@ class NMPCController:
                  N: int,
                  dt: float,
                  reference_provider,
-                 nonlinear_dynamics_function: Callable):
+                 continuous_nonlinear_dynamics: Callable):
 
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
@@ -24,105 +25,97 @@ class NMPCController:
         self.dt = float(dt)
         
         self.reference_provider = reference_provider
-        self.f = nonlinear_dynamics_function
+        self.f = continuous_nonlinear_dynamics
 
         # size
         self.n = self.Q.shape[0]
         self.m = self.R.shape[0]
 
-        if self.Q.shape != self.P.shape:
-            raise ValueError('Q and P should be the same size matrix')
+    def discrete_nonlinear_dynamics(self,
+                                    t: float,
+                                    currennt_state: ArrayLike,
+                                    control: ArrayLike):
 
-    def get_jacobians(self,
-                      t: float,
-                      state: ArrayLike,
-                      control: ArrayLike):
+        # inputs 
+        t = float(t)
+        x_current = np.asarray(currennt_state, dtype = float)
+        u = np.asarray(control, dtype = float)
+
+        # runge-kutta 4th order method
+        k1 = self.f(t, x_current, u)
+        k2 = self.f(t + self.dt / 2, x_current + self.dt * k1 / 2, u)
+        k3 = self.f(t + self.dt / 2, x_current + self.dt * k2 / 2, u)
+        k4 = self.f(t + self.dt, x_current + self.dt * k3, u)
+
+        return x_current + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    def get_gradient(self,
+                     X_bar: ArrayLike,
+                     U_bar: ArrayLike):
 
         # inputs
-        t = float(t)
-        state = np.asarray(state, dtype = float).reshape(-1)
-        control = np.asarray(control, dtype = float).reshape(-1)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
-        A = approx_derivative(fun = lambda x: self.f(t, x, control),
-                              x0 = state,
-                              method = '3-point')
-        
-        B = approx_derivative(fun = lambda u: self.f(t, state, u),
-                              x0 = control,
-                              method = '3-point')
-
-        return A, B
-
-    def get_defect(self,
-                   t: float,
-                   state: ArrayLike,
-                   control: ArrayLike,
-                   next_state: ArrayLike):
-        
-        # inputs
-        t = float(t)
-        state = np.asarray(state, dtype = float).reshape(-1)
-        control = np.asarray(control, dtype = float).reshape(-1)
-        next_state = np.asarray(next_state, dtype = float).reshape(-1)
-
-        dk = next_state - self.f(t, state, control)
-
-        return dk
-
-    def get_dynamics_constraints(self,
-                                 t: float,
-                                 current_state: ArrayLike,
-                                 X_bar: ArrayLike,
-                                 U_bar: ArrayLike):
-
-        # inputs
-        t = float(t)
-        x0 = np.asarray(current_state, dtype = float).reshape(-1)
-        X_bar = np.asarray(X_bar, dtype = float) # x_(1) ~ x_(N)
-        U_bar = np.asarray(U_bar, dtype = float) # u_(0) ~ u_(N-1)
-
-        # check size
-        if x0.shape != (self.n):
-            raise ValueError('x0 should be (n)')
-        
-        if X_bar.shape != (self.N, self.n):
-            raise ValueError('X_bar should be (N, n)')
-
-        if U_bar.shape != (self.N, self.m):
-            raise ValueError('U_bar should be (N, m)')
-
-        # zeros for dynamics_A, dynamics_B
-        dynamics_A = np.zeros((self.N * self.n, self.N * self.n + self.N * self.m))
-        dynamics_B = np.zeros(self.N * self.n)
-
-        # get B0, d0
-        _, B0 = self.get_jacobians(t, x0, U_bar[0, :])
-        d0 = - (X_bar[0, :] - B0 @ U_bar[0, :])
-        dynamics_A[0 : self.n, 0 : self.n] = np.eye(self.n)
-        dynamics_A[0 : self.n, self.N : self.N + self.n] = B0
-        dynamics_B[0 : self.n] = -d0
+        gradient_x = np.zeros(self.N, self.n)
+        gradient_u = np.zeros(self.N, self.m)
 
         for k in range(self.N):
 
-            if k == 0:
-                continue
+            gradient_u[k, :] = 2 * self.R * U_bar[k, :]
 
-            tk = t + self.dt * k
-            xk_bar = X_bar[k-1, :]
-            x_k_next_bar = X_bar[k, :]
-            uk_bar = U_bar[k, :]
+            if k == (self.N - 1):
+                # terminal x
+                gradient_x[k, :] = 2 * self.P * X_bar[k, :]
+            else:
+                gradient_x[k, :] = 2 * self.Q * X_bar[k, :]
 
-            Ak, Bk = self.get_jacobians(tk, xk_bar, uk_bar)
-            dk = self.get_defect(tk, xk_bar, uk_bar, x_k_next_bar)
+        return np.block([gradient_x.reshape(-1), gradient_u.reshape(-1)])
 
-            dynamics_A[k * self.n : (k+1) * self.n, (k-1) * self.n : k * self.n] = Ak
-            dynamics_A[k * self.n : (k+1) * self.n, k * self.n : (k+1) * self.n] = np.eye(self.n)
-            dynamics_A[k * self.n : (k+1) * self.n, k * self.n + self.N * self.n : (k+1) * self.n + self.N * self.n] = Bk
-            dynamics_B[k * self.N : (k+1) * self.N] = -dk
+    def get_hessian(self):
 
-        return dynamics_A, dynamics_B
+        hessian = []
 
+        for k in range(2 * self.N):
+            if k < (self.N - 1):
+                hessian.append(self.Q)
 
+            if k == (self.N - 1):
+                hessian.append(self.P)
+
+            if k > (self.N - 1):
+                hessian.append(self.R)
+
+        return block_diag([hessian])
+        
+    def objective_function(self,
+                           current_state: ArrayLike,
+                           X_bar: ArrayLike,
+                           U_bar: ArrayLike):
+
+        # inputs
+        x0 = np.asarray(current_state, dtype = float).reshape(-1)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
+
+        x_terminal = X_bar[self.N - 1, :].T
+        u_initial = U_bar[0, :].T
+
+        # initial & terminal cost
+        terminal_cost = cp.quad_form(x_terminal, self.P)
+        initial_cost = cp.quad_form(x0, self.Q) + cp.quad_form(u_initial, self.R)
+        cost = initial_cost + terminal_cost
+
+        # total cost
+        for k in range(self.N - 1):
+
+            # k step state & control
+            x = X_bar[k, :].T
+            u = U_bar[k + 1, :].T
+
+            cost += cp.quad_form(x, self.Q) + cp.quad_form(u, self.R)
+
+        return cp.Minimize(cost)
 
 
     
