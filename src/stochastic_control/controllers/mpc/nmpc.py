@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sp
 import cvxpy as cp
 
 from numpy.typing import ArrayLike
@@ -8,7 +7,7 @@ from collections.abc import Callable
 from scipy.optimize._numdiff import approx_derivative
 from scipy.linalg import block_diag
 
-from stochastic_control.math_tools import is_PSD
+from stochastic_control.math_tools import is_PSD, is_SPD
 
 class NMPCController:
 
@@ -20,7 +19,7 @@ class NMPCController:
                  dt: float,
                  continuous_nonlinear_dynamics: Callable,
                  control_bound = None,
-                 state_constraint_function = None):
+                 state_bound = None):
 
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
@@ -30,7 +29,7 @@ class NMPCController:
         self.dt = float(dt)
         self.f = continuous_nonlinear_dynamics
 
-        self.state_constraint_function = state_constraint_function
+        self.state_bound= state_bound
         self.control_bound = control_bound
 
         # size
@@ -44,26 +43,26 @@ class NMPCController:
         if not is_PSD(self.P):
             raise ValueError('P is not symmetric positive semi-definite matrix')
 
-        if not is_PSD(self.R):
-            raise ValueError('R is not symmetric positive semi-definite matrix')
+        if not is_SPD(self.R):
+            raise ValueError('R is not symmetric positive definite matrix')
 
     def discrete_nonlinear_dynamics(self,
                                     t: float,
-                                    currennt_state: ArrayLike,
+                                    current_state: ArrayLike,
                                     control: ArrayLike):
 
         # inputs 
         t = float(t)
-        x_current = np.asarray(currennt_state, dtype = float)
-        u = np.asarray(control, dtype = float)
+        x = np.asarray(current_state, dtype = float).reshape(-1)
+        u = np.asarray(control, dtype = float).reshape(-1)
 
         # runge-kutta 4th order method
-        k1 = self.f(t, x_current, u)
-        k2 = self.f(t + self.dt / 2, x_current + self.dt * k1 / 2, u)
-        k3 = self.f(t + self.dt / 2, x_current + self.dt * k2 / 2, u)
-        k4 = self.f(t + self.dt, x_current + self.dt * k3, u)
+        k1 = self.f(t, x, u)
+        k2 = self.f(t + self.dt / 2, x + self.dt * k1 / 2, u)
+        k3 = self.f(t + self.dt / 2, x + self.dt * k2 / 2, u)
+        k4 = self.f(t + self.dt, x + self.dt * k3, u)
 
-        return x_current + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
     def get_gradient(self,
                      X_bar: ArrayLike,
@@ -189,7 +188,7 @@ class NMPCController:
         for k in range(self.N):
 
             u_k_bar = U_bar[k, :]
-            del_u_k = del_u[k * self.n : (k+1) * self.n]
+            del_u_k = del_u[k * self.m : (k+1) * self.m]
 
             if lb is not None:
                 constraints.append(del_u_k >= lb - u_k_bar)
@@ -201,16 +200,12 @@ class NMPCController:
 
     def state_constraint(self,
                          del_x,
-                         t: float,
                          X_bar: ArrayLike):
         
-        if self.state_constraint_function is None:
+        if self.state_bound is None:
             return []
-
-        # inputs
-        t = float(t)
-        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
-
+        
+        lb, ub = self.state_bound
         constraints = []
 
         for k in range(self.N):
@@ -218,11 +213,11 @@ class NMPCController:
             x_k_bar = X_bar[k, :]
             del_x_k = del_x[k * self.n : (k+1) * self.n]
 
-            gradient_g = approx_derivative(fun = lambda x: self.state_constraint_function(x),
-                                           x0 = x_k_bar,
-                                           method = '3-point')
-
-            constraints.append(self.state_constraint_function(x_k_bar) + gradient_g.T @ del_x_k <= 0)
+            if lb is not None:
+                constraints.append(del_x_k >= lb - x_k_bar)
+            
+            if ub is not None:
+                constraints.append(del_x_k <= ub - x_k_bar)
 
         return constraints
 
@@ -244,6 +239,10 @@ class NMPCController:
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
         U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m)
+
+        # check alpha
+        if not 0 <= alpha <= 1:
+            raise ValueError('Alpha must be between 0 and 1')
 
         for j in range(max_iteration):
 
@@ -272,11 +271,14 @@ class NMPCController:
             qp = cp.Problem(objective, constraints)
             qp.solve()
 
+            if qp.status != cp.OPTIMAL:
+                raise RuntimeError(f'QP failed because of {qp.status}')
+
             # optimal correction
             optimal_del_z = del_z.value
 
             optimal_del_x = optimal_del_z[0 : self.N * self.n].reshape(self.N, self.n)
-            optimal_del_u = optimal_del_z[self.N * self.n : 0].reshape(self.N, self.m)
+            optimal_del_u = optimal_del_z[self.N * self.n : ].reshape(self.N, self.m)
 
             X_bar += alpha * optimal_del_x
             U_bar += alpha * optimal_del_u
