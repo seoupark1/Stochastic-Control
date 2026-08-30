@@ -271,7 +271,7 @@ class NMPCController:
         X_bar = self.initial_X_bar(t, x0, U_bar)
 
         # check alpha
-        if not 0 <= alpha <= 1:
+        if not 0 < alpha <= 1:
             raise ValueError('Alpha must be between 0 and 1')
 
         for j in range(max_iteration):
@@ -300,7 +300,7 @@ class NMPCController:
             qp = cp.Problem(objective, constraints)
             qp.solve()
 
-            if qp.status != cp.OPTIMAL:
+            if qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
                 raise RuntimeError(f'QP failed because of {qp.status}')
 
             # optimal correction
