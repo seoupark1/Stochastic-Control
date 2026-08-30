@@ -189,19 +189,19 @@ class NMPCController:
         for k in range(self.N):
 
             u_k_bar = U_bar[k, :]
+            del_u_k = del_u[k * self.n : (k+1) * self.n]
 
             if lb is not None:
-                constraints.append(del_u >= lb - u_k_bar)
+                constraints.append(del_u_k >= lb - u_k_bar)
             
             if ub is not None:
-                constraints.append(del_u <= ub - u_k_bar)
+                constraints.append(del_u_k <= ub - u_k_bar)
 
         return constraints
 
     def state_constraint(self,
                          del_x,
                          t: float,
-                         current_state: ArrayLike,
                          X_bar: ArrayLike):
         
         if self.state_constraint_function is None:
@@ -209,7 +209,6 @@ class NMPCController:
 
         # inputs
         t = float(t)
-        x0 = np.asarray(current_state, dtype = float).reshape(-1)
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
 
         constraints = []
@@ -227,6 +226,66 @@ class NMPCController:
 
         return constraints
 
-    def solve_nmpc(self,
-                   initial_guess,
-                   )
+    def control_vector(self,
+                   t: float,
+                   current_state: ArrayLike,
+                   X_bar: ArrayLike,
+                   U_bar: ArrayLike,
+                   max_iteration: int,
+                   alpha: float,
+                   del_z_tolerance: float):
+
+        # inputs
+        t = float(t)
+        alpha = float(alpha)
+        del_z_tolerance = float(del_z_tolerance)
+        max_iteration = int(max_iteration)
+
+        x0 = np.asarray(current_state, dtype = float).reshape(-1)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m)
+
+        for j in range(max_iteration):
+
+            del_z, objective = self.objective(X_bar, U_bar)
+
+            del_x = del_z[0 : self.N * self.n]
+            del_u = del_z[self.N * self.n : ]
+
+            # constraints
+            dynamics = self.dynamics_constraint(del_z, 
+                                                t, 
+                                                x0, 
+                                                X_bar, 
+                                                U_bar)
+            
+            control = self.control_constraint(del_u,
+                                              U_bar)
+            
+            state = self.state_constraint(del_x,
+                                          t,
+                                          X_bar)
+
+            constraints = dynamics + control + state
+
+            # solve QP
+            qp = cp.Problem(objective, constraints)
+            qp.solve()
+
+            # optimal correction
+            optimal_del_z = del_z.value
+
+            optimal_del_x = optimal_del_z[0 : self.N * self.n].reshape(self.N, self.n)
+            optimal_del_u = optimal_del_z[self.N * self.n : 0].reshape(self.N, self.m)
+
+            X_bar += alpha * optimal_del_x
+            U_bar += alpha * optimal_del_u
+
+            # when correction is small enough
+            if np.linalg.norm(optimal_del_z) < del_z_tolerance:
+                break
+
+        optimal_u = U_bar[0, :].reshape(-1)
+
+        return optimal_u, X_bar, U_bar
+
