@@ -88,35 +88,24 @@ class NMPCController:
 
         return block_diag([hessian])
         
-    def objective_function(self,
-                           current_state: ArrayLike,
-                           X_bar: ArrayLike,
-                           U_bar: ArrayLike):
+    def objective(self,
+                  X_bar: ArrayLike,
+                  U_bar: ArrayLike):
 
         # inputs
-        x0 = np.asarray(current_state, dtype = float).reshape(-1)
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
         U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
-        x_terminal = X_bar[self.N - 1, :].T
-        u_initial = U_bar[0, :].T
+        # gradient & hessian
+        gradient = self.get_gradient(X_bar, U_bar)
+        hessian = self.get_hessian()
 
-        # initial & terminal cost
-        terminal_cost = cp.quad_form(x_terminal, self.P)
-        initial_cost = cp.quad_form(x0, self.Q) + cp.quad_form(u_initial, self.R)
-        cost = initial_cost + terminal_cost
+        # correction
+        del_z = cp.Variable(hessian.shape[0])
 
-        # total cost
-        for k in range(self.N - 1):
+        # objective
+        objective = cp.Minimize((1/2) * del_z.T @ hessian @ del_z + gradient.T @ del_z)
 
-            # k step state & control
-            x = X_bar[k, :].T
-            u = U_bar[k + 1, :].T
-
-            cost += cp.quad_form(x, self.Q) + cp.quad_form(u, self.R)
-
-        return cp.Minimize(cost)
-
-
+        return objective
     
 
