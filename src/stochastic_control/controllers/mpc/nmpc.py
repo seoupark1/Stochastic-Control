@@ -248,13 +248,11 @@ class NMPCController:
         return X_bar
 
     def control_vector(self,
-                   t: float,
-                   current_state: ArrayLike,
-                   X_bar: ArrayLike,
-                   U_bar: ArrayLike,
-                   max_iteration: int,
-                   alpha: float,
-                   tolerance: float):
+                       t: float,
+                       current_state: ArrayLike,
+                       max_iteration: int,
+                       alpha: float,
+                       tolerance: float):
 
         # inputs
         t = float(t)
@@ -314,7 +312,7 @@ class NMPCController:
             X_bar += alpha * optimal_del_x
             U_bar += alpha * optimal_del_u
 
-            # when correction is small enough
+            # when correction and defect are small enough
             if np.linalg.norm(optimal_del_z) < tolerance and np.linalg.norm(defect) < tolerance:
                 break
 
