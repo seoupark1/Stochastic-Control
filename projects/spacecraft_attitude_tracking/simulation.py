@@ -15,7 +15,7 @@ from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
-from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQRCompensator
+from stochastic_control.compensators.ekf_lqr import EKFLQRCompensator
 
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat : ArrayLike,
