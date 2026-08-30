@@ -2,11 +2,13 @@ import numpy as np
 import scipy as sp
 import cvxpy as cp
 
-from scipy.linalg import block_diag
 from numpy.typing import ArrayLike
 from collections.abc import Callable
 
-from stochastic_control.math_tools import is_SPD, is_PSD
+from scipy.optimize._numdiff import approx_derivative
+from scipy.linalg import block_diag
+
+from stochastic_control.math_tools import is_PSD
 
 class NMPCController:
 
@@ -36,8 +38,14 @@ class NMPCController:
         self.m = self.R.shape[0]
 
         # check symmetry & positive (semi) definite
+        if not is_PSD(self.Q):
+            raise ValueError('Q is not symmetric positive semi-definite matrix')
 
+        if not is_PSD(self.P):
+            raise ValueError('P is not symmetric positive semi-definite matrix')
 
+        if not is_PSD(self.R):
+            raise ValueError('R is not symmetric positive semi-definite matrix')
 
     def discrete_nonlinear_dynamics(self,
                                     t: float,
@@ -116,32 +124,109 @@ class NMPCController:
 
         return del_z, objective
 
-    def get_del_u
+    def dynamics_constraint(self,
+                            del_z,
+                            t: float,
+                            current_state: ArrayLike,
+                            X_bar: ArrayLike,
+                            U_bar: ArrayLike):
+        
+        # inputs
+        t = float(t)
+        x0 = np.asarray(current_state, dtype = float).reshape(-1) # x(0)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
-    def get_del_x
+        constraints = []
 
-    def dynamics_constraint()
+        for k in range(self.N):
+
+            # time
+            tk = t + self.dt * k
+
+            # k state properties
+            if k == 0:
+                x_k_bar = x0
+                del_x_k = np.zeros(self.n)
+            
+            else:
+                x_k_bar = X_bar[k-1, :]
+                del_x_k = del_z[(k-1) * self.n : k * self.n]
+
+            # k control properties
+            u_k_bar = U_bar[k, :]
+            del_u_k = del_z[self.n * self.N + k * self.m : self.n * self.N + (k+1) * self.m]
+
+            # k+1 state properties
+            x_next_bar = X_bar[k, :]
+            del_x_next = del_z[k * self.n : (k+1) * self.n]
+
+            # A, B jacobians & defect
+            A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
+                                  x0 = x_k_bar,
+                                  method = '3-point')
+            
+            B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
+                                  x0 = u_k_bar,
+                                  method = '3-point')
+
+            defect = x_next_bar - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
+
+            constraints.append(defect == A @ del_x_k + B @ del_u_k - del_x_next)
+
+        return constraints
     
     def control_constraint(self,
                            del_u,
-                           control):
+                           U_bar: ArrayLike):
 
         if self.control_bound is None:
             return []
         
         lb, ub = self.control_bound
         constraints = []
-        
-        if lb is not None:
-            constraints.append(del_u >= lb - control)
-        
-        if ub is not None:
-            constraints.append(del_u <= ub - control)
+
+        for k in range(self.N):
+
+            u_k_bar = U_bar[k, :]
+
+            if lb is not None:
+                constraints.append(del_u >= lb - u_k_bar)
+            
+            if ub is not None:
+                constraints.append(del_u <= ub - u_k_bar)
 
         return constraints
 
     def state_constraint(self,
                          del_x,
-                         state):
+                         t: float,
+                         current_state: ArrayLike,
+                         X_bar: ArrayLike):
         
-        f = self.state_constraint_function
+        if self.state_constraint_function is None:
+            return []
+
+        # inputs
+        t = float(t)
+        x0 = np.asarray(current_state, dtype = float).reshape(-1)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
+
+        constraints = []
+
+        for k in range(self.N):
+
+            x_k_bar = X_bar[k, :]
+            del_x_k = del_x[k * self.n : (k+1) * self.n]
+
+            gradient_g = approx_derivative(fun = lambda x: self.state_constraint_function(x),
+                                           x0 = x_k_bar,
+                                           method = '3-point')
+
+            constraints.append(self.state_constraint_function(x_k_bar) + gradient_g.T @ del_x_k <= 0)
+
+        return constraints
+
+    def solve_nmpc(self,
+                   initial_guess,
+                   )
