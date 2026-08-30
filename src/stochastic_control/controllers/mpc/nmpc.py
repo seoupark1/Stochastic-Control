@@ -6,6 +6,8 @@ from scipy.linalg import block_diag
 from numpy.typing import ArrayLike
 from collections.abc import Callable
 
+from stochastic_control.math_tools import is_SPD, is_PSD
+
 class NMPCController:
 
     def __init__(self,
@@ -14,8 +16,9 @@ class NMPCController:
                  P: ArrayLike,
                  N: int,
                  dt: float,
-                 reference_provider,
-                 continuous_nonlinear_dynamics: Callable):
+                 continuous_nonlinear_dynamics: Callable,
+                 control_bound = None,
+                 state_constraint_function = None):
 
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
@@ -23,13 +26,18 @@ class NMPCController:
 
         self.N = int(N)
         self.dt = float(dt)
-        
-        self.reference_provider = reference_provider
         self.f = continuous_nonlinear_dynamics
+
+        self.state_constraint_function = state_constraint_function
+        self.control_bound = control_bound
 
         # size
         self.n = self.Q.shape[0]
         self.m = self.R.shape[0]
+
+        # check symmetry & positive (semi) definite
+
+
 
     def discrete_nonlinear_dynamics(self,
                                     t: float,
@@ -57,20 +65,20 @@ class NMPCController:
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
         U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
-        gradient_x = np.zeros(self.N, self.n)
-        gradient_u = np.zeros(self.N, self.m)
+        gradient_x = np.zeros((self.N, self.n))
+        gradient_u = np.zeros((self.N, self.m))
 
         for k in range(self.N):
 
-            gradient_u[k, :] = 2 * self.R * U_bar[k, :]
+            gradient_u[k, :] = 2 * self.R @ U_bar[k, :]
 
             if k == (self.N - 1):
                 # terminal x
-                gradient_x[k, :] = 2 * self.P * X_bar[k, :]
+                gradient_x[k, :] = 2 * self.P @ X_bar[k, :]
             else:
-                gradient_x[k, :] = 2 * self.Q * X_bar[k, :]
+                gradient_x[k, :] = 2 * self.Q @ X_bar[k, :]
 
-        return np.block([gradient_x.reshape(-1), gradient_u.reshape(-1)])
+        return np.concatenate([gradient_x.reshape(-1), gradient_u.reshape(-1)])
 
     def get_hessian(self):
 
@@ -78,15 +86,15 @@ class NMPCController:
 
         for k in range(2 * self.N):
             if k < (self.N - 1):
-                hessian.append(self.Q)
+                hessian.append(2 * self.Q)
 
-            if k == (self.N - 1):
-                hessian.append(self.P)
+            elif k == (self.N - 1):
+                hessian.append(2 * self.P)
 
-            if k > (self.N - 1):
-                hessian.append(self.R)
+            elif k > (self.N - 1):
+                hessian.append(2 * self.R)
 
-        return block_diag([hessian])
+        return block_diag(*hessian)
         
     def objective(self,
                   X_bar: ArrayLike,
@@ -104,8 +112,36 @@ class NMPCController:
         del_z = cp.Variable(hessian.shape[0])
 
         # objective
-        objective = cp.Minimize((1/2) * del_z.T @ hessian @ del_z + gradient.T @ del_z)
+        objective = cp.Minimize((1/2) * cp.quad_form(del_z, hessian) + gradient.T @ del_z)
 
-        return objective
+        return del_z, objective
+
+    def get_del_u
+
+    def get_del_x
+
+    def dynamics_constraint()
     
+    def control_constraint(self,
+                           del_u,
+                           control):
 
+        if self.control_bound is None:
+            return []
+        
+        lb, ub = self.control_bound
+        constraints = []
+        
+        if lb is not None:
+            constraints.append(del_u >= lb - control)
+        
+        if ub is not None:
+            constraints.append(del_u <= ub - control)
+
+        return constraints
+
+    def state_constraint(self,
+                         del_x,
+                         state):
+        
+        f = self.state_constraint_function
