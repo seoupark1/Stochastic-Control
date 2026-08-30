@@ -289,14 +289,13 @@ class NMPCController:
         alpha = float(alpha)
         tolerance = float(tolerance)
         max_iteration = int(max_iteration)
-
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
 
         if self.control_sequence is None:
             U_bar = np.zeros((self.N, self.m))
 
         else: 
-            U_bar = self.control_sequence
+            U_bar = self.control_sequence.copy()
 
         X_bar = self.initial_X_bar(t, x0, U_bar)
 
