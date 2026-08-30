@@ -46,6 +46,9 @@ class NMPCController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
+        # backup for warm start
+        self.control_sequence = None
+
     def discrete_nonlinear_dynamics(self,
                                     t: float,
                                     current_state: ArrayLike,
@@ -288,6 +291,7 @@ class NMPCController:
                 break
 
         optimal_u = U_bar[0, :].reshape(-1)
+        self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1, :]), axis = 0)
 
         return optimal_u, X_bar, U_bar
 
