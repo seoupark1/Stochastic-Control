@@ -1,5 +1,3 @@
-import numpy as np
-
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 
