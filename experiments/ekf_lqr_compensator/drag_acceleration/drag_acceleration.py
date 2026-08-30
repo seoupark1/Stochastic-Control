@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
 from stochastic_control.providers.reference_trajectory import TrajectoryReferenceProvider
-from stochastic_control.compensators.nonlinear_compensator.ekf_lqr import EKFLQRCompensator
+from stochastic_control.compensators.ekf_lqr import EKFLQRCompensator
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 
 def simulation():
