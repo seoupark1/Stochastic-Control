@@ -176,7 +176,7 @@ class NMPCController:
 
             constraints.append(defect == A @ del_x_k + B @ del_u_k - del_x_next)
 
-        return constraints
+        return constraints, defect
     
     def control_constraint(self,
                            del_u,
@@ -224,6 +224,29 @@ class NMPCController:
 
         return constraints
 
+    def initial_X_bar(self,
+                      t: float,
+                      current_state: ArrayLike,
+                      U_bar: ArrayLike):
+    
+        # inputs
+        t = float(t)
+        x0 = np.asarray(current_state, dtype = float).reshape(-1)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m)
+    
+        X_bar = np.zeros((self.N, self.n)) # x1 ~ xN
+
+        # proper x_k which satisfies the dynamics (defect = 0)
+        for k in range(self.N):
+            tk = t + self.dt * k
+
+            u_k_bar = U_bar[k, :]
+            x_k_bar = self.discrete_nonlinear_dynamics(tk, x0, u_k_bar)
+
+            X_bar[k, :] = x_k_bar
+
+        return X_bar
+
     def control_vector(self,
                    t: float,
                    current_state: ArrayLike,
@@ -231,17 +254,23 @@ class NMPCController:
                    U_bar: ArrayLike,
                    max_iteration: int,
                    alpha: float,
-                   del_z_tolerance: float):
+                   tolerance: float):
 
         # inputs
         t = float(t)
         alpha = float(alpha)
-        del_z_tolerance = float(del_z_tolerance)
+        tolerance = float(tolerance)
         max_iteration = int(max_iteration)
 
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
-        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n)
-        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m)
+
+        if self.control_sequence is None:
+            U_bar = np.zeros((self.N, self.m))
+
+        else: 
+            U_bar = self.control_sequence
+
+        X_bar = self.initial_X_bar(t, x0, U_bar)
 
         # check alpha
         if not 0 <= alpha <= 1:
@@ -255,17 +284,16 @@ class NMPCController:
             del_u = del_z[self.N * self.n : ]
 
             # constraints
-            dynamics = self.dynamics_constraint(del_z, 
-                                                t, 
-                                                x0, 
-                                                X_bar, 
-                                                U_bar)
+            dynamics, defect = self.dynamics_constraint(del_z, 
+                                                        t, 
+                                                        x0, 
+                                                        X_bar, 
+                                                        U_bar)
             
             control = self.control_constraint(del_u,
                                               U_bar)
             
             state = self.state_constraint(del_x,
-                                          t,
                                           X_bar)
 
             constraints = dynamics + control + state
@@ -287,11 +315,11 @@ class NMPCController:
             U_bar += alpha * optimal_del_u
 
             # when correction is small enough
-            if np.linalg.norm(optimal_del_z) < del_z_tolerance:
+            if np.linalg.norm(optimal_del_z) < tolerance and np.linalg.norm(defect) < tolerance:
                 break
 
         optimal_u = U_bar[0, :].reshape(-1)
-        self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1, :]), axis = 0)
+        self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1 :, :]), axis = 0)
 
         return optimal_u, X_bar, U_bar
 
