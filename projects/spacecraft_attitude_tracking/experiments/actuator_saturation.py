@@ -38,7 +38,7 @@ unsaturated_result = simulation(initial_x_true = initial_x_true,
 
 # control limiter
 max_u_cmd_abs = unsaturated_result['max_abs_commanded_control']
-u_max = max_u_cmd_abs / 2
+u_max = max_u_cmd_abs * (2/3)
 actuator = ReactionWheel(u_max)
 
 saturated_result = simulation(initial_x_true = initial_x_true,
@@ -75,7 +75,7 @@ plt.title('Nadir Pointing Angular Velocity Tracking Error')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/tracking_error.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/tracking_error.png')
 plt.close()
 
 # estimation error
@@ -98,7 +98,7 @@ plt.title('Nadir Pointing Omega Estimation Error')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/estimation_error.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/estimation_error.png')
 plt.close()
 
 # control
@@ -107,8 +107,8 @@ fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
 for i in range(3):
     axes[i].plot(time[0:-1], u_actual[i], label = 'u_actual')
     axes[i].plot(time[0:-1], u_cmd[i], label = 'u_cmd')
-    axes[i].axhline(u_max[i], linestyle = '--', color = 'red')
-    axes[i].axhline(-u_max[i], linestyle = '--', color = 'red')
+    axes[i].axhline(u_max[i], linestyle = '--')
+    axes[i].axhline(-u_max[i], linestyle = '--')
     axes[i].set_xlabel('Time [s]')
     axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
     axes[i].legend()
@@ -116,7 +116,7 @@ for i in range(3):
 
 fig.suptitle('Actual Control vs Commanded Control')
 fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/saturated_control.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/saturated_control.png')
 plt.close()
 
 # true gravity gradient
@@ -136,5 +136,5 @@ plt.ylabel('Torque [Nm]')
 plt.title('True Gravity Gradient Torque Norm of Spacecraft')
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/true_gravity_gradient.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/true_gravity_gradient.png')
 plt.close()
