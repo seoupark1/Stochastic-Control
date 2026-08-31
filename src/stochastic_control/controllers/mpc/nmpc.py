@@ -1,8 +1,6 @@
 import numpy as np
 import cvxpy as cp
-
 from numpy.typing import ArrayLike
-from collections.abc import Callable
 
 from scipy.optimize._numdiff import approx_derivative
 from scipy.linalg import block_diag
@@ -17,7 +15,8 @@ class NMPCController:
                  P: ArrayLike,
                  N: int,
                  dt: float,
-                 continuous_nonlinear_dynamics: Callable,
+                 discrete_nonlienar_dynamics = None,
+                 continuous_nonlinear_dynamics = None,
                  control_bound = None,
                  state_bound = None):
 
@@ -27,7 +26,14 @@ class NMPCController:
 
         self.N = int(N)
         self.dt = float(dt)
-        self.f = continuous_nonlinear_dynamics
+        self.discrete_f = discrete_nonlienar_dynamics
+        self.continuous_f = continuous_nonlinear_dynamics
+
+        if self.discrete_f is None and self.continuous_f is None:
+            raise ValueError('At least one dynamics must be provided')
+
+        if self.discrete_f is not None and self.continuous_f is not None:
+            raise ValueError('Only one dynamics is required')
 
         self.state_bound= state_bound
         self.control_bound = control_bound
@@ -59,13 +65,17 @@ class NMPCController:
         x = np.asarray(current_state, dtype = float).reshape(-1)
         u = np.asarray(control, dtype = float).reshape(-1)
 
-        # runge-kutta 4th order method
-        k1 = self.f(t, x, u)
-        k2 = self.f(t + self.dt / 2, x + self.dt * k1 / 2, u)
-        k3 = self.f(t + self.dt / 2, x + self.dt * k2 / 2, u)
-        k4 = self.f(t + self.dt, x + self.dt * k3, u)
+        if self.discrete_f is not None:
+            return self.discrete_f(t, current_state, control)
 
-        return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        else: 
+            # runge-kutta 4th order method
+            k1 = self.continuous_f(t, x, u)
+            k2 = self.continuous_f(t + self.dt / 2, x + self.dt * k1 / 2, u)
+            k3 = self.continuous_f(t + self.dt / 2, x + self.dt * k2 / 2, u)
+            k4 = self.continuous_f(t + self.dt, x + self.dt * k3, u)
+
+            return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
     def get_gradient(self,
                      X_bar: ArrayLike,
@@ -282,12 +292,14 @@ class NMPCController:
                        current_state: ArrayLike,
                        max_iteration: int,
                        alpha: float,
-                       tolerance: float):
+                       del_z_tolerance: float,
+                       defect_tolerance: float):
 
         # inputs
         t = float(t)
         alpha = float(alpha)
-        tolerance = float(tolerance)
+        del_z_tolerance = float(del_z_tolerance)
+        defect_tolerance = float(defect_tolerance)
         max_iteration = int(max_iteration)
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
 
@@ -344,7 +356,7 @@ class NMPCController:
             defects = self.get_defects(t, x0, X_bar, U_bar)
 
             # when correction and defect are small enough
-            if np.linalg.norm(optimal_del_z) < tolerance and np.linalg.norm(defects) < tolerance:
+            if np.linalg.norm(optimal_del_z) < del_z_tolerance and np.linalg.norm(defects) < defect_tolerance:
                 break
 
         optimal_u = U_bar[0, :].reshape(-1)
