@@ -27,7 +27,7 @@ def plot_graphs(results,
     plt.close()
 
     # estimation error
-    estimation_tf = 3
+    estimation_tf = 0.5
     time_range = results['time'] <= estimation_tf
     plt.subplot(2, 1, 1)
     plt.plot(results['time'][time_range], np.rad2deg(results['attitude_estimation_error'][time_range]))
