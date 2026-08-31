@@ -10,7 +10,7 @@ from stochastic_control.math_tools import skew_symmetric
 from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
-from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
+from stochastic_control.providers import BodyStateContext
 from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
@@ -51,9 +51,29 @@ def simulation(initial_x_true: ArrayLike,
 
     nadir_provider = NadirPointingReference(orbit_provider)
 
-    # reference state
+    # reference state & control
     def reference_x_function(t):
         return np.zeros(6)
+
+    def reference_u_function(t):
+
+        r_N, v_N = orbit_provider.get_state(t)
+        reference_state = nadir_provider.get_state(t)
+
+        sigma_RN = mrp_shadow_set(reference_state[0:3])
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        reference_body_state = BodyStateContext(position_N = r_N,
+                                                velocity_N = v_N,
+                                                dcm_BN = mrp_to_dcm(sigma_RN),
+                                                angular_velocity_BN = omega_RN_R)
+        
+        disturbance = gravity_gradient.torque(t, reference_body_state)
+
+        control = inertia_tensor @ omega_RN_R_dot + skew_symmetric(omega_RN_R) @ inertia_tensor @ omega_RN_R - disturbance
+
+        return control
 
     def gravity_gradient_torque(t, state):
                 
@@ -192,11 +212,16 @@ def simulation(initial_x_true: ArrayLike,
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
+    # mpc properties
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
     P = 2 * Q
-    dt_mpc = 0.05
-    N = 20
+    dt_mpc = dt
+    N = int(round(prediction_horizon / dt_mpc))
+    max_j = 5
+    alpha = 0.5
+    del_z_tolerance = 1e-4
+    defect_tolerance = 1e-5
     x_true = initial_x_true
 
     def mpc_discrete_dynamics(t, state, control):
@@ -207,6 +232,7 @@ def simulation(initial_x_true: ArrayLike,
                          P = P,
                          N = N,
                          dt = dt,
+                         reference_control_function = reference_u_function,
                          discrete_nonlienar_dynamics = mpc_discrete_dynamics,
                          control_bound = control_bound,
                          state_bound = state_bound)
@@ -263,10 +289,10 @@ def simulation(initial_x_true: ArrayLike,
         # control with saturation
         u_cmd, X_bar, U_bar = mpc.control_vector(t = t,
                                                  current_state = ekf.x,
-                                                 max_iteration = 10,
-                                                 alpha = 0.5,
-                                                 del_z_tolerance = 1e-4,
-                                                 defect_tolerance = 1e-5)
+                                                 max_iteration = max_j,
+                                                 alpha = alpha,
+                                                 del_z_tolerance = del_z_tolerance,
+                                                 defect_tolerance = defect_tolerance)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -378,3 +404,4 @@ def simulation(initial_x_true: ArrayLike,
             'omega_tracking_error': omega_tracking_error_norm_history,
             'attitude_estimation_error': attitude_estimation_error_angle_history,
             'omega_estimation_error': omega_estimation_norm_error_history}
+
