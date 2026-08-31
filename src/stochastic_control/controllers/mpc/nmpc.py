@@ -129,24 +129,26 @@ class NMPCController:
         return block_diag(*hessian)
         
     def objective(self,
+                  t: float,
                   X_bar: ArrayLike,
                   U_bar: ArrayLike):
 
         # inputs
+        t = float(t)
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
         U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
         # gradient & hessian
-        gradient = self.get_gradient(X_bar, U_bar)
+        gradient = self.get_gradient(t, X_bar, U_bar)
         hessian = self.get_hessian()
 
         # correction
         del_z = cp.Variable(hessian.shape[0])
 
         # objective
-        objective = cp.Minimize((1/2) * cp.quad_form(del_z, hessian) + gradient.T @ del_z)
+        objective_result = cp.Minimize((1/2) * cp.quad_form(del_z, hessian) + gradient.T @ del_z)
 
-        return del_z, objective
+        return del_z, objective_result
 
     def get_defects(self,
                     t: float,
@@ -218,11 +220,11 @@ class NMPCController:
             # A, B jacobians & defect
             A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
                                   x0 = x_k_bar,
-                                  method = '3-point')
+                                  method = '2-point')
             
             B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
                                   x0 = u_k_bar,
-                                  method = '3-point')
+                                  method = '2-point')
 
             defect = x_next_bar - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
 
@@ -315,6 +317,7 @@ class NMPCController:
         max_iteration = int(max_iteration)
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
 
+        # warm start
         if self.control_sequence is None:
             U_bar = np.zeros((self.N, self.m))
 
@@ -329,8 +332,7 @@ class NMPCController:
 
         for j in range(max_iteration):
 
-            del_z, objective = self.objective(X_bar, U_bar)
-
+            del_z, objective = self.objective(t, X_bar, U_bar)
             del_x = del_z[0 : self.N * self.n]
             del_u = del_z[self.N * self.n : ]
 
@@ -366,12 +368,15 @@ class NMPCController:
             X_bar += alpha * optimal_del_x
             U_bar += alpha * optimal_del_u
 
-            defects = self.get_defects(t, x0, X_bar, U_bar)
+            # when correction is small enough
+            if np.linalg.norm(optimal_del_z) < del_z_tolerance:
+                
+                defects = self.get_defects(t, x0, X_bar, U_bar)
 
-            # when correction and defect are small enough
-            if np.linalg.norm(optimal_del_z) < del_z_tolerance and np.linalg.norm(defects) < defect_tolerance:
-                break
-
+                # when defect is small enough
+                if np.linalg.norm(defects) < defect_tolerance:
+                    break
+        
         optimal_u = U_bar[0, :].reshape(-1)
         self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1 :, :]), axis = 0)
 
