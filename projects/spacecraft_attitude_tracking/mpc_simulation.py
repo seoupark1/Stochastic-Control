@@ -107,20 +107,23 @@ def simulation(initial_x_true: ArrayLike,
 
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
-    def motion_model(t, state, control):
+    def discrete_dynamics(t, state, control, time_interval):
 
         # runge-kutta 4th order method
         k1 = dynamics(t, state, control)
-        k2 = dynamics(t + dt / 2, state + dt * k1 / 2, control)
-        k3 = dynamics(t + dt / 2, state + dt * k2 / 2, control)
-        k4 = dynamics(t + dt, state + dt * k3, control)
+        k2 = dynamics(t + time_interval / 2, state + time_interval * k1 / 2, control)
+        k3 = dynamics(t + time_interval / 2, state + time_interval * k2 / 2, control)
+        k4 = dynamics(t + time_interval, state + time_interval * k3, control)
 
-        next_state = state + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        next_state = state + time_interval / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         # shadow set transfer
         next_state[:3] = mrp_shadow_set(next_state[:3])
 
         return next_state
+
+    def motion_model(t, state, control):
+        return discrete_dynamics(t, state, control, dt)
 
     def motion_jacobian(t, state, control):
 
@@ -192,16 +195,19 @@ def simulation(initial_x_true: ArrayLike,
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
     P = 2 * Q
-    mpc_dt = dt
-    N = int(prediction_horizon / mpc_dt)
+    dt_mpc = 0.05
+    N = 20
     x_true = initial_x_true
+
+    def mpc_discrete_dynamics(t, state, control):
+        return discrete_dynamics(t, state, control, dt_mpc)
 
     mpc = NMPCController(Q = Q,
                          R = R,
                          P = P,
                          N = N,
                          dt = dt,
-                         discrete_nonlienar_dynamics = motion_model,
+                         discrete_nonlienar_dynamics = mpc_discrete_dynamics,
                          control_bound = control_bound,
                          state_bound = state_bound)
 
