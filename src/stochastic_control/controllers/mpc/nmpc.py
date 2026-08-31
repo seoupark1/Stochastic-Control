@@ -15,6 +15,7 @@ class NMPCController:
                  P: ArrayLike,
                  N: int,
                  dt: float,
+                 reference_control_function = None,
                  discrete_nonlienar_dynamics = None,
                  continuous_nonlinear_dynamics = None,
                  control_bound = None,
@@ -23,9 +24,10 @@ class NMPCController:
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
         self.P = np.asarray(P, dtype = float)
-
         self.N = int(N)
         self.dt = float(dt)
+
+        self.reference_control_function = reference_control_function
         self.discrete_f = discrete_nonlienar_dynamics
         self.continuous_f = continuous_nonlinear_dynamics
 
@@ -78,10 +80,12 @@ class NMPCController:
             return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
     def get_gradient(self,
+                     t: float,
                      X_bar: ArrayLike,
                      U_bar: ArrayLike):
 
         # inputs
+        t = float(t)
         X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
         U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
 
@@ -90,7 +94,15 @@ class NMPCController:
 
         for k in range(self.N):
 
-            gradient_u[k, :] = 2 * self.R @ U_bar[k, :]
+            tk = t + k * self.dt
+
+            if self.reference_control_function is None:
+                reference_u = np.zeros(self.m)
+
+            else:
+                reference_u = np.asarray(self.reference_control_function(tk), dtype = float).reshape(-1)
+
+            gradient_u[k, :] = 2 * self.R @ (U_bar[k, :] - reference_u)
 
             if k == (self.N - 1):
                 # terminal x
@@ -339,7 +351,8 @@ class NMPCController:
 
             # solve QP
             qp = cp.Problem(objective, constraints)
-            qp.solve()
+            qp.solve(solver = cp.OSQP,
+                     warm_start = True)
 
             if qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
                 raise RuntimeError(f'QP failed because of {qp.status}')
