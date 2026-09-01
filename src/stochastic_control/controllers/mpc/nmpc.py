@@ -396,7 +396,7 @@ class NMPCController:
                     break
 
             if j == (max_iteration - 1):
-                status = 'max iteration, return terminal u'
+                status = "max iteration, return max j's u"
         
         optimal_u = U_bar[0, :].reshape(-1)
         histories = {'status': status,
