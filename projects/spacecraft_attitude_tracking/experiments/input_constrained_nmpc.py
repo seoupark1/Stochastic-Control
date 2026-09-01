@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from collections import Counter
 from ..simulations.ekf_nmpc import simulation
 
 # star tracker performance
@@ -24,12 +25,12 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 
 # nmpc properties
-prediction_horizon = 1 # [s]
+prediction_horizon = 0.1 # [s]
 max_iteration = 5 # [step]
-alpha = 0.5,
+alpha = 0.5
 del_z_tolerance = 1e-4
 defect_tolerance = 1e-5
-u_max = (20, 20, 20)
+u_max = np.asarray([20, 20, 20]) # [Nm]
 
 nmpc_result = simulation(initial_x_true = initial_x_true,
                          initial_x_hat = initial_x_hat,
@@ -37,7 +38,7 @@ nmpc_result = simulation(initial_x_true = initial_x_true,
                          motion_noise_covariance = motion_noise_covariance,
                          star_tracker_noise_covariance = star_tracker_noise_covariance,
                          gyroscope_noise_covariance = gyroscope_noise_covariance,
-                         simulation_tf = 60,
+                         simulation_tf = 1,
                          prediction_horizon = prediction_horizon,
                          star_tracker_sampling_rate = star_tracker_sampling_rate,
                          gyroscope_sampling_rate = gyroscope_sampling_rate,
@@ -49,24 +50,46 @@ nmpc_result = simulation(initial_x_true = initial_x_true,
                          control_bound = (-u_max, u_max))
 
 time = nmpc_result['time']
-control = nmpc_result['commanded_control']
+attitude_tracking_error = nmpc_result['attitude_tracking_error']
+omega_tracking_error = nmpc_result['omega_tracking_error']
+u_cmd = nmpc_result['commanded_control']
+qp_status = nmpc_result['qp_status']
 
-# commanded control
+# tracking error
 plt.subplot(2, 1, 1)
-plt.plot(time[0:-1], control[0], label = 'u_1')
-plt.plot(time[0:-1], control[1], label = 'u_2')
-plt.plot(time[0:-1], control[2], label = 'u_3')
+plt.plot(time, np.rad2deg(attitude_tracking_error))
 plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.title('NMPC Nadir Pointing Commanded Control')
+plt.ylabel('Attitude Error [deg]')
+plt.title('NMPC Nadir Pointing Attitude Tracking Error')
 plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time[0:-1], np.linalg.norm(control, axis = 0))
+plt.plot(time, np.rad2deg(omega_tracking_error))
 plt.xlabel('Time [s]')
-plt.ylabel('Torque [Nm]')
-plt.title('NMPC Nadir Pointing Commanded Control Norm')
+plt.ylabel('Angular Velocity Error [deg/s]')
+plt.title('NMPC Nadir Pointing Angular Velocity Tracking Error')
+plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/tracking_error.png')
+plt.close()
+
+# qp failed / converged / max iteration
+print('QP status:', Counter(qp_status))
+
+# commanded constrained control
+fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
+
+for i in range(3):
+    axes[i].plot(time[0:-1], u_cmd[i], label = 'u_cmd')
+    axes[i].axhline(u_max[i], linestyle = '--')
+    axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].set_xlabel('Time [s]')
+    axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
+    axes[i].legend()
+    axes[i].grid(True)
+
+fig.suptitle('NMPC Nadir Pointing Commanded Control')
+fig.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/commanded_control.png')
 plt.close()
