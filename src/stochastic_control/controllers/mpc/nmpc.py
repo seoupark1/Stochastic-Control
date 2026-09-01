@@ -403,7 +403,7 @@ class NMPCController:
                      'iterations': iterations}
 
         if status != 'qp failed, return previous optimal u':
-            self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1 :, :]), axis = 0)
+            self.control_sequence = np.concatenate((U_bar[1 :, :], U_bar[-1 :, :]), axis = 0)
 
         return optimal_u, histories
 
