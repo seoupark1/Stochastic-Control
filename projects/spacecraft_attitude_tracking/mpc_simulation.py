@@ -280,6 +280,9 @@ def simulation(initial_x_true: ArrayLike,
     attitude_estimation_error_angle_history = np.zeros(total_step + 1)
     omega_estimation_error_history = np.zeros((3, total_step + 1))
 
+    # qp result history
+    qp_result_history = np.zeros((2, total_step + 1))
+
     # run simulation
     for k in range(total_step):
 
@@ -287,12 +290,12 @@ def simulation(initial_x_true: ArrayLike,
         next_t = time[k + 1]
 
         # control with saturation
-        u_cmd, X_bar, U_bar = mpc.control_vector(t = t,
-                                                 current_state = ekf.x,
-                                                 max_iteration = max_j,
-                                                 alpha = alpha,
-                                                 del_z_tolerance = del_z_tolerance,
-                                                 defect_tolerance = defect_tolerance)
+        u_cmd, histories = mpc.control_vector(t = t,
+                                              current_state = ekf.x,
+                                              max_iteration = max_j,
+                                              alpha = alpha,
+                                              del_z_tolerance = del_z_tolerance,
+                                              defect_tolerance = defect_tolerance)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -355,6 +358,7 @@ def simulation(initial_x_true: ArrayLike,
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
         covariance_history[:, :, k + 1] = ekf.P
         cmd_control_history[:, k] = u_cmd
+        qp_result_history[:, k] = histories
 
     # compute tracking error & estimation error & standard deviation
     for k in range(total_step + 1):
@@ -397,6 +401,7 @@ def simulation(initial_x_true: ArrayLike,
             'true_gravity_gradient_torque' : true_gravity_gradient_history,
             'covariance_P' : covariance_history,
             'commanded_control': cmd_control_history,
+            'qp result': qp_result_history,
             'measurement_y': measurement_history,
             'star_tracker_correction_steps': star_tracker_correction_steps_history,
             'gyroscope_correction_steps': gyroscope_correction_steps_history,
