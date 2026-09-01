@@ -26,6 +26,7 @@ class NMPCController:
         self.P = np.asarray(P, dtype = float)
         self.N = int(N)
         self.dt = float(dt)
+        self.hessian = self.get_hessian()
 
         self.reference_control_function = reference_control_function
         self.discrete_f = discrete_nonlienar_dynamics
@@ -54,7 +55,7 @@ class NMPCController:
         if not is_SPD(self.R):
             raise ValueError('R is not symmetric positive definite matrix')
 
-        # backup for warm start
+        # warm start
         self.control_sequence = None
 
     def discrete_nonlinear_dynamics(self,
@@ -98,7 +99,6 @@ class NMPCController:
 
             if self.reference_control_function is None:
                 reference_u = np.zeros(self.m)
-
             else:
                 reference_u = np.asarray(self.reference_control_function(tk), dtype = float).reshape(-1)
 
@@ -126,9 +126,7 @@ class NMPCController:
             elif k > (self.N - 1):
                 hessian.append(2 * self.R)
 
-        self.hessian = block_diag(*hessian)
-
-    get_hessian()
+        return block_diag(*hessian)
 
     def objective(self,
                   t: float,
@@ -182,6 +180,27 @@ class NMPCController:
 
         return np.concatenate(defects)
 
+    def get_jacobians(self,
+                      tk: float,
+                      x_k_bar: ArrayLike,
+                      u_k_bar: ArrayLike):
+        
+        # inputs
+        tk = float(tk)
+        x_k_bar = np.asarray(x_k_bar, dtype = float).reshape(-1)
+        u_k_bar = np.asarray(u_k_bar, dtype = float).reshape(-1)
+
+        # A, B jacobians
+        A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
+                              x0 = x_k_bar,
+                              method = '3-point')
+            
+        B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
+                              x0 = u_k_bar,
+                              method = '3-point')
+
+        return A, B
+
     def dynamics_constraint(self,
                             del_z,
                             t: float,
@@ -220,13 +239,7 @@ class NMPCController:
             del_x_next = del_z[k * self.n : (k+1) * self.n]
 
             # A, B jacobians & defect
-            A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
-                                  x0 = x_k_bar,
-                                  method = '3-point')
-            
-            B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
-                                  x0 = u_k_bar,
-                                  method = '3-point')
+            A, B = self.get_jacobians(tk, x_k_bar, u_k_bar)
 
             defect = x_next_bar - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
 
@@ -337,7 +350,7 @@ class NMPCController:
 
         # for status history
         status = None
-        terminal_iteration = 0
+        iterations = 0
 
         for j in range(max_iteration):
 
@@ -357,11 +370,11 @@ class NMPCController:
                      warm_start = True)
 
             if qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
-                status = 'QP failed, neither optimal nor optimal_inaccurate'
+                status = 'qp failed, return previous optimal u'
                 U_bar = backup_U_bar
                 break
 
-            terminal_iteration += 1
+            iterations += 1
 
             # optimal correction
             optimal_del_z = del_z.value
@@ -379,17 +392,17 @@ class NMPCController:
 
                 # when defect is small enough
                 if np.linalg.norm(defects) < defect_tolerance:
-                    status = {'converged, return optimal u'}
+                    status = 'converged, return optimal u'
                     break
 
             if j == (max_iteration - 1):
-                status = {'max iteration, used backup u'}
+                status = 'max iteration, return terminal u'
         
         optimal_u = U_bar[0, :].reshape(-1)
         histories = {'status': status,
-                     'terminal iteration': terminal_iteration}
+                     'terminal iteration': iterations}
 
-        if status != 'QP failed':
+        if status != 'qp failed, return previous optimal u':
             self.control_sequence = np.concatenate((U_bar[1 :, : ], U_bar[-1 :, :]), axis = 0)
 
         return optimal_u, histories
