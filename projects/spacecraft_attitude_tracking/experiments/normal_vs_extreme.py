@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..simulation import simulation
+from ..simulations.ekf_lqr import simulation
 
 def get_max_abs_u_cmd(results):
     print(results['max_abs_commanded_control'])

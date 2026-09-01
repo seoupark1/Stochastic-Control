@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..simulation import simulation
+from ..simulations.ekf_lqr import simulation
 from stochastic_control.actuators.reaction_wheel import ReactionWheel
 
 # star tracker performance
@@ -38,7 +38,7 @@ unsaturated_result = simulation(initial_x_true = initial_x_true,
 
 # control limiter
 max_u_cmd_abs = unsaturated_result['max_abs_commanded_control']
-u_max = max_u_cmd_abs * (2/3)
+u_max = max_u_cmd_abs / 2
 actuator = ReactionWheel(u_max)
 
 saturated_result = simulation(initial_x_true = initial_x_true,
@@ -75,7 +75,7 @@ plt.title('Nadir Pointing Angular Velocity Tracking Error')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/tracking_error.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png')
 plt.close()
 
 # estimation error
@@ -98,7 +98,7 @@ plt.title('Nadir Pointing Omega Estimation Error')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/estimation_error.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/estimation_error.png')
 plt.close()
 
 # control
@@ -116,7 +116,7 @@ for i in range(3):
 
 fig.suptitle('Actual Control vs Commanded Control')
 fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/saturated_control.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/saturated_control.png')
 plt.close()
 
 # true gravity gradient
@@ -136,5 +136,5 @@ plt.ylabel('Torque [Nm]')
 plt.title('True Gravity Gradient Torque Norm of Spacecraft')
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/two_third_of_max/true_gravity_gradient.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/true_gravity_gradient.png')
 plt.close()
