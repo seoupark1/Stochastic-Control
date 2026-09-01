@@ -193,11 +193,11 @@ class NMPCController:
         # A, B jacobians
         A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
                               x0 = x_k_bar,
-                              method = '3-point')
+                              method = '2-point')
             
         B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
                               x0 = u_k_bar,
-                              method = '3-point')
+                              method = '2-point')
 
         return A, B
 
