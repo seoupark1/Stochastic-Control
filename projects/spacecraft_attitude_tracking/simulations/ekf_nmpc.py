@@ -221,9 +221,16 @@ def simulation(initial_x_true: ArrayLike,
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
     P = 2 * Q
-    dt_mpc = dt
-    N = int(round(prediction_horizon / dt_mpc))
+    u_cmd = np.zeros(3)
     x_true = initial_x_true
+
+    # N stages prediction
+    prediction_dt = 0.05
+    N = int(round(prediction_horizon / prediction_dt))
+
+    # control update timing
+    dt_mpc = 0.1
+    mpc_update_step = int(round(dt_mpc / dt))
 
     def mpc_discrete_dynamics(t, state, control):
         return discrete_dynamics(t, state, control, dt_mpc)
@@ -232,11 +239,12 @@ def simulation(initial_x_true: ArrayLike,
                          R = R,
                          P = P,
                          N = N,
-                         dt = dt,
+                         dt = dt_mpc,
                          reference_control_function = reference_u_function,
                          discrete_nonlienar_dynamics = mpc_discrete_dynamics,
                          control_bound = control_bound,
-                         state_bound = state_bound)
+                         state_bound = state_bound,
+                         cost_reference_dt = 0.01)
 
     # noises & sensors
     rng = np.random.default_rng(seed)
@@ -284,6 +292,8 @@ def simulation(initial_x_true: ArrayLike,
     # qp history
     qp_status_history = []
     qp_iterations_history = np.zeros(total_step)
+    final_correction_norm_history = np.full(total_step, np.nan)
+    final_defect_norm_history = np.full(total_step, np.nan)
 
     # run simulation
     for k in range(total_step):
@@ -291,13 +301,13 @@ def simulation(initial_x_true: ArrayLike,
         t = k * dt
         next_t = time[k + 1]
 
-        # control with saturation
-        u_cmd, histories = mpc.control_vector(t = t,
-                                              current_state = ekf.x,
-                                              max_iteration = max_iteration,
-                                              alpha = alpha,
-                                              del_z_tolerance = del_z_tolerance,
-                                              defect_tolerance = defect_tolerance)
+        if k % mpc_update_step == 0:
+            u_cmd, histories = mpc.control_vector(t = t,
+                                                  current_state = ekf.x,
+                                                  max_iteration = max_iteration,
+                                                  alpha = alpha,
+                                                  del_z_tolerance = del_z_tolerance,
+                                                  defect_tolerance = defect_tolerance)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -361,6 +371,8 @@ def simulation(initial_x_true: ArrayLike,
         # update qp histories
         qp_status_history.append(histories['status'])
         qp_iterations_history[k] = histories['iterations']
+        final_correction_norm_history[k] = histories['final_correction_norm']
+        final_defect_norm_history[k] = histories['final_defect_norm']
 
         # update other histories
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
@@ -410,6 +422,8 @@ def simulation(initial_x_true: ArrayLike,
             'commanded_control': cmd_control_history,
             'qp_status': qp_status_history,
             'qp_iterations': qp_iterations_history,
+            'final_correction_norm': final_correction_norm_history,
+            'final_defect_norm': final_defect_norm_history,
             'measurement_y': measurement_history,
             'star_tracker_correction_steps': star_tracker_correction_steps_history,
             'gyroscope_correction_steps': gyroscope_correction_steps_history,
