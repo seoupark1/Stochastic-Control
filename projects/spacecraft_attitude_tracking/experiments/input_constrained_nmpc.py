@@ -25,7 +25,7 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 
 # nmpc properties
-prediction_horizon = 0.1 # [s]
+prediction_horizon = 0.5 # [s]
 max_iteration = 5 # [step]
 alpha = 0.5
 del_z_tolerance = 1e-4
@@ -38,7 +38,7 @@ nmpc_result = simulation(initial_x_true = initial_x_true,
                          motion_noise_covariance = motion_noise_covariance,
                          star_tracker_noise_covariance = star_tracker_noise_covariance,
                          gyroscope_noise_covariance = gyroscope_noise_covariance,
-                         simulation_tf = 1,
+                         simulation_tf = 2,
                          prediction_horizon = prediction_horizon,
                          star_tracker_sampling_rate = star_tracker_sampling_rate,
                          gyroscope_sampling_rate = gyroscope_sampling_rate,
@@ -61,14 +61,12 @@ plt.plot(time, np.rad2deg(attitude_tracking_error))
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [deg]')
 plt.title('NMPC Nadir Pointing Attitude Tracking Error')
-plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
 plt.plot(time, np.rad2deg(omega_tracking_error))
 plt.xlabel('Time [s]')
 plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('NMPC Nadir Pointing Angular Velocity Tracking Error')
-plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/tracking_error.png')
@@ -81,12 +79,11 @@ print('QP status:', Counter(qp_status))
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
 
 for i in range(3):
-    axes[i].plot(time[0:-1], u_cmd[i], label = 'u_cmd')
+    axes[i].plot(time[0:-1], u_cmd[i])
     axes[i].axhline(u_max[i], linestyle = '--')
     axes[i].axhline(-u_max[i], linestyle = '--')
     axes[i].set_xlabel('Time [s]')
     axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
-    axes[i].legend()
     axes[i].grid(True)
 
 fig.suptitle('NMPC Nadir Pointing Commanded Control')
