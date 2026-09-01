@@ -19,13 +19,20 @@ class NMPCController:
                  discrete_nonlienar_dynamics = None,
                  continuous_nonlinear_dynamics = None,
                  control_bound = None,
-                 state_bound = None):
+                 state_bound = None,
+                 cost_reference_dt = None):
 
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
         self.P = np.asarray(P, dtype = float)
         self.N = int(N)
         self.dt = float(dt)
+
+        if cost_reference_dt is None:
+            self.cost_scale = 1
+        else:
+            self.cost_scale = self.dt / self.cost_reference_dt
+
         self.hessian = self.get_hessian()
 
         self.reference_control_function = reference_control_function
@@ -102,13 +109,13 @@ class NMPCController:
             else:
                 reference_u = np.asarray(self.reference_control_function(tk), dtype = float).reshape(-1)
 
-            gradient_u[k, :] = 2 * self.R @ (U_bar[k, :] - reference_u)
+            gradient_u[k, :] = 2 * self.cost_scale * self.R @ (U_bar[k, :] - reference_u)
 
             if k == (self.N - 1):
                 # terminal x
                 gradient_x[k, :] = 2 * self.P @ X_bar[k, :]
             else:
-                gradient_x[k, :] = 2 * self.Q @ X_bar[k, :]
+                gradient_x[k, :] = 2 * self.cost_scale * self.Q @ X_bar[k, :]
 
         return np.concatenate([gradient_x.reshape(-1), gradient_u.reshape(-1)])
 
@@ -118,13 +125,13 @@ class NMPCController:
 
         for k in range(2 * self.N):
             if k < (self.N - 1):
-                hessian.append(2 * self.Q)
+                hessian.append(2 * self.cost_scale * self.Q)
 
             elif k == (self.N - 1):
                 hessian.append(2 * self.P)
 
             elif k > (self.N - 1):
-                hessian.append(2 * self.R)
+                hessian.append(2 * self.cost_scale * self.R)
 
         return block_diag(*hessian)
 
@@ -343,6 +350,7 @@ class NMPCController:
 
         # backup for qp failure
         backup_U_bar = U_bar.copy()
+        backup_X_bar = X_bar.copy()
 
         # check alpha
         if not 0 < alpha <= 1:
@@ -351,6 +359,8 @@ class NMPCController:
         # for status history
         status = None
         iterations = 0
+        final_correction_norm = 0
+        final_defect_norm = 0
 
         for j in range(max_iteration):
 
@@ -372,6 +382,12 @@ class NMPCController:
             if qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
                 status = 'qp failed, return previous optimal u'
                 U_bar = backup_U_bar
+                X_bar = backup_X_bar
+
+                # no correction and defect
+                final_correction_norm = np.nan
+                final_defect_norm = np.nan
+
                 break
 
             iterations += 1
@@ -385,22 +401,31 @@ class NMPCController:
             X_bar += alpha * optimal_del_x
             U_bar += alpha * optimal_del_u
 
+            # final correction norm
+            final_correction_norm = np.linalg.norm(optimal_del_z)
+
             # when correction is small enough
-            if np.linalg.norm(optimal_del_z) < del_z_tolerance:
+            if final_correction_norm < del_z_tolerance:
                 
                 defects = self.get_defects(t, x0, X_bar, U_bar)
+                final_defect_norm = np.linalg.norm(defects)
 
                 # when defect is small enough
-                if np.linalg.norm(defects) < defect_tolerance:
+                if final_defect_norm < defect_tolerance:
                     status = 'converged, return optimal u'
                     break
 
             if j == (max_iteration - 1):
+                defects = self.get_defects(t, x0, X_bar, U_bar)
+                final_defect_norm = np.linalg.norm(defects)
                 status = "max iteration, return max j's u"
         
         optimal_u = U_bar[0, :].reshape(-1)
+
         histories = {'status': status,
-                     'iterations': iterations}
+                     'iterations': iterations,
+                     'final_correction_norm': final_correction_norm,
+                     'final_defect_norm': final_defect_norm}
 
         if status != 'qp failed, return previous optimal u':
             self.control_sequence = np.concatenate((U_bar[1 :, :], U_bar[-1 :, :]), axis = 0)
