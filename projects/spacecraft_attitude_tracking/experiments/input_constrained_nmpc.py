@@ -28,8 +28,8 @@ motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 prediction_horizon = 0.5 # [s]
 max_iteration = 5 # [step]
 alpha = 0.5
-del_z_tolerance = 1e-2
-defect_tolerance = 1e-3
+del_z_tolerance = 1e-3
+defect_tolerance = 1e-4
 u_max = np.asarray([20, 20, 20]) # [Nm]
 
 nmpc_result = simulation(initial_x_true = initial_x_true,

@@ -132,23 +132,20 @@ def simulation(initial_x_true: ArrayLike,
 
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
-    def discrete_dynamics(t, state, control, time_interval):
+    def motion_model(t, state, control):
 
         # runge-kutta 4th order method
         k1 = dynamics(t, state, control)
-        k2 = dynamics(t + time_interval / 2, state + time_interval * k1 / 2, control)
-        k3 = dynamics(t + time_interval / 2, state + time_interval * k2 / 2, control)
-        k4 = dynamics(t + time_interval, state + time_interval * k3, control)
+        k2 = dynamics(t + dt / 2, state + dt * k1 / 2, control)
+        k3 = dynamics(t + dt / 2, state + dt * k2 / 2, control)
+        k4 = dynamics(t + dt, state + dt * k3, control)
 
-        next_state = state + time_interval / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        next_state = state + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         # shadow set transfer
         next_state[:3] = mrp_shadow_set(next_state[:3])
 
         return next_state
-
-    def motion_model(t, state, control):
-        return discrete_dynamics(t, state, control, dt)
 
     def motion_jacobian(t, state, control):
 
@@ -221,23 +218,18 @@ def simulation(initial_x_true: ArrayLike,
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
     P = 2 * Q
-    dt_mpc = dt
-    N = int(round(prediction_horizon / dt_mpc))
+    N = int(round(prediction_horizon / dt))
     x_true = initial_x_true
-
-    def mpc_discrete_dynamics(t, state, control):
-        return discrete_dynamics(t, state, control, dt_mpc)
 
     mpc = NMPCController(Q = Q,
                          R = R,
                          P = P,
                          N = N,
-                         dt = dt_mpc,
+                         dt = dt,
                          reference_control_function = reference_u_function,
-                         discrete_nonlienar_dynamics = mpc_discrete_dynamics,
+                         discrete_nonlienar_dynamics = motion_model,
                          control_bound = control_bound,
-                         state_bound = state_bound,
-                         cost_reference_dt = 0.01)
+                         state_bound = state_bound)
 
     # noises & sensors
     rng = np.random.default_rng(seed)
@@ -285,8 +277,8 @@ def simulation(initial_x_true: ArrayLike,
     # qp history
     qp_status_history = []
     qp_iterations_history = np.zeros(total_step)
-    final_correction_norm_history = np.full(total_step, np.nan)
-    final_defect_norm_history = np.full(total_step, np.nan)
+    final_correction_norm_history = np.zeros(total_step)
+    final_defect_norm_history = np.zeros(total_step)
 
     # run simulation
     for k in range(total_step):
@@ -295,11 +287,11 @@ def simulation(initial_x_true: ArrayLike,
         next_t = time[k + 1]
 
         u_cmd, histories = mpc.control_vector(t = t,
-                                                current_state = ekf.x,
-                                                max_iteration = max_iteration,
-                                                alpha = alpha,
-                                                del_z_tolerance = del_z_tolerance,
-                                                defect_tolerance = defect_tolerance)
+                                              current_state = ekf.x,
+                                              max_iteration = max_iteration,
+                                              alpha = alpha,
+                                              del_z_tolerance = del_z_tolerance,
+                                              defect_tolerance = defect_tolerance)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
