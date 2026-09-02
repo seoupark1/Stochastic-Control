@@ -233,13 +233,13 @@ def simulation(initial_x_true: ArrayLike,
     mpc_update_step = int(round(dt_mpc / dt))
 
     def mpc_discrete_dynamics(t, state, control):
-        return discrete_dynamics(t, state, control, dt_mpc)
+        return discrete_dynamics(t, state, control, prediction_dt)
 
     mpc = NMPCController(Q = Q,
                          R = R,
                          P = P,
                          N = N,
-                         dt = dt_mpc,
+                         dt = prediction_dt,
                          reference_control_function = reference_u_function,
                          discrete_nonlienar_dynamics = mpc_discrete_dynamics,
                          control_bound = control_bound,
@@ -309,6 +309,12 @@ def simulation(initial_x_true: ArrayLike,
                                                   del_z_tolerance = del_z_tolerance,
                                                   defect_tolerance = defect_tolerance)
 
+            # update qp histories
+            qp_status_history.append(histories['status'])
+            qp_iterations_history[k] = histories['iterations']
+            final_correction_norm_history[k] = histories['final_correction_norm']
+            final_defect_norm_history[k] = histories['final_defect_norm']
+
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
@@ -367,12 +373,6 @@ def simulation(initial_x_true: ArrayLike,
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
         estimated_state_history[:, k + 1] = ekf.x
-
-        # update qp histories
-        qp_status_history.append(histories['status'])
-        qp_iterations_history[k] = histories['iterations']
-        final_correction_norm_history[k] = histories['final_correction_norm']
-        final_defect_norm_history[k] = histories['final_defect_norm']
 
         # update other histories
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
