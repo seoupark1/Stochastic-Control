@@ -221,25 +221,18 @@ def simulation(initial_x_true: ArrayLike,
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
     P = 2 * Q
-    u_cmd = np.zeros(3)
+    dt_mpc = dt
+    N = int(round(prediction_horizon / dt_mpc))
     x_true = initial_x_true
 
-    # N stages prediction
-    prediction_dt = 0.05
-    N = int(round(prediction_horizon / prediction_dt))
-
-    # control update timing
-    dt_mpc = 0.1
-    mpc_update_step = int(round(dt_mpc / dt))
-
     def mpc_discrete_dynamics(t, state, control):
-        return discrete_dynamics(t, state, control, prediction_dt)
+        return discrete_dynamics(t, state, control, dt_mpc)
 
     mpc = NMPCController(Q = Q,
                          R = R,
                          P = P,
                          N = N,
-                         dt = prediction_dt,
+                         dt = dt_mpc,
                          reference_control_function = reference_u_function,
                          discrete_nonlienar_dynamics = mpc_discrete_dynamics,
                          control_bound = control_bound,
@@ -301,19 +294,12 @@ def simulation(initial_x_true: ArrayLike,
         t = k * dt
         next_t = time[k + 1]
 
-        if k % mpc_update_step == 0:
-            u_cmd, histories = mpc.control_vector(t = t,
-                                                  current_state = ekf.x,
-                                                  max_iteration = max_iteration,
-                                                  alpha = alpha,
-                                                  del_z_tolerance = del_z_tolerance,
-                                                  defect_tolerance = defect_tolerance)
-
-            # update qp histories
-            qp_status_history.append(histories['status'])
-            qp_iterations_history[k] = histories['iterations']
-            final_correction_norm_history[k] = histories['final_correction_norm']
-            final_defect_norm_history[k] = histories['final_defect_norm']
+        u_cmd, histories = mpc.control_vector(t = t,
+                                                current_state = ekf.x,
+                                                max_iteration = max_iteration,
+                                                alpha = alpha,
+                                                del_z_tolerance = del_z_tolerance,
+                                                defect_tolerance = defect_tolerance)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(t, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -373,6 +359,12 @@ def simulation(initial_x_true: ArrayLike,
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
         estimated_state_history[:, k + 1] = ekf.x
+
+        # qp status histories
+        qp_status_history.append(histories['status'])
+        qp_iterations_history[k] = histories['iterations']
+        final_correction_norm_history[k] = histories['final_correction_norm']
+        final_defect_norm_history[k] = histories['final_defect_norm']
 
         # update other histories
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
