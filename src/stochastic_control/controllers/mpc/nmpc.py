@@ -220,7 +220,7 @@ class NMPCController:
             del_x_next = del_x[k * self.n : (k + 1) * self.n]
             del_u_k = del_u[k * self.m : (k + 1) * self.m]
 
-            constraints.append([defect_k == A_k @ del_x_k + B_k @ del_u_k - del_x_next])
+            constraints.append(defect_k == A_k @ del_x_k + B_k @ del_u_k - del_x_next)
 
         # control constraint
         if self.control_bound is not None:
@@ -285,14 +285,14 @@ class NMPCController:
             A_k, B_k = self.get_jacobians(tk, x_k_bar, u_k_bar)
             defect_k = x_next_bar - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
 
-            self.A_parameters.value = A_k
-            self.B_parameters.value = B_k
-            self.defect_parameters.value = defect_k
+            self.A_parameters[k].value = A_k
+            self.B_parameters[k].value = B_k
+            self.defect_parameters[k].value = defect_k
 
-    def initial_X_bar(self,
-                      t: float,
-                      current_state: ArrayLike,
-                      U_bar: ArrayLike):
+    def corresponding_X_bar(self,
+                            t: float,
+                            current_state: ArrayLike,
+                            U_bar: ArrayLike):
     
         X_bar = np.zeros((self.N, self.n)) # x1 ~ xN
 
@@ -300,8 +300,8 @@ class NMPCController:
 
             tk = t + k * self.dt
 
-            x_k_bar = self.discrete_nonlinear_dynamics(tk, current_state, u_k_bar)
             u_k_bar = U_bar[k, :]
+            x_k_bar = self.discrete_nonlinear_dynamics(tk, current_state, u_k_bar)
 
             X_bar[k, :] = x_k_bar
 
@@ -330,11 +330,11 @@ class NMPCController:
         else: 
             U_bar = self.control_sequence.copy()
 
-        X_bar = self.initial_X_bar(t, x0, U_bar)
+        X_bar = self.corresponding_X_bar(t, x0, U_bar)
 
         # backup for qp failure
-        backup_U_bar = U_bar
-        backup_X_bar = X_bar
+        backup_U_bar = U_bar.copy()
+        backup_X_bar = X_bar.copy()
 
         # check alpha
         if not 0 < alpha <= 1:
