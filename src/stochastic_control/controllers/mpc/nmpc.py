@@ -19,21 +19,13 @@ class NMPCController:
                  discrete_nonlienar_dynamics = None,
                  continuous_nonlinear_dynamics = None,
                  control_bound = None,
-                 state_bound = None,
-                 cost_reference_dt = None):
+                 state_bound = None):
 
         self.Q = np.asarray(Q, dtype = float)
         self.R = np.asarray(R, dtype = float)
         self.P = np.asarray(P, dtype = float)
         self.N = int(N)
         self.dt = float(dt)
-
-        if cost_reference_dt is None:
-            self.cost_scale = 1
-            
-        else:
-            self.cost_reference_dt = float(cost_reference_dt)
-            self.cost_scale = self.dt / self.cost_reference_dt
 
         self.hessian = self.get_hessian()
 
@@ -111,13 +103,13 @@ class NMPCController:
             else:
                 reference_u = np.asarray(self.reference_control_function(tk), dtype = float).reshape(-1)
 
-            gradient_u[k, :] = 2 * self.cost_scale * self.R @ (U_bar[k, :] - reference_u)
+            gradient_u[k, :] = 2 * self.R @ (U_bar[k, :] - reference_u)
 
             if k == (self.N - 1):
                 # terminal x
                 gradient_x[k, :] = 2 * self.P @ X_bar[k, :]
             else:
-                gradient_x[k, :] = 2 * self.cost_scale * self.Q @ X_bar[k, :]
+                gradient_x[k, :] = 2 * self.Q @ X_bar[k, :]
 
         return np.concatenate([gradient_x.reshape(-1), gradient_u.reshape(-1)])
 
@@ -127,13 +119,13 @@ class NMPCController:
 
         for k in range(2 * self.N):
             if k < (self.N - 1):
-                hessian.append(2 * self.cost_scale * self.Q)
+                hessian.append(2 * self.Q)
 
             elif k == (self.N - 1):
                 hessian.append(2 * self.P)
 
             elif k > (self.N - 1):
-                hessian.append(2 * self.cost_scale * self.R)
+                hessian.append(2 * self.R)
 
         return block_diag(*hessian)
 
