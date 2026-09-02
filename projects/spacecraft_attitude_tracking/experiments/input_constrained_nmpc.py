@@ -28,8 +28,8 @@ motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 prediction_horizon = 0.5 # [s]
 max_iteration = 5 # [step]
 alpha = 0.5
-del_z_tolerance = 1e-7
-defect_tolerance = 1e-8
+del_z_tolerance = 1e-2
+defect_tolerance = 1e-3
 u_max = np.asarray([20, 20, 20]) # [Nm]
 
 nmpc_result = simulation(initial_x_true = initial_x_true,
@@ -73,7 +73,12 @@ plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nm
 plt.close()
 
 # qp failed / converged / max iteration
+correction_norm = nmpc_result['final_correction_norm']
+defect_norm = nmpc_result['final_defect_norm']
+
 print('QP status:', Counter(qp_status))
+print('Correction norm:', correction_norm[~ np.isnan(correction_norm)])
+print('Defect norm:', defect_norm[~np.isnan(defect_norm)])
 
 # commanded constrained control
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))

@@ -30,7 +30,9 @@ class NMPCController:
 
         if cost_reference_dt is None:
             self.cost_scale = 1
+            
         else:
+            self.cost_reference_dt = float(cost_reference_dt)
             self.cost_scale = self.dt / self.cost_reference_dt
 
         self.hessian = self.get_hessian()
