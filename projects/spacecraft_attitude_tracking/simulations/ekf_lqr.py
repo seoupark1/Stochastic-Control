@@ -26,6 +26,7 @@ def simulation(initial_x_true: ArrayLike,
                controller_tf: float,
                star_tracker_sampling_rate: float,
                gyroscope_sampling_rate: float,
+               seed = int,
                control_limiter = None):
 
     # sampling rates
@@ -224,7 +225,7 @@ def simulation(initial_x_true: ArrayLike,
                                                     dynamics_function = dynamics)
 
     # noises & sensors
-    rng = np.random.default_rng(seed = 2026)
+    rng = np.random.default_rng(int(seed))
     motion_noise_provider = GaussianNoise(np.zeros(6), motion_noise_covariance)
     star_tracker = StarTracker(np.zeros(3), star_tracker_noise_covariance)
     gyroscope = Gyroscope(np.zeros(3), gyroscope_noise_covariance)
