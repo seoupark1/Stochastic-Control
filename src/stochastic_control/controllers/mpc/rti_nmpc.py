@@ -188,8 +188,8 @@ class RealTimeNMPCController:
         del_x = self.del_z[0 : self.N * self.n]  # del_x(1) ~ del_x(N)
         del_u = self.del_z[self.N * self.n : ] # del_u(0) ~ del_u(N-1)
 
-        # parameters (del_x0, gradient, X_bar, U_bar, A, B, defect, constraints)
-        self.del_x0_parameter = cp.Parameter(self.n)
+        # parameters (A @ del_x0, gradient, X_bar, U_bar, A, B, defect, constraints)
+        self.A_del_x0_parameter = cp.Parameter(self.n)
         self.gradient_parameter = cp.Parameter(self.N * (self.n + self.m))
         self.X_bar_parameter = cp.Parameter((self.N, self.n))
         self.U_bar_parameter = cp.Parameter((self.N, self.m))
@@ -209,17 +209,17 @@ class RealTimeNMPCController:
             self.A_parameters.append(A_k)
             self.B_parameters.append(B_k)
             self.defect_parameters.append(defect_k)
-
-            if k == 0:
-                del_x_k = self.del_x0_parameter
-
-            else:
-                del_x_k = del_x[(k - 1) * self.n : k * self.n]
-
+        
             del_x_next = del_x[k * self.n : (k + 1) * self.n]
             del_u_k = del_u[k * self.m : (k + 1) * self.m]
 
-            constraints.append(defect_k == A_k @ del_x_k + B_k @ del_u_k - del_x_next)
+            if k == 0:
+                A_del_x_k = self.A_del_x0_parameter
+                constraints.append(defect_k == A_del_x_k + B_k @ del_u_k - del_x_next)
+
+            else:
+                del_x_k = del_x[(k - 1) * self.n : k * self.n]
+                constraints.append(defect_k == A_k @ del_x_k + B_k @ del_u_k - del_x_next)
 
         # control constraint
         if self.control_bound is not None:
@@ -289,7 +289,9 @@ class RealTimeNMPCController:
         # check input
         x0_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
 
-        self.del_x0_parameter.value = x0_hat - self.X_bar[0, :]
+        A_0 = self.A_parameters[0]
+        del_x0 = x0_hat - self.X_bar[0, :]
+        self.A_del_x0_parameter.value = A_0 @ del_x0
 
         # save previous optimal u for qp failure
         backup_U_bar = self.U_bar.copy()
