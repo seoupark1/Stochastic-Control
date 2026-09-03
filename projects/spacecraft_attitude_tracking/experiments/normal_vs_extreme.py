@@ -115,7 +115,8 @@ normal_result = simulation(initial_x_true = initial_x_true,
                            simulation_tf = 60,
                            controller_tf = 120,
                            star_tracker_sampling_rate = star_tracker_sampling_rate,
-                           gyroscope_sampling_rate = gyroscope_sampling_rate)
+                           gyroscope_sampling_rate = gyroscope_sampling_rate,
+                           seed = 2026)
 
 get_max_abs_u_cmd(normal_result)
 plot_graphs(normal_result, 'normal_case')
@@ -139,7 +140,8 @@ extreme_result = simulation(initial_x_true = initial_x_true,
                             simulation_tf = 60,
                             controller_tf = 120,
                             star_tracker_sampling_rate = star_tracker_sampling_rate,
-                            gyroscope_sampling_rate = gyroscope_sampling_rate)
+                            gyroscope_sampling_rate = gyroscope_sampling_rate,
+                            seed = 2026)
 
 get_max_abs_u_cmd(extreme_result)
 plot_graphs(extreme_result, 'extreme_case')
