@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
 from stochastic_control.providers.reference_trajectory import TrajectoryReferenceProvider
-from stochastic_control.compensators.ekf_lqr import EKFLQRCompensator
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 
 def simulation():
@@ -82,8 +81,6 @@ def simulation():
                                                            reference_provider = nominal_trajectory,
                                                            dynamics_function = dynamics)
 
-    compensator = EKFLQRCompensator(estimator, controller)
-
     # noises
     rng = np.random.default_rng(seed = 2026)
     motion_noise = GaussianNoise(np.zeros(2), motion_noise_covariance)
@@ -106,7 +103,7 @@ def simulation():
         time[k] = t
 
         # control
-        u_cmd = compensator.control_vector(t)
+        u_cmd = controller.control_vector(t, estimator.state)
         control_history[k] = u_cmd[0]
 
         # true values
@@ -118,8 +115,8 @@ def simulation():
         measurement_history[k] = y[0]
 
         # estimate
-        compensator.estimate(u_cmd, y)
-        estimated_state_history[:, k] = estimator.x
+        estimator.extendedkalmanfilter(t, u_cmd, y)
+        estimated_state_history[:, k] = estimator.state
 
     state_error_history = estimated_state_history - true_state_history
 
