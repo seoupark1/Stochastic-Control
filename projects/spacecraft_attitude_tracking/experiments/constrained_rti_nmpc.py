@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
-from ..simulations.ekf_nmpc import simulation
+from ..simulations.ekf_rti_nmpc import simulation
 
 # star tracker performance
 star_tracker_sampling_rate = 10 # [Hz]
@@ -25,35 +25,27 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 
 # nmpc properties
-prediction_horizon = 0.5 # [s]
-max_iteration = 5 # [step]
-alpha = 0.5
-del_z_tolerance = 1e-3
-defect_tolerance = 1e-4
+prediction_horizon = 2 # [s]
 u_max = np.asarray([20, 20, 20]) # [Nm]
 
-nmpc_result = simulation(initial_x_true = initial_x_true,
-                         initial_x_hat = initial_x_hat,
-                         initial_covariance = initial_covariance,
-                         motion_noise_covariance = motion_noise_covariance,
-                         star_tracker_noise_covariance = star_tracker_noise_covariance,
-                         gyroscope_noise_covariance = gyroscope_noise_covariance,
-                         simulation_tf = 2,
-                         prediction_horizon = prediction_horizon,
-                         star_tracker_sampling_rate = star_tracker_sampling_rate,
-                         gyroscope_sampling_rate = gyroscope_sampling_rate,
-                         seed = 2005,
-                         max_iteration = max_iteration,
-                         alpha = alpha,
-                         del_z_tolerance = del_z_tolerance,
-                         defect_tolerance = defect_tolerance,
-                         control_bound = (-u_max, u_max))
+result = simulation(initial_x_true = initial_x_true,
+                    initial_x_hat = initial_x_hat,
+                    initial_covariance = initial_covariance,
+                    motion_noise_covariance = motion_noise_covariance,
+                    star_tracker_noise_covariance = star_tracker_noise_covariance,
+                    gyroscope_noise_covariance = gyroscope_noise_covariance,
+                    simulation_tf = 20,
+                    prediction_horizon = prediction_horizon,
+                    star_tracker_sampling_rate = star_tracker_sampling_rate,
+                    gyroscope_sampling_rate = gyroscope_sampling_rate,
+                    seed = 2026,
+                    control_bound = (-u_max, u_max))
 
-time = nmpc_result['time']
-attitude_tracking_error = nmpc_result['attitude_tracking_error']
-omega_tracking_error = nmpc_result['omega_tracking_error']
-u_cmd = nmpc_result['commanded_control']
-qp_status = nmpc_result['qp_status']
+time = result['time']
+attitude_tracking_error = result['attitude_tracking_error']
+omega_tracking_error = result['omega_tracking_error']
+u_cmd = result['commanded_control']
+qp_status = result['qp_status']
 
 # tracking error
 plt.subplot(2, 1, 1)
@@ -69,7 +61,7 @@ plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('NMPC Nadir Pointing Angular Velocity Tracking Error')
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/tracking_error.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/constrained_rti_nmpc/tracking_error.png')
 plt.close()
 
 # qp status
@@ -88,5 +80,5 @@ for i in range(3):
 
 fig.suptitle('NMPC Nadir Pointing Commanded Control')
 fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/commanded_control.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/constrained_rti_nmpc/commanded_control.png')
 plt.close()
