@@ -14,7 +14,7 @@ from stochastic_control.providers import BodyStateContext
 from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
-from stochastic_control.controllers.mpc.rti_nmpc import NMPCController
+from stochastic_control.controllers.mpc.nmpc import NMPCController
 
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat: ArrayLike,
@@ -227,7 +227,7 @@ def simulation(initial_x_true: ArrayLike,
                          N = N,
                          dt = dt,
                          reference_control_function = reference_u_function,
-                         discrete_nonlienar_dynamics = motion_model,
+                         discrete_nonlinear_dynamics = motion_model,
                          control_bound = control_bound,
                          state_bound = state_bound)
 
@@ -256,7 +256,7 @@ def simulation(initial_x_true: ArrayLike,
     # state history at t = 0
     true_state_history[:, 0] = x_true
     reference_state_history[:, 0] = reference_x_function(0)
-    estimated_state_history[:, 0] = ekf.x
+    estimated_state_history[:, 0] = ekf.state
     true_gravity_gradient_history[:, 0] = gravity_gradient_torque(0, x_true)
 
     # ekf covariance P history
@@ -285,7 +285,7 @@ def simulation(initial_x_true: ArrayLike,
         next_t = time[k + 1]
 
         u_cmd, histories = mpc.control_vector(t = t,
-                                              current_state = ekf.x,
+                                              current_state = ekf.state,
                                               max_iteration = max_iteration,
                                               alpha = alpha,
                                               del_z_tolerance = del_z_tolerance,
@@ -306,8 +306,8 @@ def simulation(initial_x_true: ArrayLike,
             measurement_history[0:3, k + 1] = y
 
             # predicted model & jacobian
-            predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
-            star_tracker_jacobian = innovation_jacobian(next_t, ekf.x)
+            predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.state)[0:3]
+            star_tracker_jacobian = innovation_jacobian(next_t, ekf.state)
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
@@ -330,8 +330,8 @@ def simulation(initial_x_true: ArrayLike,
             measurement_history[3:6, k + 1] = y
 
             # predicted model & jacobian
-            predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.x)[3:6]
-            predicted_gyroscope_jacobian = measurement_jacobian(next_t, ekf.x)[3:6, :]
+            predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.state)[3:6]
+            predicted_gyroscope_jacobian = measurement_jacobian(next_t, ekf.state)[3:6, :]
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
@@ -348,7 +348,7 @@ def simulation(initial_x_true: ArrayLike,
         # update state histories
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
-        estimated_state_history[:, k + 1] = ekf.x
+        estimated_state_history[:, k + 1] = ekf.state
 
         # qp status histories
         qp_status_history.append(histories['status'])
