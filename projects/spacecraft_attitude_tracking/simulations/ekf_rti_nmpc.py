@@ -16,6 +16,8 @@ from stochastic_control.sensors import Gyroscope, StarTracker
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.mpc.rti_nmpc import RealTimeNMPCController
 
+from time import perf_counter
+
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat: ArrayLike,
                initial_covariance: ArrayLike,
@@ -282,8 +284,30 @@ def simulation(initial_x_true: ArrayLike,
 
         tk = k * dt
         next_t = time[k + 1]
+        
+######################################################
+        start = perf_counter()
+        rti_nmpc.preparation(tk)
+        preparation_time = perf_counter() - start
+        start = perf_counter()
+######################################################
 
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
+
+######################################################
+        feedback_time = perf_counter() - start
+        if k % 10 == 0 or k == total_step - 1:
+            print(
+                f'\r'
+                f'[{k + 1:4d}/{total_step}] '
+                f't = {next_t:5.2f}s | '
+                f'prep = {preparation_time:.3f}s | '
+                f'QP = {feedback_time:.3f}s | '
+                f'status = {histories["status"]}',
+                end = '',
+                flush = True
+            )
+######################################################
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)

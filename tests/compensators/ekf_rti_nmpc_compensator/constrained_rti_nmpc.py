@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
-from ....projects.spacecraft_attitude_tracking.simulations.ekf_rti_nmpc import simulation
+from projects.spacecraft_attitude_tracking.simulations.ekf_rti_nmpc import simulation
 
 # star tracker performance
 star_tracker_sampling_rate = 10 # [Hz]
