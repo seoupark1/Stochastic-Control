@@ -110,14 +110,6 @@ class ExtendedKalmanFilter:
         self.x = self.x + K @ innovation
         self.P = (np.eye(n) - K @ H) @ self.P @ (np.eye(n) - K @ H).T + K @ (M @ R @ M.T) @ K.T
         self.P = (self.P + self.P.T) / 2
-
-    def extendedkalmanfilter(self,
-                             t: ArrayLike,
-                             control_vector: ArrayLike,
-                             measurement_vector: ArrayLike):
-        
-        self.prediction(control_vector, t)
-        self.correction(measurement_vector, t)
     
     @property
     def state(self):

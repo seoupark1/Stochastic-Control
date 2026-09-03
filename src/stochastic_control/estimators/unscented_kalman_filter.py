@@ -117,15 +117,6 @@ class UnscentedKalmanFilter:
         self.P -= K @ P_y @ K.T
         self.P = (self.P + self.P.T) / 2
 
-    def unscentedkalmanfilter(self,
-                              control_vector: ArrayLike,
-                              measurement_vector: ArrayLike):
-        
-        u = np.asarray(control_vector, dtype = float).reshape(-1)
-        y = np.asarray(measurement_vector, dtype = float).reshape(-1)
-        self.prediction(u)
-        self.correction(y)
-
     @property
     def state(self):
         return self.mean.copy()

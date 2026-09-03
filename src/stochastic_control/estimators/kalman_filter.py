@@ -56,13 +56,6 @@ class KalmanFilter:
         self.P = (np.eye(n) - K @ self.H) @ self.P @ (np.eye(n) - K @ self.H).T + K @ self.R @ K.T
         self.P = (self.P + self.P.T) / 2
 
-    def kalmanfilter(self,
-                     control_vector:ArrayLike,
-                     measurement_vector: ArrayLike):
-        
-        self.prediction(control_vector)
-        self.correction(measurement_vector)
-
     @property
     def state(self):
         return self.x.copy()
