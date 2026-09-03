@@ -7,7 +7,7 @@ from scipy.linalg import block_diag
 
 from stochastic_control.math_tools import is_PSD, is_SPD
 
-class NMPCController:
+class RealTimeNMPCController:
 
     def __init__(self,
                  Q: ArrayLike,
@@ -304,7 +304,10 @@ class NMPCController:
             self.U_bar = backup_U_bar
             self.X_bar = backup_X_bar
 
-            return backup_U_bar[0, :], {'status': 'qp failed'}
+            histories = {'status': 'qp failed',
+                         'iterations': 0}
+
+            return backup_U_bar[0, :], histories
 
         # optimal correction
         optimal_del_z = self.del_z.value
