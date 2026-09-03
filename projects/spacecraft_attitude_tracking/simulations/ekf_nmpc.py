@@ -261,7 +261,7 @@ def simulation(initial_x_true: ArrayLike,
 
     # ekf covariance P history
     covariance_history = np.zeros((6, 6, total_step + 1))
-    covariance_history[:, :, 0] = ekf.P
+    covariance_history[:, :, 0] = ekf.covariance
 
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
@@ -356,7 +356,7 @@ def simulation(initial_x_true: ArrayLike,
 
         # update other histories
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
-        covariance_history[:, :, k + 1] = ekf.P
+        covariance_history[:, :, k + 1] = ekf.covariance
         cmd_control_history[:, k] = u_cmd
 
     # compute tracking error & estimation error & standard deviation
