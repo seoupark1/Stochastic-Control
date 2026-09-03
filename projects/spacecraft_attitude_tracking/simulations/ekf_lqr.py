@@ -26,7 +26,7 @@ def simulation(initial_x_true: ArrayLike,
                controller_tf: float,
                star_tracker_sampling_rate: float,
                gyroscope_sampling_rate: float,
-               seed = int,
+               seed: int,
                control_limiter = None):
 
     # sampling rates
