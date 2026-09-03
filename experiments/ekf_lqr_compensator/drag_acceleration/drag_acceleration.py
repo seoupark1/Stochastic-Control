@@ -115,7 +115,8 @@ def simulation():
         measurement_history[k] = y[0]
 
         # estimate
-        estimator.extendedkalmanfilter(t, u_cmd, y)
+        estimator.prediction(u_cmd)
+        estimator.correction(y)
         estimated_state_history[:, k] = estimator.state
 
     state_error_history = estimated_state_history - true_state_history
