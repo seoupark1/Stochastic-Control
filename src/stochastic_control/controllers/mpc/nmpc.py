@@ -16,7 +16,7 @@ class NMPCController:
                  N: int,
                  dt: float,
                  reference_control_function = None,
-                 discrete_nonlinear_dynamics = None,
+                 discrete_nonlienar_dynamics = None,
                  continuous_nonlinear_dynamics = None,
                  control_bound = None,
                  state_bound = None):
@@ -39,7 +39,7 @@ class NMPCController:
         self.dt = float(dt)
 
         self.reference_control_function = reference_control_function
-        self.discrete_f = discrete_nonlinear_dynamics
+        self.discrete_f = discrete_nonlienar_dynamics
         self.continuous_f = continuous_nonlinear_dynamics
 
         if self.discrete_f is None and self.continuous_f is None:
@@ -57,16 +57,15 @@ class NMPCController:
         self.n = self.Q.shape[0]
         self.m = self.R.shape[0]
 
-        # for real time iteration
-        self.X_bar = None
-        self.U_bar = None
+        # warm start
+        self.control_sequence = None
 
         self.build_qp()
 
-    def discrete_dynamics(self,
-                          t: float,
-                          current_state: ArrayLike,
-                          control: ArrayLike):
+    def discrete_nonlinear_dynamics(self,
+                                    t: float,
+                                    current_state: ArrayLike,
+                                    control: ArrayLike):
 
         # inputs 
         t = float(t)
@@ -84,33 +83,6 @@ class NMPCController:
             k4 = self.continuous_f(t + self.dt, x + self.dt * k3, u)
 
             return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-
-    def nominal_trajectory(self,
-                           t: float,
-                           current_state: ArrayLike):
-
-        # check inputs
-        t = float(t)
-        x0 = np.asarray(current_state, dtype = float).reshape(-1)
-
-        self.X_bar = np.zeros((self.N + 1, self.n)) # x(0) ~ x(N)
-        self.U_bar = np.zeros((self.N, self.m)) # u(0) ~ u(N-1)
-
-        self.X_bar[0, :] = x0
-
-        for k in range(self.N):
-
-            tk = t + k * self.dt
-
-            if self.reference_control_function is None:
-                u_k_bar = np.zeros(self.m)
-
-            else:
-                x_k_bar = self.X_bar[k, :]
-                u_k_bar = np.asarray(self.reference_control_function(tk), dtype = float).reshape(-1)
-
-                self.U_bar[k, :] = u_k_bar
-                self.X_bar[k + 1, :] = self.discrete_dynamics(tk, x_k_bar, u_k_bar)
 
     def get_gradient(self,
                      t: float,
@@ -171,15 +143,45 @@ class NMPCController:
         u_k_bar = np.asarray(u_k_bar, dtype = float).reshape(-1)
 
         # A, B jacobians
-        A = approx_derivative(fun = lambda x: self.discrete_dynamics(tk, x, u_k_bar),
+        A = approx_derivative(fun = lambda x: self.discrete_nonlinear_dynamics(tk, x, u_k_bar),
                               x0 = x_k_bar,
                               method = '2-point')
             
-        B = approx_derivative(fun = lambda u: self.discrete_dynamics(tk, x_k_bar, u),
+        B = approx_derivative(fun = lambda u: self.discrete_nonlinear_dynamics(tk, x_k_bar, u),
                               x0 = u_k_bar,
                               method = '2-point')
 
         return A, B
+
+    def get_defects(self,
+                    t: float,
+                    current_state: ArrayLike,
+                    X_bar: ArrayLike,
+                    U_bar: ArrayLike):
+
+        # inputs
+        t = float(t)
+        x0 = np.asarray(current_state, dtype = float).reshape(-1) # x(0)
+        X_bar = np.asarray(X_bar, dtype = float).reshape(self.N, self.n) # x(1) ~ x(N)
+        U_bar = np.asarray(U_bar, dtype = float).reshape(self.N, self.m) # u(0) ~ u(N-1)
+
+        defects = []
+
+        for k in range(self.N):
+
+            tk = t + self.dt * k
+            u_k_bar = U_bar[k, :]
+
+            if k == 0:
+                x_k_bar = x0
+            
+            else:
+                x_k_bar = X_bar[k-1, :]
+
+            defect = X_bar[k, :] - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
+            defects.append(defect)
+
+        return np.concatenate(defects)
 
     def build_qp(self):
 
@@ -188,8 +190,7 @@ class NMPCController:
         del_x = self.del_z[0 : self.N * self.n]  # del_x(1) ~ del_x(N)
         del_u = self.del_z[self.N * self.n : ] # del_u(0) ~ del_u(N-1)
 
-        # parameters (del_x0, gradient, X_bar, U_bar, A, B, defect, constraints)
-        self.del_x0_parameter = cp.Parameter(self.n)
+        # parameters (gradient, X_bar, U_bar, A, B, defect, constraints)
         self.gradient_parameter = cp.Parameter(self.N * (self.n + self.m))
         self.X_bar_parameter = cp.Parameter((self.N, self.n))
         self.U_bar_parameter = cp.Parameter((self.N, self.m))
@@ -211,7 +212,7 @@ class NMPCController:
             self.defect_parameters.append(defect_k)
 
             if k == 0:
-                del_x_k = self.del_x0_parameter
+                del_x_k = np.zeros(self.n)
 
             else:
                 del_x_k = del_x[(k - 1) * self.n : k * self.n]
@@ -257,79 +258,155 @@ class NMPCController:
         objective = cp.Minimize((1/2) * cp.quad_form(self.del_z, self.hessian) + self.gradient_parameter @ self.del_z)
         self.qp = cp.Problem(objective, constraints)
 
-    def preparation(self,
-                    t: float):
+    def update_qp(self,
+                  t: float,
+                  current_state: ArrayLike,
+                  X_bar: ArrayLike,
+                  U_bar: ArrayLike):
 
-        # check input
-        t = float(t)
-
-        self.X_bar_parameter.value = self.X_bar[1:, :]
-        self.U_bar_parameter.value = self.U_bar
-        self.gradient_parameter.value = self.get_gradient(t, self.X_bar[1:, :], self.U_bar)
+        self.X_bar_parameter.value = X_bar
+        self.U_bar_parameter.value = U_bar
+        self.gradient_parameter.value = self.get_gradient(t, X_bar, U_bar)
 
         # update A, B, defect, constraints
         for k in range(self.N):
 
             tk = t + k * self.dt
 
-            x_k_bar = self.X_bar[k, :]
-            x_next_bar = self.X_bar[k + 1, :]
-            u_k_bar = self.U_bar[k, :]
+            if k == 0:
+                x_k_bar = current_state
+            
+            else:
+                x_k_bar = X_bar[k - 1, :]
+
+            x_next_bar = X_bar[k, :]
+            u_k_bar = U_bar[k, :]
 
             A_k, B_k = self.get_jacobians(tk, x_k_bar, u_k_bar)
-            defect_k = x_next_bar - self.discrete_dynamics(tk, x_k_bar, u_k_bar)
+            defect_k = x_next_bar - self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
 
             self.A_parameters[k].value = A_k
             self.B_parameters[k].value = B_k
             self.defect_parameters[k].value = defect_k
 
-    def feedback(self,
-                 estimated_state: ArrayLike):
+    def corresponding_X_bar(self,
+                            t: float,
+                            current_state: ArrayLike,
+                            U_bar: ArrayLike):
+    
+        X_bar = np.zeros((self.N, self.n)) # x1 ~ xN
+        x_k_bar = np.asarray(current_state, dtype = float).reshape(-1)
 
-        # check input
-        x0_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
+        for k in range(self.N):
 
-        self.del_x0_parameter = x0_hat - self.X_bar[0, :]
+            tk = t + k * self.dt
 
-        # save previous optimal u for qp failure
-        backup_U_bar = self.U_bar.copy()
-        backup_X_bar = self.X_bar.copy()
+            u_k_bar = U_bar[k, :]
+            x_k_bar = self.discrete_nonlinear_dynamics(tk, x_k_bar, u_k_bar)
 
-        self.qp.solve(solver = cp.OSQP,
-                      warm_start = True)
+            X_bar[k, :] = x_k_bar
 
-        if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
+        return X_bar
 
-            # use previous optimal u
-            self.U_bar = backup_U_bar
-            self.X_bar = backup_X_bar
+    def control_vector(self,
+                       t: float,
+                       current_state: ArrayLike,
+                       max_iteration: int,
+                       alpha: float,
+                       del_z_tolerance: float,
+                       defect_tolerance: float):
 
-            return backup_U_bar[0, :], {'status': 'qp failed'}
+        # inputs
+        t = float(t)
+        alpha = float(alpha)
+        del_z_tolerance = float(del_z_tolerance)
+        defect_tolerance = float(defect_tolerance)
+        max_iteration = int(max_iteration)
+        x0 = np.asarray(current_state, dtype = float).reshape(-1)
 
-        # optimal correction
-        optimal_del_z = self.del_z.value
-        optimal_del_x = optimal_del_z[0 : self.N * self.n].reshape(self.N, self.n)
-        optimal_del_u = optimal_del_z[self.N * self.n : ].reshape(self.N, self.m)
+        # warm start
+        if self.control_sequence is None:
+            U_bar = np.zeros((self.N, self.m))
 
-        # update correction
-        self.X_bar[0, :] = x0_hat
-        self.X_bar[1:, :] += optimal_del_x
-        self.U_bar += optimal_del_u
+        else: 
+            U_bar = self.control_sequence.copy()
 
-        optimal_u = self.U_bar[0, :].reshape(-1)
+        X_bar = self.corresponding_X_bar(t, x0, U_bar)
 
-        histories = {'status': self.qp.status,
-                     'iterations': self.qp.solver_stats.num_iters}
+        # backup for qp failure
+        backup_U_bar = U_bar.copy()
+        backup_X_bar = X_bar.copy()
+
+        # check alpha
+        if not 0 < alpha <= 1:
+            raise ValueError('Alpha must be between 0 and 1')
+
+        # for status history
+        status = None
+        iterations = 0
+        final_correction_norm = 0
+        final_defect_norm = 0
+
+        for j in range(max_iteration):
+
+            self.update_qp(t, x0, X_bar, U_bar)
+
+            self.qp.solve(solver = cp.OSQP,
+                          warm_start = True)
+
+            if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
+
+                status = 'qp failed, return previous optimal u'
+
+                # use previous optimal u
+                U_bar = backup_U_bar
+                X_bar = backup_X_bar
+
+                # no correction and defect
+                final_correction_norm = np.nan
+                final_defect_norm = np.nan
+                break
+
+            iterations += 1
+
+            # optimal correction
+            optimal_del_z = self.del_z.value
+            optimal_del_x = optimal_del_z[0 : self.N * self.n].reshape(self.N, self.n)
+            optimal_del_u = optimal_del_z[self.N * self.n : ].reshape(self.N, self.m)
+
+            # update correction
+            X_bar += alpha * optimal_del_x
+            U_bar += alpha * optimal_del_u
+
+            # final correction norm
+            final_correction_norm = np.linalg.norm(optimal_del_z)
+
+            # when correction is small enough
+            if final_correction_norm < del_z_tolerance:
+                
+                defects = self.get_defects(t, x0, X_bar, U_bar)
+                final_defect_norm = np.linalg.norm(defects)
+
+                # when defect is small enough
+                if final_defect_norm < defect_tolerance:
+
+                    status = 'converged, return optimal u'
+                    break
+
+            if j == max_iteration - 1:
+                defects = self.get_defects(t, x0, X_bar, U_bar)
+                final_defect_norm = np.linalg.norm(defects)
+
+                status = "max iteration, return max j's u"
         
+        optimal_u = U_bar[0, :].reshape(-1)
+
+        histories = {'status': status,
+                     'iterations': iterations,
+                     'final_correction_norm': final_correction_norm,
+                     'final_defect_norm': final_defect_norm}
+
+        if status != 'qp failed, return previous optimal u':
+            self.control_sequence = np.concatenate((U_bar[1 :, :], U_bar[-1 :, :]), axis = 0)
+
         return optimal_u, histories
-
-    def warm_start(self,
-                   next_t: float):
-
-        # check input
-        next_t = float(next_t)
-
-        self.U_bar[:-1, :] = self.U_bar[1:, :]
-        self.U_bar[-1, :] = self.U_bar[-2, :]
-
-        self.X_bar # dynamics에 맞는 U_bar에 대응되는 X_bar 출력
