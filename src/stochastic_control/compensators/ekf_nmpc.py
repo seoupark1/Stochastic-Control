@@ -1,4 +1,4 @@
-from stochastic_control.controllers.mpc.nmpc import NMPCController
+from stochastic_control.controllers.mpc.rti_nmpc import NMPCController
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 
 class EKFNMPCCompensator:
