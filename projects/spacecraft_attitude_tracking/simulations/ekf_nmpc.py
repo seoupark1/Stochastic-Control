@@ -14,7 +14,7 @@ from stochastic_control.providers import BodyStateContext
 from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
-from stochastic_control.controllers.mpc.nmpc import NMPCController
+from stochastic_control.controllers.mpc.rti_nmpc import NMPCController
 
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat: ArrayLike,
@@ -277,8 +277,6 @@ def simulation(initial_x_true: ArrayLike,
     # qp history
     qp_status_history = []
     qp_iterations_history = np.zeros(total_step)
-    final_correction_norm_history = np.zeros(total_step)
-    final_defect_norm_history = np.zeros(total_step)
 
     # run simulation
     for k in range(total_step):
@@ -355,8 +353,6 @@ def simulation(initial_x_true: ArrayLike,
         # qp status histories
         qp_status_history.append(histories['status'])
         qp_iterations_history[k] = histories['iterations']
-        final_correction_norm_history[k] = histories['final_correction_norm']
-        final_defect_norm_history[k] = histories['final_defect_norm']
 
         # update other histories
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
@@ -406,8 +402,6 @@ def simulation(initial_x_true: ArrayLike,
             'commanded_control': cmd_control_history,
             'qp_status': qp_status_history,
             'qp_iterations': qp_iterations_history,
-            'final_correction_norm': final_correction_norm_history,
-            'final_defect_norm': final_defect_norm_history,
             'measurement_y': measurement_history,
             'star_tracker_correction_steps': star_tracker_correction_steps_history,
             'gyroscope_correction_steps': gyroscope_correction_steps_history,
