@@ -5,23 +5,7 @@
 Nadir Pointing은 행성 궤도를 공전하는 물체의 방향이 항상 행성 쪽을 바라보도록 
 우주선의 자세표현법으로 Modified Rodrigues Parameter를 사용함. 
 
-# Project Result Simulation GIF
-gif
-
-# Experiment 1 (normal_vs_extreme)
-EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error, commanded control, true gravity gradient) 추출
-
-u abs max cmd
-normal : [12.8076, 16.2495, 4.8823]
-extreme : [38.3882, 49.6486, 12.2470]
-
-
-# Experiment 2 (actuator_saturation)
-Nonlinear MRP control under Noise and Saturation
-
-LQR 말고 lyapunov controller를 활용. K, P, KI에 따라 standard가 좋을 수도 있고 integral이 좋을 수도 있음. 
-
-# < EKF & LQR Conditions >
+# < Simulation Conditions >
 [Normal Case: Small initial tracking error + trustworthy EKF]
 
 Initial Attitude Tracking Error = around 7 degrees
@@ -32,10 +16,19 @@ Initial Angular Velocity Tracking Error = around 4 degrees
 Initial Attitude Tracking Error = around 35 degrees
 Initial Angular Velocity Tracking Error = around 30 degrees
 
-# Experiment 3 (NMPC validation)
+# Project Result Simulation GIF
+gif
 
-# Experiment 4
-같은 조건과 u_max에서 ekf_lqr과 ekf_nmpc의 결과 비교
+# Experiment 1 (LQR normal case vs extreme case)
+EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error, commanded control, true gravity gradient) 추출
 
-# Experiment 5 (가장 메인)
-deterministic MPC와 chance-constrained MPC 결과 비교
+u abs max cmd
+normal : [12.8076, 16.2495, 4.8823]
+extreme : [38.3882, 49.6486, 12.2470]
+
+
+# Experiment 2 (LQR actuator saturation)
+
+# Experiment 3 (EKF + LQR vs EKF + RTI NMPC)
+
+# Experiment 4 (RTI NMPC vs chance constrained RTI NMPC)
