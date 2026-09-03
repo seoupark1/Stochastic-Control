@@ -289,7 +289,7 @@ class RealTimeNMPCController:
         # check input
         x0_hat = np.asarray(estimated_state, dtype = float).reshape(-1)
 
-        A_0 = self.A_parameters[0]
+        A_0 = self.A_parameters[0].value
         del_x0 = x0_hat - self.X_bar[0, :]
         self.A_del_x0_parameter.value = A_0 @ del_x0
 
