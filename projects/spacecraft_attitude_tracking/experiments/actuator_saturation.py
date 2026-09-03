@@ -34,7 +34,8 @@ unsaturated_result = simulation(initial_x_true = initial_x_true,
                                 simulation_tf = 60,
                                 controller_tf = 120,
                                 star_tracker_sampling_rate = star_tracker_sampling_rate,
-                                gyroscope_sampling_rate = gyroscope_sampling_rate)
+                                gyroscope_sampling_rate = gyroscope_sampling_rate,
+                                seed = 2026)
 
 # control limiter
 max_u_cmd_abs = unsaturated_result['max_abs_commanded_control']
@@ -51,6 +52,7 @@ saturated_result = simulation(initial_x_true = initial_x_true,
                               controller_tf = 120,
                               star_tracker_sampling_rate = star_tracker_sampling_rate,
                               gyroscope_sampling_rate = gyroscope_sampling_rate,
+                              seed = 2026,
                               control_limiter = actuator)
 
 time = saturated_result['time']
