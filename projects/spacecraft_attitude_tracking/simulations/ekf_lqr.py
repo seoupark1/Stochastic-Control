@@ -15,7 +15,6 @@ from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.lqr.local_trajectory_stabilization import LocalTrajectoryStabilizationLQRController
-from stochastic_control.compensators.ekf_lqr import EKFLQRCompensator
 
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat : ArrayLike,
@@ -224,8 +223,6 @@ def simulation(initial_x_true: ArrayLike,
                                                     reference_provider = reference_provider,
                                                     dynamics_function = dynamics)
 
-    compensator = EKFLQRCompensator(ekf, lqr)
-
     # noises & sensors
     rng = np.random.default_rng(seed = 2026)
     motion_noise_provider = GaussianNoise(np.zeros(6), motion_noise_covariance)
@@ -251,12 +248,12 @@ def simulation(initial_x_true: ArrayLike,
     # state history at t = 0
     true_state_history[:, 0] = x_true
     reference_state_history[:, 0] = reference_x_function(0)
-    estimated_state_history[:, 0] = ekf.x
+    estimated_state_history[:, 0] = ekf.state
     true_gravity_gradient_history[:, 0] = gravity_gradient_torque(0, x_true)
 
     # ekf covariance P history
     covariance_history = np.zeros((6, 6, total_step + 1))
-    covariance_history[:, :, 0] = ekf.P
+    covariance_history[:, :, 0] = ekf.covariance
 
     # control & measurement histories
     cmd_control_history = np.zeros((3, total_step))
@@ -277,7 +274,7 @@ def simulation(initial_x_true: ArrayLike,
         next_t = time[k + 1]
 
         # control with saturation
-        u_cmd = compensator.control_vector(t)
+        u_cmd = lqr.control_vector(t, ekf.state)
 
         if control_limiter is None:
             u_actual = u_cmd
@@ -300,8 +297,8 @@ def simulation(initial_x_true: ArrayLike,
             measurement_history[0:3, k + 1] = y
 
             # predicted model & jacobian
-            predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.x)[0:3]
-            star_tracker_jacobian = innovation_jacobian(next_t, ekf.x)
+            predicted_star_tracker_measurement_model = measurement_model(next_t, ekf.state)[0:3]
+            star_tracker_jacobian = innovation_jacobian(next_t, ekf.state)
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
@@ -324,8 +321,8 @@ def simulation(initial_x_true: ArrayLike,
             measurement_history[3:6, k + 1] = y
 
             # predicted model & jacobian
-            predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.x)[3:6]
-            predicted_gyroscope_jacobian = measurement_jacobian(next_t, ekf.x)[3:6, :]
+            predicted_gyroscope_measurement_model = measurement_model(next_t, ekf.state)[3:6]
+            predicted_gyroscope_jacobian = measurement_jacobian(next_t, ekf.state)[3:6, :]
 
             ekf.correction(measurement_vector = y,
                            t = next_t,
@@ -342,9 +339,9 @@ def simulation(initial_x_true: ArrayLike,
         # update histories
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
-        estimated_state_history[:, k + 1] = ekf.x
+        estimated_state_history[:, k + 1] = ekf.state
         true_gravity_gradient_history[:, k + 1] = gravity_gradient_torque(next_t, x_true)
-        covariance_history[:, :, k + 1] = ekf.P
+        covariance_history[:, :, k + 1] = ekf.covariance
         cmd_control_history[:, k] = u_cmd
         actual_control_history[:, k] = u_actual
 
