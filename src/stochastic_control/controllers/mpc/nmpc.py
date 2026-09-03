@@ -58,7 +58,7 @@ class NMPCController:
         self.m = self.R.shape[0]
 
         # warm start
-        self.control_sequence = None
+        self.warm_start_u = None
 
         self.build_qp()
 
@@ -293,9 +293,9 @@ class NMPCController:
                             t: float,
                             current_state: ArrayLike,
                             U_bar: ArrayLike):
-    
+
+        x_k_bar = np.asarray(current_state, dtype = float).reshape(-1) # x0
         X_bar = np.zeros((self.N, self.n)) # x1 ~ xN
-        x_k_bar = np.asarray(current_state, dtype = float).reshape(-1)
 
         for k in range(self.N):
 
@@ -322,18 +322,19 @@ class NMPCController:
         del_z_tolerance = float(del_z_tolerance)
         defect_tolerance = float(defect_tolerance)
         max_iteration = int(max_iteration)
+
         x0 = np.asarray(current_state, dtype = float).reshape(-1)
 
         # warm start
-        if self.control_sequence is None:
+        if self.warm_start_u is None:
             U_bar = np.zeros((self.N, self.m))
 
-        else: 
-            U_bar = self.control_sequence.copy()
+        else:
+            U_bar = self.warm_start_u.copy()
 
         X_bar = self.corresponding_X_bar(t, x0, U_bar)
 
-        # backup for qp failure
+        # save previous optimal u for qp failure
         backup_U_bar = U_bar.copy()
         backup_X_bar = X_bar.copy()
 
@@ -341,11 +342,8 @@ class NMPCController:
         if not 0 < alpha <= 1:
             raise ValueError('Alpha must be between 0 and 1')
 
-        # for status history
         status = None
         iterations = 0
-        final_correction_norm = 0
-        final_defect_norm = 0
 
         for j in range(max_iteration):
 
@@ -356,15 +354,11 @@ class NMPCController:
 
             if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
 
-                status = 'qp failed, return previous optimal u'
+                status = 'qp failed'
 
                 # use previous optimal u
                 U_bar = backup_U_bar
                 X_bar = backup_X_bar
-
-                # no correction and defect
-                final_correction_norm = np.nan
-                final_defect_norm = np.nan
                 break
 
             iterations += 1
@@ -378,35 +372,28 @@ class NMPCController:
             X_bar += alpha * optimal_del_x
             U_bar += alpha * optimal_del_u
 
-            # final correction norm
-            final_correction_norm = np.linalg.norm(optimal_del_z)
-
             # when correction is small enough
-            if final_correction_norm < del_z_tolerance:
+            if np.linalg.norm(optimal_del_z) < del_z_tolerance:
                 
                 defects = self.get_defects(t, x0, X_bar, U_bar)
-                final_defect_norm = np.linalg.norm(defects)
 
                 # when defect is small enough
-                if final_defect_norm < defect_tolerance:
+                if np.linalg.norm(defects) < defect_tolerance:
 
-                    status = 'converged, return optimal u'
+                    status = 'converged'
                     break
 
+            # status update at final iteration
             if j == max_iteration - 1:
-                defects = self.get_defects(t, x0, X_bar, U_bar)
-                final_defect_norm = np.linalg.norm(defects)
 
-                status = "max iteration, return max j's u"
+                status = 'max iteration'
         
         optimal_u = U_bar[0, :].reshape(-1)
 
         histories = {'status': status,
-                     'iterations': iterations,
-                     'final_correction_norm': final_correction_norm,
-                     'final_defect_norm': final_defect_norm}
+                     'iterations': iterations}
 
-        if status != 'qp failed, return previous optimal u':
-            self.control_sequence = np.concatenate((U_bar[1 :, :], U_bar[-1 :, :]), axis = 0)
+        if status != 'qp failed':
+            self.warm_start_u = np.concatenate((U_bar[1 :, :], U_bar[-1 :, :]), axis = 0)
 
         return optimal_u, histories
