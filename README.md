@@ -23,7 +23,9 @@ gif
 EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error, commanded control, true gravity gradient) 추출
 
 u abs max cmd
+
 normal : [12.8076, 16.2495, 4.8823]
+
 extreme : [38.3882, 49.6486, 12.2470]
 
 
