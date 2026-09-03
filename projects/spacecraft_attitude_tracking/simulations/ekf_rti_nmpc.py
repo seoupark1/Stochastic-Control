@@ -276,17 +276,14 @@ def simulation(initial_x_true: ArrayLike,
 
     # run simulation
     rti_nmpc.nominal_trajectory(0, ekf.state)
-    rti_nmpc.build_qp()
-    optimal_u = rti_nmpc.U_bar[0, :]
+    rti_nmpc.preparation(0)
 
     for k in range(total_step):
 
         tk = k * dt
         next_t = time[k + 1]
 
-        # rti-nmpc preparation
-        rti_nmpc.preparation(tk)
-        u_cmd = optimal_u
+        u_cmd, histories = rti_nmpc.feedback(ekf.state)
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -342,9 +339,8 @@ def simulation(initial_x_true: ArrayLike,
 
             gyroscope_correction_steps_history[k + 1] = 1
 
-        # rti-nmpc feedback & create warm start state, control
-        optimal_u, histories = rti_nmpc.feedback(ekf.state)
         rti_nmpc.warm_start(next_t)
+        rti_nmpc.preparation(next_t)
 
         # update state histories
         true_state_history[:, k + 1] = x_true
