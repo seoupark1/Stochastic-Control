@@ -16,7 +16,7 @@ class NMPCController:
                  N: int,
                  dt: float,
                  reference_control_function = None,
-                 discrete_nonlienar_dynamics = None,
+                 discrete_nonlinear_dynamics = None,
                  continuous_nonlinear_dynamics = None,
                  control_bound = None,
                  state_bound = None):
@@ -39,7 +39,7 @@ class NMPCController:
         self.dt = float(dt)
 
         self.reference_control_function = reference_control_function
-        self.discrete_f = discrete_nonlienar_dynamics
+        self.discrete_f = discrete_nonlinear_dynamics
         self.continuous_f = continuous_nonlinear_dynamics
 
         if self.discrete_f is None and self.continuous_f is None:
