@@ -72,13 +72,8 @@ plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/input_constrained_nmpc/tracking_error.png')
 plt.close()
 
-# qp failed / converged / max iteration
-correction_norm = nmpc_result['final_correction_norm']
-defect_norm = nmpc_result['final_defect_norm']
-
+# qp status
 print('QP status:', Counter(qp_status))
-print('Correction norm:', correction_norm[~ np.isnan(correction_norm)])
-print('Defect norm:', defect_norm[~np.isnan(defect_norm)])
 
 # commanded constrained control
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
