@@ -284,17 +284,17 @@ def simulation(initial_x_true: ArrayLike,
 
         tk = k * dt
         next_t = time[k + 1]
-        
-######################################################
+
+#####################################################
         start = perf_counter()
         rti_nmpc.preparation(tk)
         preparation_time = perf_counter() - start
         start = perf_counter()
-######################################################
+#####################################################
 
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
 
-######################################################
+#####################################################
         feedback_time = perf_counter() - start
         if k % 10 == 0 or k == total_step - 1:
             print(
@@ -307,7 +307,7 @@ def simulation(initial_x_true: ArrayLike,
                 end = '',
                 flush = True
             )
-######################################################
+#####################################################
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
