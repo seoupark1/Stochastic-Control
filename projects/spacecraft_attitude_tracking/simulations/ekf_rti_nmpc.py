@@ -212,16 +212,21 @@ def simulation(initial_x_true: ArrayLike,
                                motion_noise_covariance = motion_noise_covariance,
                                measurement_noise_covariance = measurement_noise_covariance)
 
+    # ekf_lqr's lqr properties
+    Q_lqr = np.diag([100, 100, 100, 500, 500, 500])
+    R_lqr = 0.01 * np.eye(3)
+    Qf_lqr = 2 * Q_lqr
+
     # mpc properties
-    Q = np.diag([100, 100, 100, 500, 500, 500]) * dt
-    R = 0.01 * np.eye(3) * dt
-    P = 2 * Q
+    Q_mpc = dt * Q_lqr
+    R_mpc = dt * R_lqr
+    P_mpc = Qf_lqr
     N = int(round(prediction_horizon / dt))
     x_true = initial_x_true
 
-    rti_nmpc = RealTimeNMPCController(Q = Q,
-                                      R = R,
-                                      P = P,
+    rti_nmpc = RealTimeNMPCController(Q = Q_mpc,
+                                      R = R_mpc,
+                                      P = P_mpc,
                                       N = N,
                                       dt = dt,
                                       reference_control_function = reference_u_function,
