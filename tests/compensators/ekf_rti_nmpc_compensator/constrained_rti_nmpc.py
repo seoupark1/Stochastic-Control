@@ -34,7 +34,7 @@ result = simulation(initial_x_true = initial_x_true,
                     motion_noise_covariance = motion_noise_covariance,
                     star_tracker_noise_covariance = star_tracker_noise_covariance,
                     gyroscope_noise_covariance = gyroscope_noise_covariance,
-                    simulation_tf = 5,
+                    simulation_tf = 3,
                     prediction_horizon = prediction_horizon,
                     star_tracker_sampling_rate = star_tracker_sampling_rate,
                     gyroscope_sampling_rate = gyroscope_sampling_rate,
@@ -42,20 +42,16 @@ result = simulation(initial_x_true = initial_x_true,
                     control_bound = (-u_max, u_max))
 
 time = result['time']
-attitude_tracking_error = result['attitude_tracking_error']
-omega_tracking_error = result['omega_tracking_error']
-u_cmd = result['commanded_control']
-qp_status = result['qp_status']
 
 # tracking error
 plt.subplot(2, 1, 1)
-plt.plot(time, np.rad2deg(attitude_tracking_error))
+plt.plot(time, np.rad2deg(result['attitude_tracking_error']))
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [deg]')
 plt.title('NMPC Nadir Pointing Attitude Tracking Error')
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, np.rad2deg(omega_tracking_error))
+plt.plot(time, np.rad2deg(result['omega_tracking_error']))
 plt.xlabel('Time [s]')
 plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('NMPC Nadir Pointing Angular Velocity Tracking Error')
@@ -65,13 +61,15 @@ plt.savefig(f'tests/compensators/ekf_rti_nmpc_compensator/tracking_error.png')
 plt.close()
 
 # qp status
-print('QP status:', Counter(qp_status))
+print('QP status:', Counter(result['qp_status']))
+print('max iterations:', np.max(result['qp_iterations']))
+print('mean iterations:', np.mean(result['qp_iterations']))
 
 # commanded constrained control
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
 
 for i in range(3):
-    axes[i].plot(time[0:-1], u_cmd[i])
+    axes[i].plot(time[0:-1], result['commanded_control'][i])
     axes[i].axhline(u_max[i], linestyle = '--')
     axes[i].axhline(-u_max[i], linestyle = '--')
     axes[i].set_xlabel('Time [s]')
