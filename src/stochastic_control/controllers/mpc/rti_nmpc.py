@@ -298,7 +298,9 @@ class RealTimeNMPCController:
         backup_X_bar = self.X_bar.copy()
 
         self.qp.solve(solver = cp.OSQP,
-                      warm_start = True)
+                      warm_start = True,
+                      max_iter = 20000,
+                      adaptive_rho = True)
 
         if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
 
@@ -306,7 +308,7 @@ class RealTimeNMPCController:
             self.U_bar = backup_U_bar
             self.X_bar = backup_X_bar
 
-            histories = {'status': 'qp failed',
+            histories = {'status': 'qp_failed',
                          'iterations': 0}
 
             return backup_U_bar[0, :], histories
