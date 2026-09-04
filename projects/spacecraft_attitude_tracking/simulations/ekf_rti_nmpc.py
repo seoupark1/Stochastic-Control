@@ -152,10 +152,10 @@ def simulation(initial_x_true: ArrayLike,
                                          x0 = state,
                                          method = '2-point')
         
-        continuous_B = np.vstack([np.zeros(3), I_inv])
+        continuous_B = np.vstack([np.zeros((3, 3)), I_inv])
 
         # from continuous to discrete
-        discrete_A = np.eye(3) + dt * continuous_A
+        discrete_A = np.eye(6) + dt * continuous_A
         discrete_B = dt * continuous_B
 
         return discrete_A, discrete_B
@@ -204,7 +204,7 @@ def simulation(initial_x_true: ArrayLike,
 
         jacobian = approx_derivative(fun = lambda nearby_state: innovation_function(measurement_model(t, nearby_state)[0:3], predicted_sigma),
                                      x0 = state,
-                                     method = '2-point')
+                                     method = '3-point')
 
         return jacobian
     
