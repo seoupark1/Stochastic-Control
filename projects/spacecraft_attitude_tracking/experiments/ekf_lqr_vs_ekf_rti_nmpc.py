@@ -88,6 +88,15 @@ lqr_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(lqr_result['omega_tr
 mpc_attitude_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['attitude_tracking_error']))))
 mpc_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['omega_tracking_error']))))
 
+context1 = ('Tracking Error RMSE\n'
+            f'LQR attitude RMSE [deg]       = {lqr_attitude_error_rmse: .4f}\n'
+            f'RTI-NMPC attitude RMSE [deg]  = {mpc_attitude_error_rmse: .4f}\n'
+            f'LQR omega RMSE [deg/s]        = {lqr_omega_error_rmse: .4f}\n'
+            f'RTI-NMPC omega RMSE [deg/s]   = {mpc_omega_error_rmse: .4f}\n')
+
+with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error_rmse.txt', 'w') as file:
+    file.write(context1)
+
 # control
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
 
@@ -125,10 +134,37 @@ for time_step in range(N):
 lqr_violation_rate = (lqr_violation / (3 * N)) * 100 # [%]
 mpc_violation_rate = (mpc_violation / (3 * N)) * 100 # [%]
 
+context2 = ('Control Limit Violation\n'
+            f'LQR violation rate [%]        = {lqr_violation_rate: .4f}\n'
+            f'RTI-NMPC violation rate [%]   = {mpc_violation_rate: .4f}\n')
 
-# control effort comparison
+with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_limit_violation.txt', 'w') as file:
+    file.write(context2)
+
+# control effort
 lqr_control_effort = dt * np.sum(np.square(lqr_result['actual_control']))
 mpc_control_effort = dt * np.sum(np.square(mpc_result['commanded_control']))
+
+context3 = ('Control Effort\n'
+            f'LQR control effort [Nm^2 s]   = {lqr_control_effort: .4f}\n'
+            f'RTI-NMPC effort [Nm^2 s]      = {mpc_control_effort: .4f}\n')
+
+with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_effort.txt', 'w') as file:
+    file.write(context3)
+
+# qp status
+status_count = Counter(mpc_result['qp_status'])
+optimal_count = status_count['optimal']
+optimal_inaccurate_count = status_count['optimal inaccurate']
+failed_count = status_count['qp_failed']
+
+context4 = ('RTI-NMPC QP Status\n'
+            f'optimal                       = {optimal_count}\n'
+            f'optimal_inaccurate            = {optimal_inaccurate_count}\n'
+            f'qp_failed                     = {failed_count}\n')
+
+with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_status.txt', 'w') as file:
+    file.write(context4)
 
 # estimation error
 plt.subplot(2, 1, 1)
