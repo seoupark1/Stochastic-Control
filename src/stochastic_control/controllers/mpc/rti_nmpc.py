@@ -18,6 +18,7 @@ class RealTimeNMPCController:
                  reference_control_function = None,
                  discrete_nonlinear_dynamics = None,
                  continuous_nonlinear_dynamics = None,
+                 discrete_jacobian_function = None,
                  control_bound = None,
                  state_bound = None):
 
@@ -41,6 +42,7 @@ class RealTimeNMPCController:
         self.reference_control_function = reference_control_function
         self.discrete_f = discrete_nonlinear_dynamics
         self.continuous_f = continuous_nonlinear_dynamics
+        self.discrete_jacobian_function = discrete_jacobian_function
 
         if self.discrete_f is None and self.continuous_f is None:
             raise ValueError('At least one dynamics must be provided')
@@ -170,16 +172,19 @@ class RealTimeNMPCController:
         x_k_bar = np.asarray(x_k_bar, dtype = float).reshape(-1)
         u_k_bar = np.asarray(u_k_bar, dtype = float).reshape(-1)
 
-        # A, B jacobians
-        A = approx_derivative(fun = lambda x: self.discrete_dynamics(tk, x, u_k_bar),
-                              x0 = x_k_bar,
-                              method = '2-point')
-            
-        B = approx_derivative(fun = lambda u: self.discrete_dynamics(tk, x_k_bar, u),
-                              x0 = u_k_bar,
-                              method = '2-point')
+        if self.discrete_jacobian_function is not None:
+            return self.discrete_jacobian_function(tk, x_k_bar, u_k_bar)
 
-        return A, B
+        else:
+            discrete_A = approx_derivative(fun = lambda x: self.discrete_dynamics(tk, x, u_k_bar),
+                                           x0 = x_k_bar,
+                                           method = '2-point')
+                
+            discrete_B = approx_derivative(fun = lambda u: self.discrete_dynamics(tk, x_k_bar, u),
+                                           x0 = u_k_bar,
+                                           method = '2-point')
+
+            return discrete_A, discrete_B
 
     def build_qp(self):
 
