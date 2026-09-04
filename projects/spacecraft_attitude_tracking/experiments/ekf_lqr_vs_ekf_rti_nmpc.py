@@ -62,15 +62,15 @@ time = lqr_result['time']
 
 # tracking error
 plt.subplot(2, 1, 1)
-plt.plot(time, np.rad2deg(lqr_result['attitude_tracking_error']))
-plt.plot(time, np.rad2deg(mpc_result['attitude_tracking_error']))
+plt.plot(time, np.rad2deg(lqr_result['attitude_tracking_error']), label = 'EKF + LQR')
+plt.plot(time, np.rad2deg(mpc_result['attitude_tracking_error']), label = 'EKF + RTI-NMPC')
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [deg]')
 plt.title('Nadir Pointing Attitude Tracking Error')
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, np.rad2deg(lqr_result['omega_tracking_error']))
-plt.plot(time, np.rad2deg(mpc_result['omega_tracking_error']))
+plt.plot(time, np.rad2deg(lqr_result['omega_tracking_error']), label = 'EKF + LQR')
+plt.plot(time, np.rad2deg(mpc_result['omega_tracking_error']), label = 'EKF + RTI-NMPC')
 plt.xlabel('Time [s]')
 plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('Nadir Pointing Angular Velocity Tracking Error')
@@ -78,6 +78,58 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error.png')
 plt.close()
+
+# tracking error RMSE
+simulation_tf = 60
+dt = 0.01
+N = int(simulation_tf / dt)
+lqr_attitude_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(lqr_result['attitude_tracking_error']))))
+lqr_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(lqr_result['omega_tracking_error']))))
+mpc_attitude_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['attitude_tracking_error']))))
+mpc_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['omega_tracking_error']))))
+
+# control
+fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
+
+for i in range(3):
+    axes[i].plot(time[0:-1], lqr_result['actual_control'][i], label = 'EKF + LQR (u_actual)')
+    axes[i].plot(time[0:-1], lqr_result['commanded_control'][i], label = 'EKF + LQR (u_cmd)')
+    axes[i].plot(time[0:-1], mpc_result['commanded_control'][i], label = 'EKF + RTI-NMPC (u_cmd)')
+    axes[i].axhline(u_max[i], linestyle = '--')
+    axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].set_xlabel('Time [s]')
+    axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
+    axes[i].grid(True)
+
+fig.suptitle('Nadir Pointing Control')
+fig.tight_layout()
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png')
+plt.close()
+
+# control limit violation
+lqr_violation = 0
+mpc_violation = 0
+
+for time_step in range(N):
+    for i in range(3):
+
+        if lqr_result['commanded_control'][i] > u_max[i]:
+            lqr_violation += 1
+        break
+
+    for j in range(3):
+
+        if mpc_result['commanded_control'][i] > u_max[i]:
+            mpc_violation += 1
+        break
+
+lqr_violation_rate = (lqr_violation / N) * 100 # [%]
+mpc_violation_rate = (mpc_violation / N) * 100 # [%]
+
+
+# control effort comparison
+lqr_control_effort = dt * np.sum(np.square(lqr_result['commanded_control']))
+mpc_control_effort = dt * np.sum(np.square(mpc_result['commanded_control']))
 
 # estimation error
 plt.subplot(2, 1, 1)
@@ -96,21 +148,4 @@ plt.title('Nadir Pointing Angular Velocity Estimation Error')
 plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png')
-plt.close()
-
-# actual control
-fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
-
-for i in range(3):
-    axes[i].plot(time[0:-1], lqr_result['actual_control'][i])
-    axes[i].plot(time[0:-1], mpc_result['commanded_control'][i])
-    axes[i].axhline(u_max[i], linestyle = '--')
-    axes[i].axhline(-u_max[i], linestyle = '--')
-    axes[i].set_xlabel('Time [s]')
-    axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
-    axes[i].grid(True)
-
-fig.suptitle('Nadir Pointing Actual Control')
-fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/actual_control.png')
 plt.close()
