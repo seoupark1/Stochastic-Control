@@ -25,7 +25,7 @@ initial_covariance = np.diag([mrp_std**2, mrp_std**2, mrp_std**2, omega_std**2, 
 motion_noise_covariance = np.diag([1e-9, 1e-9, 1e-9, 1e-7, 1e-7, 1e-7])
 
 # nmpc properties
-prediction_horizon = 0.5 # [s]
+prediction_horizon = 1 # [s]
 u_max = np.asarray([20, 20, 20]) # [Nm]
 
 result = simulation(initial_x_true = initial_x_true,
@@ -34,7 +34,7 @@ result = simulation(initial_x_true = initial_x_true,
                     motion_noise_covariance = motion_noise_covariance,
                     star_tracker_noise_covariance = star_tracker_noise_covariance,
                     gyroscope_noise_covariance = gyroscope_noise_covariance,
-                    simulation_tf = 10,
+                    simulation_tf = 3,
                     prediction_horizon = prediction_horizon,
                     star_tracker_sampling_rate = star_tracker_sampling_rate,
                     gyroscope_sampling_rate = gyroscope_sampling_rate,
