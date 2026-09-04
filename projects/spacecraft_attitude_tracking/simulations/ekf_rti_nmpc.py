@@ -213,9 +213,9 @@ def simulation(initial_x_true: ArrayLike,
                                measurement_noise_covariance = measurement_noise_covariance)
 
     # mpc properties
-    Q = np.diag([100, 100, 100, 500, 500, 500])
-    R = 0.01 * np.eye(3)
-    P = 10 * Q
+    Q = np.diag([100, 100, 100, 500, 500, 500]) * dt
+    R = 0.01 * np.eye(3) * dt
+    P = 2 * Q
     N = int(round(prediction_horizon / dt))
     x_true = initial_x_true
 
