@@ -215,7 +215,7 @@ def simulation(initial_x_true: ArrayLike,
     # mpc properties
     Q = np.diag([100, 100, 100, 500, 500, 500])
     R = 0.01 * np.eye(3)
-    P = 2 * Q
+    P = 10 * Q
     N = int(round(prediction_horizon / dt))
     x_true = initial_x_true
 
@@ -285,29 +285,35 @@ def simulation(initial_x_true: ArrayLike,
         tk = k * dt
         next_t = time[k + 1]
 
-#####################################################
+#################################################
+        # 현재 step 표시
+        if k % 10 == 0:
+            print(
+                f'\r[{k + 1:4d}/{total_step}] '
+                f't = {tk:5.2f}s | solving QP...',
+                end='',
+                flush=True
+            )
+
+        # QP feedback
         start = perf_counter()
-        rti_nmpc.preparation(tk)
-        preparation_time = perf_counter() - start
-        start = perf_counter()
-#####################################################
+#################################################
 
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
 
-#####################################################
+#################################################
         feedback_time = perf_counter() - start
-        if k % 10 == 0 or k == total_step - 1:
+
+        if k % 10 == 0:
             print(
-                f'\r'
-                f'[{k + 1:4d}/{total_step}] '
-                f't = {next_t:5.2f}s | '
-                f'prep = {preparation_time:.3f}s | '
+                f'\r[{k + 1:4d}/{total_step}] '
+                f't = {tk:5.2f}s | '
                 f'QP = {feedback_time:.3f}s | '
                 f'status = {histories["status"]}',
-                end = '',
-                flush = True
+                end='',
+                flush=True
             )
-#####################################################
+#################################################
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -364,6 +370,17 @@ def simulation(initial_x_true: ArrayLike,
             gyroscope_correction_steps_history[k + 1] = 1
 
         rti_nmpc.warm_start(next_t)
+
+#################################################
+        if k % 10 == 0:
+            print(
+                f'\r[{k + 1:4d}/{total_step}] '
+                f't = {next_t:5.2f}s | preparing next step...',
+                end='',
+                flush=True
+            )
+#################################################
+
         rti_nmpc.preparation(next_t)
 
         # update state histories
