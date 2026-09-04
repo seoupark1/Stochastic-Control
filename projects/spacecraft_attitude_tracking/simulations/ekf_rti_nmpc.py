@@ -41,6 +41,7 @@ def simulation(initial_x_true: ArrayLike,
 
     # spacecraft & planet properties
     inertia_tensor = np.diag([1448.3, 1346.2, 689.8])
+    I_inv = np.linalg.inv(inertia_tensor)
     mu = 4.2828 * 10**13
 
     gravity_gradient = GravityGradient(inertia_tensor = inertia_tensor,
@@ -144,12 +145,24 @@ def simulation(initial_x_true: ArrayLike,
         next_state[:3] = mrp_shadow_set(next_state[:3])
 
         return next_state
+    
+    def discrete_jacobian_function(t, state, control):
+
+        continuous_A = approx_derivative(fun = lambda x: dynamics(t, x, control),
+                                         x0 = state,
+                                         method = '2-point')
+        
+        continuous_B = np.vstack([np.zeros(3), I_inv])
+
+        # from continuous to discrete
+        discrete_A = np.eye(3) + dt * continuous_A
+        discrete_B = dt * continuous_B
+
+        return discrete_A, discrete_B
 
     def motion_jacobian(t, state, control):
 
-        return approx_derivative(fun = lambda x: motion_model(t, x, control),
-                                 x0 = state,
-                                 method = '3-point')
+        return discrete_jacobian_function(t, state, control)[0]
     
     def measurement_model(t, state):
 
@@ -173,7 +186,7 @@ def simulation(initial_x_true: ArrayLike,
 
         return approx_derivative(fun = lambda x: measurement_model(t, x),
                                  x0 = state,
-                                 method = '3-point')
+                                 method = '2-point')
 
     # output: rotation vector
     def innovation_function(measured_mrp, predicted_mrp):
@@ -191,7 +204,7 @@ def simulation(initial_x_true: ArrayLike,
 
         jacobian = approx_derivative(fun = lambda nearby_state: innovation_function(measurement_model(t, nearby_state)[0:3], predicted_sigma),
                                      x0 = state,
-                                     method = '3-point')
+                                     method = '2-point')
 
         return jacobian
     
@@ -231,6 +244,7 @@ def simulation(initial_x_true: ArrayLike,
                                       dt = dt,
                                       reference_control_function = reference_u_function,
                                       discrete_nonlinear_dynamics = motion_model,
+                                      discrete_jacobian_function = discrete_jacobian_function,
                                       control_bound = control_bound,
                                       state_bound = state_bound)
 
@@ -290,35 +304,7 @@ def simulation(initial_x_true: ArrayLike,
         tk = k * dt
         next_t = time[k + 1]
 
-#################################################
-        # 현재 step 표시
-        if k % 10 == 0:
-            print(
-                f'\r[{k + 1:4d}/{total_step}] '
-                f't = {tk:5.2f}s | solving QP...',
-                end='',
-                flush=True
-            )
-
-        # QP feedback
-        start = perf_counter()
-#################################################
-
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
-
-#################################################
-        feedback_time = perf_counter() - start
-
-        if k % 10 == 0:
-            print(
-                f'\r[{k + 1:4d}/{total_step}] '
-                f't = {tk:5.2f}s | '
-                f'QP = {feedback_time:.3f}s | '
-                f'status = {histories["status"]}',
-                end='',
-                flush=True
-            )
-#################################################
 
         # true state propagation & mrp shadow set transfer
         x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
@@ -375,17 +361,6 @@ def simulation(initial_x_true: ArrayLike,
             gyroscope_correction_steps_history[k + 1] = 1
 
         rti_nmpc.warm_start(next_t)
-
-#################################################
-        if k % 10 == 0:
-            print(
-                f'\r[{k + 1:4d}/{total_step}] '
-                f't = {next_t:5.2f}s | preparing next step...',
-                end='',
-                flush=True
-            )
-#################################################
-
         rti_nmpc.preparation(next_t)
 
         # update state histories
