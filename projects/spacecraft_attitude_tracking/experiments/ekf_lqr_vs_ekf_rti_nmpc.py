@@ -111,24 +111,23 @@ lqr_violation = 0
 mpc_violation = 0
 
 for time_step in range(N):
+
     for i in range(3):
 
-        if lqr_result['commanded_control'][i] > u_max[i]:
+        if np.abs(lqr_result['commanded_control'][i, time_step]) > u_max[i]:
             lqr_violation += 1
-        break
 
     for j in range(3):
 
-        if mpc_result['commanded_control'][i] > u_max[i]:
+        if np.abs(mpc_result['commanded_control'][j, time_step]) > u_max[j]:
             mpc_violation += 1
-        break
 
-lqr_violation_rate = (lqr_violation / N) * 100 # [%]
-mpc_violation_rate = (mpc_violation / N) * 100 # [%]
+lqr_violation_rate = (lqr_violation / (3 * N)) * 100 # [%]
+mpc_violation_rate = (mpc_violation / (3 * N)) * 100 # [%]
 
 
 # control effort comparison
-lqr_control_effort = dt * np.sum(np.square(lqr_result['commanded_control']))
+lqr_control_effort = dt * np.sum(np.square(lqr_result['actual_control']))
 mpc_control_effort = dt * np.sum(np.square(mpc_result['commanded_control']))
 
 # estimation error
