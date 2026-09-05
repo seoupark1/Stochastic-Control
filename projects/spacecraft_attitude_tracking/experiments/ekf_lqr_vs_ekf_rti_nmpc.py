@@ -155,7 +155,7 @@ with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc
 # qp status
 status_count = Counter(mpc_result['qp_status'])
 optimal_count = status_count['optimal']
-optimal_inaccurate_count = status_count['optimal inaccurate']
+optimal_inaccurate_count = status_count['optimal_inaccurate']
 failed_count = status_count['qp_failed']
 
 context4 = ('RTI-NMPC QP Status\n'
