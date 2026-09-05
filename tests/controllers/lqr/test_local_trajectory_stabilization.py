@@ -29,21 +29,21 @@ def reference_provider():
     return TrajectoryReferenceProvider(reference_x_function, reference_u_function)
 
 @pytest.fixture
-def dynamics_function():
+def continuous_dynamics_function():
     # conditions
     m = 3 # [kg]
     l = 5 # [m]
     g = 9.80665 # [m/s^2]
 
-    def dynamics(x, u):
+    def continuous_dynamics(x, u):
         theta, omega = x
 
         return np.array([omega, -g * np.sin(theta) / l + u[0] / (m * l**2)])
 
-    return dynamics
+    return continuous_dynamics
 
 @pytest.mark.parametrize('t', [5, 10, 15, 20, 25, 30, 35, 40])
-def test_get_jacobians_method(reference_provider, dynamics_function, t):
+def test_get_jacobians_method(reference_provider, continuous_dynamics_function, t):
     # conditions
     m = 3 # [kg]
     l = 5 # [m]
@@ -60,7 +60,7 @@ def test_get_jacobians_method(reference_provider, dynamics_function, t):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           continuous_dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = continuous_dynamics_function)
     A, B = controller.get_jacobians(t)
 
     # expected values
@@ -77,7 +77,7 @@ def test_get_jacobians_method(reference_provider, dynamics_function, t):
     np.testing.assert_allclose(A, expected_A)
     np.testing.assert_allclose(B, expected_B)
 
-def test_get_S_method(reference_provider, dynamics_function):
+def test_get_S_method(reference_provider, continuous_dynamics_function):
 
     Q = np.diag([5, 1])
     R = np.eye(1)
@@ -90,7 +90,7 @@ def test_get_S_method(reference_provider, dynamics_function):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           continuous_dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = continuous_dynamics_function)
 
     S = controller.get_S(tf)
 
@@ -98,7 +98,7 @@ def test_get_S_method(reference_provider, dynamics_function):
     np.testing.assert_allclose(S, Qf)
 
 @pytest.mark.parametrize('t', [5, 10, 15, 20, 25, 30, 35, 40])
-def test_control_vector_method(reference_provider, dynamics_function, t):
+def test_control_vector_method(reference_provider, continuous_dynamics_function, t):
 
     Q = np.diag([5, 1])
     R = np.eye(1)
@@ -116,7 +116,7 @@ def test_control_vector_method(reference_provider, dynamics_function, t):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           continuous_dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = continuous_dynamics_function)
 
     control_vector = controller.control_vector(t, x_d)
 
