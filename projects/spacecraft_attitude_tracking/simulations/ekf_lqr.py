@@ -220,9 +220,19 @@ def simulation(initial_x_true: ArrayLike,
 
         return continuous_A, continuous_B
 
+    def discrete_jacobians(t, state, control):
+
+        continuous_A, continuous_B = continuous_jacobians(t, state, control)
+
+        # from continuous to discrete
+        discrete_A = np.eye(6) + dt * continuous_A
+        discrete_B = dt * continuous_B
+
+        return discrete_A, discrete_B
+
     def motion_jacobian(t, state, control):
 
-        return continuous_jacobians(t, state, control)[0]
+        return discrete_jacobians(t, state, control)[0]
     
     def measurement_model(t, state):
 
