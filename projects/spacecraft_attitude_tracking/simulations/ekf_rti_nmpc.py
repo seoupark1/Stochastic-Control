@@ -179,7 +179,7 @@ def simulation(initial_x_true: ArrayLike,
         for i in range(3):
             derivatived_sigma = np.eye(3)[:, i]
             derivatived_b_matrix = (-2 * sigma_BR[i] * np.eye(3) + 2 * skew_symmetric(derivatived_sigma) 
-                                    + 2 * (sigma_BR @ derivatived_sigma.T + derivatived_sigma @ sigma_BR.T))
+                                    + 2 * (np.outer(sigma_BR, derivatived_sigma) + np.outer(derivatived_sigma, sigma_BR)))
 
             A_11[:, i] = (1/4) * derivatived_b_matrix @ omega_BR_B
 
@@ -200,11 +200,11 @@ def simulation(initial_x_true: ArrayLike,
 
             derivatived_r_B = derivatived_dcm_BR @ r_R
 
-            derivatived_gravity_gradient = ((3 * mu / r**5) * np.cross(derivatived_r_B, inertia_tensor @ r_B) 
-                                            + np.cross(r_B, inertia_tensor @ derivatived_r_B))
+            derivatived_gravity_gradient = ((3 * mu / r**5) * (np.cross(derivatived_r_B, inertia_tensor @ r_B) 
+                                            + np.cross(r_B, inertia_tensor @ derivatived_r_B)))
 
-            derivatived_gyroscopic_term = (np.cross(derivatived_omega_BN_B, inertia_tensor @ omega_BN_B) + 
-                                           np.cross(omega_BN_B @ inertia_tensor @ derivatived_omega_BN_B))
+            derivatived_gyroscopic_term = - (np.cross(derivatived_omega_BN_B, inertia_tensor @ omega_BN_B) + 
+                                             np.cross(omega_BN_B, inertia_tensor @ derivatived_omega_BN_B))
 
             derivated_omega_RN_B_dot = - np.cross(omega_BR_B, derivatived_omega_RN_B) + derivatived_dcm_BR @ omega_RN_R_dot
 
