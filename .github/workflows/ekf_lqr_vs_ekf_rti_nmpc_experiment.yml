@@ -25,6 +25,7 @@ jobs:
           run: python -m projects.spacecraft_attitude_tracking.experiments.ekf_lqr_vs_ekf_rti_nmpc
 
         - name: upload results
+          if: always()
           uses: actions/upload-artifact@v4
           with:
             name: ekf-lqr-vs-ekf-rti-nmpc-results
