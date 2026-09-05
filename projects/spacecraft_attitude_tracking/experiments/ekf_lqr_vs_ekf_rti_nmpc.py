@@ -58,6 +58,25 @@ mpc_result = ekf_rti_nmpc.simulation(initial_x_true = initial_x_true,
 
 time = lqr_result['time']
 
+# raw data
+np.savez_compressed('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/raw_data.npz',
+
+    time = time,
+    lqr_attitude_tracking_error = lqr_result['attitude_tracking_error'],
+    lqr_omega_tracking_error = lqr_result['omega_tracking_error'],
+    lqr_attitude_estimation_error = lqr_result['attitude_estimation_error'],
+    lqr_omega_estimation_error = lqr_result['omega_estimation_error'],
+    lqr_commanded_control = lqr_result['commanded_control'],
+    lqr_actual_control = lqr_result['actual_control'],
+
+    mpc_attitude_tracking_error = mpc_result['attitude_tracking_error'],
+    mpc_omega_tracking_error = mpc_result['omega_tracking_error'],
+    mpc_attitude_estimation_error = mpc_result['attitude_estimation_error'],
+    mpc_omega_estimation_error = mpc_result['omega_estimation_error'],
+    mpc_commanded_control = mpc_result['commanded_control'],
+    mpc_qp_iterations = mpc_result['qp_iterations'],
+    mpc_qp_status = np.asarray(mpc_result['qp_status'], dtype = 'U20'))
+
 # tracking error
 plt.subplot(2, 1, 1)
 plt.plot(time, np.rad2deg(lqr_result['attitude_tracking_error']), label = 'EKF + LQR')
@@ -140,6 +159,7 @@ for i in range(3):
     axes[i].plot(time[0:-1], mpc_result['commanded_control'][i], label = 'EKF + RTI-NMPC (u_cmd)')
     axes[i].axhline(u_max[i], linestyle = '--')
     axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].set_xlim(0, 30)
     axes[i].set_xlabel('Time [s]')
     axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
     axes[i].grid(True)
@@ -147,7 +167,6 @@ for i in range(3):
 axes[0].legend()
 fig.suptitle('Nadir Pointing Control')
 fig.tight_layout()
-plt.xlim(0, 30)
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_initial_30s.png')
 plt.close()
 
@@ -235,22 +254,3 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png')
 plt.close()
-
-# raw data
-np.savez_compressed('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/raw_data.npz',
-
-    time = time,
-    lqr_attitude_tracking_error = lqr_result['attitude_tracking_error'],
-    lqr_omega_tracking_error = lqr_result['omega_tracking_error'],
-    lqr_attitude_estimation_error = lqr_result['attitude_estimation_error'],
-    lqr_omega_estimation_error = lqr_result['omega_estimation_error'],
-    lqr_commanded_control = lqr_result['commanded_control'],
-    lqr_actual_control = lqr_result['actual_control'],
-
-    mpc_attitude_tracking_error = mpc_result['attitude_tracking_error'],
-    mpc_omega_tracking_error = mpc_result['omega_tracking_error'],
-    mpc_attitude_estimation_error = mpc_result['attitude_estimation_error'],
-    mpc_omega_estimation_error = mpc_result['omega_estimation_error'],
-    mpc_commanded_control = mpc_result['commanded_control'],
-    mpc_qp_iterations = mpc_result['qp_iterations'],
-    mpc_qp_status = np.asarray(mpc_result['qp_status'], dtype = 'U32'))
