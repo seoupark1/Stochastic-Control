@@ -308,7 +308,7 @@ class RealTimeNMPCController:
                           max_iter = 20000,
                           adaptive_rho = True)
 
-        except cp.error.Solvererror:
+        except cp.error.SolverError:
 
             self.U_bar = backup_U_bar
             self.X_bar = backup_X_bar
