@@ -60,7 +60,7 @@ def test_get_jacobians_method(reference_provider, dynamics_function, t):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = dynamics_function)
     A, B = controller.get_jacobians(t)
 
     # expected values
@@ -90,7 +90,7 @@ def test_get_S_method(reference_provider, dynamics_function):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = dynamics_function)
 
     S = controller.get_S(tf)
 
@@ -116,7 +116,7 @@ def test_control_vector_method(reference_provider, dynamics_function, t):
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = reference_provider,
-                                                           dynamics_function = dynamics_function)
+                                                           continuous_dynamics_function = dynamics_function)
 
     control_vector = controller.control_vector(t, x_d)
 
