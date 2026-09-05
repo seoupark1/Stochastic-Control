@@ -35,7 +35,7 @@ def continuous_dynamics_function():
     l = 5 # [m]
     g = 9.80665 # [m/s^2]
 
-    def continuous_dynamics(x, u):
+    def continuous_dynamics(t, x, u):
         theta, omega = x
 
         return np.array([omega, -g * np.sin(theta) / l + u[0] / (m * l**2)])
