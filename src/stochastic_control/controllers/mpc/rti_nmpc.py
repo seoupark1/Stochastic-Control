@@ -178,11 +178,11 @@ class RealTimeNMPCController:
         else:
             discrete_A = approx_derivative(fun = lambda x: self.discrete_dynamics(tk, x, u_k_bar),
                                            x0 = x_k_bar,
-                                           method = '2-point')
+                                           method = '3-point')
                 
             discrete_B = approx_derivative(fun = lambda u: self.discrete_dynamics(tk, x_k_bar, u),
                                            x0 = u_k_bar,
-                                           method = '2-point')
+                                           method = '3-point')
 
             return discrete_A, discrete_B
 
