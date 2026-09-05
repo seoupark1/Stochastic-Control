@@ -20,7 +20,7 @@ def simulation():
     motion_noise_jacobian = np.eye(2)
     measurement_noise_jacobian = np.eye(1)
 
-    def dynamics(state, control):
+    def continuous_dynamics(state, control):
         velocity = state[1]
         position_dot = velocity
         velocity_dot = control[0] - c_drag * velocity * abs(velocity)
@@ -28,7 +28,7 @@ def simulation():
         return np.array([position_dot, velocity_dot])
 
     def f(state, control):
-        return state + dt * dynamics(state, control)
+        return state + dt * continuous_dynamics(state, control)
 
     def F(state, control):
         velocity = state[1]
@@ -79,7 +79,7 @@ def simulation():
                                                            Qf = Qf,
                                                            tf = tf,
                                                            reference_provider = nominal_trajectory,
-                                                           dynamics_function = dynamics)
+                                                           continuous_dynamics_function = continuous_dynamics)
 
     # noises
     rng = np.random.default_rng(seed = 2026)
