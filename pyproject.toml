@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "control everything"
 requires-python = ">=3.12.1"
 readme = "README.md"
-dependencies = ["numpy>=2.5.1", "scipy>=1.18.0", "sympy>=1.14.0", "cvxpy>=1.9.2", "matplotlib>=3.11.1"]
+dependencies = ["numpy>=2.5.1", "scipy>=1.18.0", "sympy>=1.14.0", "cvxpy>=1.9.2", "matplotlib>=3.11.1", "pytest>=9.1.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
