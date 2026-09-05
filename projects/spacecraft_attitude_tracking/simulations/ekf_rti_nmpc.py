@@ -7,7 +7,7 @@ from ..references.circular_orbit import CircularOrbit
 from ..references.nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector, mrp_b_matrix
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 from stochastic_control.providers import BodyStateContext
@@ -15,9 +15,10 @@ from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.mpc.rti_nmpc import RealTimeNMPCController
-
+####################################################################
 from time import perf_counter
-
+from collections import Counter
+####################################################################
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat: ArrayLike,
                initial_covariance: ArrayLike,
@@ -106,8 +107,7 @@ def simulation(initial_x_true: ArrayLike,
 
         return gravity_gradient.torque(t, body_state)
 
-    # continuous time
-    def dynamics(t, state, control):
+    def continuous_dynamics(t, state, control):
 
         # tracking error
         sigma_BR = mrp_shadow_set(state[0:3])
@@ -131,13 +131,13 @@ def simulation(initial_x_true: ArrayLike,
 
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
-    def motion_model(t, state, control):
+    def discrete_dynamics(t, state, control):
 
         # runge-kutta 4th order method
-        k1 = dynamics(t, state, control)
-        k2 = dynamics(t + dt / 2, state + dt * k1 / 2, control)
-        k3 = dynamics(t + dt / 2, state + dt * k2 / 2, control)
-        k4 = dynamics(t + dt, state + dt * k3, control)
+        k1 = continuous_dynamics(t, state, control)
+        k2 = continuous_dynamics(t + dt / 2, state + dt * k1 / 2, control)
+        k3 = continuous_dynamics(t + dt / 2, state + dt * k2 / 2, control)
+        k4 = continuous_dynamics(t + dt, state + dt * k3, control)
 
         next_state = state + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
@@ -145,14 +145,84 @@ def simulation(initial_x_true: ArrayLike,
         next_state[:3] = mrp_shadow_set(next_state[:3])
 
         return next_state
-    
-    def discrete_jacobian_function(t, state, control):
 
-        continuous_A = approx_derivative(fun = lambda x: dynamics(t, x, control),
-                                         x0 = state,
-                                         method = '2-point')
-        
+    def continuous_jacobians(t, state, control):
+
+        # body state
+        sigma_BR = state[0:3]
+        omega_BR_B = state[3:6]
+
+        reference_state = nadir_provider.get_state(t)
+
+        # reference state
+        sigma_RN = mrp_shadow_set(reference_state[0:3])
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        dcm_BR = mrp_to_dcm(sigma_BR)
+        dcm_RN = mrp_to_dcm(sigma_RN)
+
+        omega_RN_B = dcm_BR @ omega_RN_R
+        omega_BN_B = omega_BR_B + omega_RN_B
+
+        # gravity gradient properties
+        r_N = orbit_provider.get_state(t)[0]
+
+        r_R = dcm_RN @ r_N
+        r_B = dcm_BR @ r_R
+
+        r = np.linalg.norm(r_N)
+
+        # A_11 (d_sigma_dot / d_sigma)
+        A_11 = np.zeros((3, 3))
+
+        for i in range(3):
+            derivatived_sigma = np.eye(3)[:, i]
+            derivatived_b_matrix = (-2 * sigma_BR[i] * np.eye(3) + 2 * skew_symmetric(derivatived_sigma) 
+                                    + 2 * (sigma_BR @ derivatived_sigma.T + derivatived_sigma @ sigma_BR.T))
+
+            A_11[:, i] = (1/4) * derivatived_b_matrix @ omega_BR_B
+
+        # A_12 (d_sigma_dot / d_omega)
+        A_12 = (1/4) * mrp_b_matrix(sigma_BR)
+
+        # A_21 (d_omega_dot / d_sigma)
+        A_21 = np.zeros((3, 3))
+
+        for i in range(3):
+            derivatived_sigma = np.eye(3)[:, i]
+
+            derivatived_dcm_BR = - skew_symmetric(4 * np.linalg.inv(mrp_b_matrix(sigma_BR)) @ derivatived_sigma) @ dcm_BR
+
+            derivatived_omega_RN_B = derivatived_dcm_BR @ omega_RN_R
+
+            derivatived_omega_BN_B = derivatived_omega_RN_B
+
+            derivatived_r_B = derivatived_dcm_BR @ r_R
+
+            derivatived_gravity_gradient = ((3 * mu / r**5) * np.cross(derivatived_r_B, inertia_tensor @ r_B) 
+                                            + np.cross(r_B, inertia_tensor @ derivatived_r_B))
+
+            derivatived_gyroscopic_term = (np.cross(derivatived_omega_BN_B, inertia_tensor @ omega_BN_B) + 
+                                           np.cross(omega_BN_B @ inertia_tensor @ derivatived_omega_BN_B))
+
+            derivated_omega_RN_B_dot = - np.cross(omega_BR_B, derivatived_omega_RN_B) + derivatived_dcm_BR @ omega_RN_R_dot
+
+            A_21[:, i] = I_inv @ (derivatived_gyroscopic_term + derivatived_gravity_gradient) - derivated_omega_RN_B_dot
+
+        # A_22 (d_omega_dot / d_omega)
+        A_22 = I_inv @ (skew_symmetric(inertia_tensor @ omega_BN_B) - skew_symmetric(omega_BN_B) @ inertia_tensor) - skew_symmetric(omega_RN_B)
+
+        continuous_A = np.block([[A_11, A_12],
+                                 [A_21, A_22]])
+
         continuous_B = np.vstack([np.zeros((3, 3)), I_inv])
+
+        return continuous_A, continuous_B
+
+    def discrete_jacobians(t, state, control):
+
+        continuous_A, continuous_B = continuous_jacobians(t, state, control)
 
         # from continuous to discrete
         discrete_A = np.eye(6) + dt * continuous_A
@@ -162,7 +232,7 @@ def simulation(initial_x_true: ArrayLike,
 
     def motion_jacobian(t, state, control):
 
-        return discrete_jacobian_function(t, state, control)[0]
+        return discrete_jacobians(t, state, control)[0]
     
     def measurement_model(t, state):
 
@@ -216,7 +286,7 @@ def simulation(initial_x_true: ArrayLike,
 
     ekf = ExtendedKalmanFilter(state = initial_x_hat,
                                covariance = initial_covariance,
-                               motion_model = motion_model,
+                               motion_model = discrete_dynamics,
                                motion_jacobian = motion_jacobian,
                                motion_noise_jacobian = motion_noise_jacobian,
                                measurement_model = measurement_model,
@@ -243,8 +313,8 @@ def simulation(initial_x_true: ArrayLike,
                                       N = N,
                                       dt = dt,
                                       reference_control_function = reference_u_function,
-                                      discrete_nonlinear_dynamics = motion_model,
-                                      discrete_jacobian_function = discrete_jacobian_function,
+                                      discrete_nonlinear_dynamics = discrete_dynamics,
+                                      discrete_jacobian_function = discrete_jacobians,
                                       control_bound = control_bound,
                                       state_bound = state_bound)
 
@@ -298,16 +368,50 @@ def simulation(initial_x_true: ArrayLike,
     # run simulation
     rti_nmpc.nominal_trajectory(0, ekf.state)
     rti_nmpc.preparation(0)
-
+####################################################################
+    qp_status_counter = Counter()
+####################################################################
     for k in range(total_step):
 
         tk = k * dt
         next_t = time[k + 1]
+####################################################################
+        # current step
+        if k % 10 == 0:
+            print(
+                f'\r[{k + 1:4d}/{total_step}] '
+                f't = {tk:6.2f}s | solving QP...',
+                end='',
+                flush=True
+            )
 
+        # QP feedback
+        start = perf_counter()
+####################################################################
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
+####################################################################
+        feedback_time = perf_counter() - start
 
+        # QP status count
+        qp_status_counter[histories['status']] += 1
+
+        if k % 10 == 0:
+            print(
+                (
+                    f'\r[{k + 1:4d}/{total_step}] '
+                    f't = {tk:6.2f}s | '
+                    f'QP = {feedback_time:.3f}s | '
+                    f'status = {histories["status"]} | '
+                    f'optimal = {qp_status_counter["optimal"]} | '
+                    f'inaccurate = {qp_status_counter["optimal_inaccurate"]} | '
+                    f'failed = {qp_status_counter["qp_failed"]}'
+                ).ljust(140),
+                end='',
+                flush=True
+            )
+####################################################################
         # true state propagation & mrp shadow set transfer
-        x_true = motion_model(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
+        x_true = discrete_dynamics(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
 
         # ekf prediction
@@ -361,6 +465,17 @@ def simulation(initial_x_true: ArrayLike,
             gyroscope_correction_steps_history[k + 1] = 1
 
         rti_nmpc.warm_start(next_t)
+####################################################################
+        if k % 10 == 0:
+            print(
+                (
+                    f'\r[{k + 1:4d}/{total_step}] '
+                    f't = {next_t:6.2f}s | preparing next step...'
+                ).ljust(140),
+                end='',
+                flush=True
+            )
+####################################################################3
         rti_nmpc.preparation(next_t)
 
         # update state histories
