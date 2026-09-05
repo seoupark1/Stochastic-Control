@@ -61,14 +61,14 @@ plt.savefig(f'validations/compensators/ekf_rti_nmpc_compensator/results/tracking
 plt.close()
 
 # qp status
-qp_status_count = Counter(result['qp_status']))
+qp_status_count = Counter(result['qp_status'])
 print('max iterations:', np.max(result['qp_iterations']))
 print('mean iterations:', np.mean(result['qp_iterations']))
 
 context = ('RTI-NMPC QP Status\n'
            f'optimal                       = {qp_status_count['optimal']}\n'
-           f'optimal_inaccurate            = {qp_status_count['optimal_inaccurate_count']}\n'
-           f'qp_failed                     = {qp_status_count['failed_count']}\n'
+           f'optimal_inaccurate            = {qp_status_count['optimal_inaccurate']}\n'
+           f'qp_failed                     = {qp_status_count['qp_failed']}\n'
            f'max iterations                = {np.max(result['qp_iterations'])}\n'
            f'mean iterations               = {np.mean(result['qp_iterations'])}')
 
