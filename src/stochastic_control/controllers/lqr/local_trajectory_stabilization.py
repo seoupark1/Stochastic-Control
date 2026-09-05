@@ -16,7 +16,8 @@ class LocalTrajectoryStabilizationLQRController:
                  Qf: ArrayLike, 
                  tf: float,
                  reference_provider,
-                 dynamics_function = None,
+                 continuous_dynamics_function = None,
+                 continuous_jacobian_function = None,
                  A = None,
                  B = None):
 
@@ -27,7 +28,8 @@ class LocalTrajectoryStabilizationLQRController:
         self.tf = float(tf)
         self.reference_provider = reference_provider
 
-        self.dynamics_function = dynamics_function
+        self.continuous_dynamics_function = continuous_dynamics_function
+        self.continuous_jacobian_function = continuous_jacobian_function
         self.A = None if A is None else np.asarray(A, dtype = float)
         self.B = None if B is None else np.asarray(B, dtype = float)
 
@@ -47,27 +49,31 @@ class LocalTrajectoryStabilizationLQRController:
     def get_jacobians(self, t: float):
 
         # linear system
-        if self.A is not None and self.B is not None and self.dynamics_function is None:
+        if self.A is not None and self.B is not None and self.continuous_dynamics_function is None:
             return self.A, self.B
 
         # non-linear system
-        elif self.A is None and self.B is None and self.dynamics_function is not None: 
+        elif self.A is None and self.B is None and self.continuous_dynamics_function is not None: 
 
             # reference trajectory
             reference = self.reference_provider.get_reference(t)
             x_d = reference.reference_x
             u_d = reference.reference_u
 
-            # get A, B jacobians
-            A = approx_derivative(fun = lambda x: self.dynamics_function(t, x, u_d),
-                                  x0 = x_d,
-                                  method = '3-point')
-            
-            B = approx_derivative(fun = lambda u: self.dynamics_function(t, x_d, u),
-                                  x0 = u_d,
-                                  method = '3-point')
+            if self.continuous_jacobian_function is None:
 
-            return A, B
+                A = approx_derivative(fun = lambda x: self.continuous_dynamics_function(t, x, u_d),
+                                    x0 = x_d,
+                                    method = '3-point')
+                
+                B = approx_derivative(fun = lambda u: self.continuous_dynamics_function(t, x_d, u),
+                                    x0 = u_d,
+                                    method = '3-point')
+
+                return A, B
+
+            else:
+                return self.continuous_jacobian_function(t, x_d, u_d)
 
         # errors
         else:
