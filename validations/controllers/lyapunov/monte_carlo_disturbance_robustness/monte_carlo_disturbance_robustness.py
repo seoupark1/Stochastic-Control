@@ -1,8 +1,7 @@
 import numpy as np
-from scipy.integrate import solve_ivp
-
-from sklearn.datasets import make_spd_matrix
 from matplotlib import pyplot as plt
+
+from scipy.integrate import solve_ivp
 
 from stochastic_control.dynamics.rigid_body import RigidBody
 from stochastic_control.controllers.lyapunov.standard import StandardLyapunovController
