@@ -35,8 +35,8 @@ lqr_result = ekf_lqr.simulation(initial_x_true = initial_x_true,
                                 motion_noise_covariance = motion_noise_covariance,
                                 star_tracker_noise_covariance = star_tracker_noise_covariance,
                                 gyroscope_noise_covariance = gyroscope_noise_covariance,
-                                simulation_tf = 60,
-                                controller_tf = 120,
+                                simulation_tf = 150,
+                                controller_tf = 200,
                                 star_tracker_sampling_rate = star_tracker_sampling_rate,
                                 gyroscope_sampling_rate = gyroscope_sampling_rate,
                                 seed = 2026,
@@ -49,7 +49,7 @@ mpc_result = ekf_rti_nmpc.simulation(initial_x_true = initial_x_true,
                                      motion_noise_covariance = motion_noise_covariance,
                                      star_tracker_noise_covariance = star_tracker_noise_covariance,
                                      gyroscope_noise_covariance = gyroscope_noise_covariance,
-                                     simulation_tf = 60,
+                                     simulation_tf = 150,
                                      prediction_horizon = prediction_horizon,
                                      star_tracker_sampling_rate = star_tracker_sampling_rate,
                                      gyroscope_sampling_rate = gyroscope_sampling_rate,
@@ -79,8 +79,23 @@ plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error.png')
 plt.close()
 
+# final tracking error
+lqr_final_attitude_error = np.rad2deg(lqr_result['attitude_tracking_error'][-1])
+lqr_final_omega_error = np.rad2deg(lqr_result['omega_tracking_error'][-1])
+mpc_final_attitude_error = np.rad2deg(mpc_result['attitude_tracking_error'][-1])
+mpc_final_omega_error = np.rad2deg(mpc_result['omega_tracking_error'][-1])
+
+context = ('Final Tracking Error\n'
+          f'LQR attitude Error [deg]       = {lqr_final_attitude_error: .4f}\n'
+          f'RTI-NMPC attitude Error [deg]  = {mpc_final_attitude_error: .4f}\n'
+          f'LQR omega Error [deg/s]        = {lqr_final_omega_error: .4f}\n'
+          f'RTI-NMPC omega Error [deg/s]   = {mpc_final_omega_error: .4f}\n')
+
+with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/final_tracking_error.txt', 'w') as file:
+    file.write(context)
+
 # tracking error RMSE
-simulation_tf = 60
+simulation_tf = 150
 dt = 0.01
 N = int(simulation_tf / dt)
 lqr_attitude_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(lqr_result['attitude_tracking_error']))))
@@ -88,14 +103,14 @@ lqr_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(lqr_result['omega_tr
 mpc_attitude_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['attitude_tracking_error']))))
 mpc_omega_error_rmse = np.rad2deg(np.sqrt(np.mean(np.square(mpc_result['omega_tracking_error']))))
 
-context1 = ('Tracking Error RMSE\n'
-            f'LQR attitude RMSE [deg]       = {lqr_attitude_error_rmse: .4f}\n'
-            f'RTI-NMPC attitude RMSE [deg]  = {mpc_attitude_error_rmse: .4f}\n'
-            f'LQR omega RMSE [deg/s]        = {lqr_omega_error_rmse: .4f}\n'
-            f'RTI-NMPC omega RMSE [deg/s]   = {mpc_omega_error_rmse: .4f}\n')
+context = ('Tracking Error RMSE\n'
+          f'LQR attitude RMSE [deg]       = {lqr_attitude_error_rmse: .4f}\n'
+          f'RTI-NMPC attitude RMSE [deg]  = {mpc_attitude_error_rmse: .4f}\n'
+          f'LQR omega RMSE [deg/s]        = {lqr_omega_error_rmse: .4f}\n'
+          f'RTI-NMPC omega RMSE [deg/s]   = {mpc_omega_error_rmse: .4f}\n')
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error_rmse.txt', 'w') as file:
-    file.write(context1)
+    file.write(context)
 
 # control
 fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
@@ -113,7 +128,7 @@ for i in range(3):
 axes[0].legend()
 fig.suptitle('Nadir Pointing Control')
 fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/actual_control.png')
 plt.close()
 
 # control limit violation
@@ -135,23 +150,25 @@ for time_step in range(N):
 lqr_violation_rate = (lqr_violation / (3 * N)) * 100 # [%]
 mpc_violation_rate = (mpc_violation / (3 * N)) * 100 # [%]
 
-context2 = ('Control Limit Violation\n'
-            f'LQR violation rate [%]        = {lqr_violation_rate: .4f}\n'
-            f'RTI-NMPC violation rate [%]   = {mpc_violation_rate: .4f}\n')
+context = ('Control Limit Violation\n'
+          f'LQR violation rate [%]        = {lqr_violation_rate: .4f}\n'
+          f'RTI-NMPC violation rate [%]   = {mpc_violation_rate: .4f}\n')
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_limit_violation.txt', 'w') as file:
-    file.write(context2)
+    file.write(context)
 
 # control effort
 lqr_control_effort = dt * np.sum(np.square(lqr_result['actual_control']))
 mpc_control_effort = dt * np.sum(np.square(mpc_result['commanded_control']))
+control_effort_ratio = (1 - mpc_control_effort / lqr_control_effort) * 100
 
-context3 = ('Control Effort\n'
-            f'LQR control effort [Nm^2 s]   = {lqr_control_effort: .4f}\n'
-            f'RTI-NMPC effort [Nm^2 s]      = {mpc_control_effort: .4f}\n')
+context = ('Control Effort\n'
+          f'LQR control effort [Nm^2 s]   = {lqr_control_effort: .4f}\n'
+          f'RTI-NMPC effort [Nm^2 s]      = {mpc_control_effort: .4f}\n'
+          f'RTI-NMPC used {control_effort_ratio: .4f}% less control effort than LQR')
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_effort.txt', 'w') as file:
-    file.write(context3)
+    file.write(context)
 
 # qp status
 status_count = Counter(mpc_result['qp_status'])
@@ -159,26 +176,28 @@ optimal_count = status_count['optimal']
 optimal_inaccurate_count = status_count['optimal_inaccurate']
 failed_count = status_count['qp_failed']
 
-context4 = ('RTI-NMPC QP Status\n'
-            f'optimal                       = {optimal_count}\n'
-            f'optimal_inaccurate            = {optimal_inaccurate_count}\n'
-            f'qp_failed                     = {failed_count}\n')
+context = ('RTI-NMPC QP Status\n'
+          f'optimal                       = {optimal_count}\n'
+          f'optimal_inaccurate            = {optimal_inaccurate_count}\n'
+          f'qp_failed                     = {failed_count}\n'
+          f'max iterations                = {np.max(mpc_result['qp_iterations'])}\n'
+          f'mean iterations               = {np.mean(mpc_result['qp_iterations'])}')
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_status.txt', 'w') as file:
-    file.write(context4)
+    file.write(context)
 
 # estimation error
 plt.subplot(2, 1, 1)
-plt.plot(time, np.rad2deg(lqr_result['attitude_estimation_error']), legend = 'EKF + LQR')
-plt.plot(time, np.rad2deg(mpc_result['attitude_estimation_error']), legend = 'EKF + RTI-NMPC')
+plt.plot(time, np.rad2deg(lqr_result['attitude_estimation_error']), label = 'EKF + LQR')
+plt.plot(time, np.rad2deg(mpc_result['attitude_estimation_error']), label = 'EKF + RTI-NMPC')
 plt.xlabel('Time [s]')
 plt.ylabel('Attitude Error [deg]')
 plt.title('Nadir Pointing Attitude Estimation Error')
 plt.legend()
 plt.grid(True)
 plt.subplot(2, 1, 2)
-plt.plot(time, np.rad2deg(lqr_result['omega_estimation_error']), legend = 'EKF + LQR')
-plt.plot(time, np.rad2deg(mpc_result['omega_estimation_error']), legend = 'EKF + RTI-NMPC')
+plt.plot(time, np.rad2deg(lqr_result['omega_estimation_error']), label = 'EKF + LQR')
+plt.plot(time, np.rad2deg(mpc_result['omega_estimation_error']), label = 'EKF + RTI-NMPC')
 plt.xlabel('Time [s]')
 plt.ylabel('Angular Velocity Error [deg/s]')
 plt.title('Nadir Pointing Angular Velocity Estimation Error')
