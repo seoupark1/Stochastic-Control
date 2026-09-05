@@ -7,7 +7,7 @@ from ..references.circular_orbit import CircularOrbit
 from ..references.nadir_pointing import NadirPointingReference
 
 from stochastic_control.math_tools import skew_symmetric
-from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector
+from stochastic_control.attitude.mrp import mrp_to_dcm, dcm_to_mrp, mrp_derivative, mrp_shadow_set, mrp_to_rotation_vector, mrp_b_matrix
 from stochastic_control.disturbances.gravity_gradient import GravityGradient
 from stochastic_control.noises.gaussian_noise import GaussianNoise
 from stochastic_control.providers import TrajectoryReferenceProvider, BodyStateContext
@@ -38,6 +38,7 @@ def simulation(initial_x_true: ArrayLike,
 
     # spacecraft & planet properties
     inertia_tensor = np.diag([1448.3, 1346.2, 689.8])
+    I_inv = np.linalg.inv(inertia_tensor)
     mu = 4.2828 * 10**13
 
     gravity_gradient = GravityGradient(inertia_tensor = inertia_tensor,
@@ -106,7 +107,7 @@ def simulation(initial_x_true: ArrayLike,
         return gravity_gradient.torque(t, body_state)
 
     # output : sigma_BR_dot, omega_BR_B_dot
-    def dynamics(t, state, control):
+    def continuous_dynamics(t, state, control):
 
         # tracking error
         sigma_BR = mrp_shadow_set(state[0:3])
@@ -130,13 +131,13 @@ def simulation(initial_x_true: ArrayLike,
 
         return np.concatenate((sigma_BR_dot, omega_BR_B_dot))
 
-    def motion_model(t, state, control):
+    def discrete_dynamics(t, state, control):
 
         # runge-kutta 4th order method
-        k1 = dynamics(t, state, control)
-        k2 = dynamics(t + dt / 2, state + dt * k1 / 2, control)
-        k3 = dynamics(t + dt / 2, state + dt * k2 / 2, control)
-        k4 = dynamics(t + dt, state + dt * k3, control)
+        k1 = continuous_dynamics(t, state, control)
+        k2 = continuous_dynamics(t + dt / 2, state + dt * k1 / 2, control)
+        k3 = continuous_dynamics(t + dt / 2, state + dt * k2 / 2, control)
+        k4 = continuous_dynamics(t + dt, state + dt * k3, control)
 
         next_state = state + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
@@ -145,11 +146,83 @@ def simulation(initial_x_true: ArrayLike,
 
         return next_state
 
+    def continuous_jacobians(t, state, control):
+
+        # body state
+        sigma_BR = mrp_shadow_set(state[0:3])
+        omega_BR_B = state[3:6]
+
+        reference_state = nadir_provider.get_state(t)
+
+        # reference state
+        sigma_RN = mrp_shadow_set(reference_state[0:3])
+        omega_RN_R = reference_state[3:6]
+        omega_RN_R_dot = nadir_provider.angular_acceleration(t)
+
+        dcm_BR = mrp_to_dcm(sigma_BR)
+        dcm_RN = mrp_to_dcm(sigma_RN)
+
+        omega_RN_B = dcm_BR @ omega_RN_R
+        omega_BN_B = omega_BR_B + omega_RN_B
+
+        # gravity gradient properties
+        r_N = orbit_provider.get_state(t)[0]
+
+        r_R = dcm_RN @ r_N
+        r_B = dcm_BR @ r_R
+
+        r = np.linalg.norm(r_N)
+
+        # A_11 (d_sigma_dot / d_sigma)
+        A_11 = np.zeros((3, 3))
+
+        for i in range(3):
+            derivatived_sigma = np.eye(3)[:, i]
+            derivatived_b_matrix = (-2 * sigma_BR[i] * np.eye(3) + 2 * skew_symmetric(derivatived_sigma) 
+                                    + 2 * (np.outer(sigma_BR, derivatived_sigma) + np.outer(derivatived_sigma, sigma_BR)))
+
+            A_11[:, i] = (1/4) * derivatived_b_matrix @ omega_BR_B
+
+        # A_12 (d_sigma_dot / d_omega)
+        A_12 = (1/4) * mrp_b_matrix(sigma_BR)
+
+        # A_21 (d_omega_dot / d_sigma)
+        A_21 = np.zeros((3, 3))
+
+        for i in range(3):
+            derivatived_sigma = np.eye(3)[:, i]
+
+            derivatived_dcm_BR = - skew_symmetric(4 * np.linalg.inv(mrp_b_matrix(sigma_BR)) @ derivatived_sigma) @ dcm_BR
+
+            derivatived_omega_RN_B = derivatived_dcm_BR @ omega_RN_R
+
+            derivatived_omega_BN_B = derivatived_omega_RN_B
+
+            derivatived_r_B = derivatived_dcm_BR @ r_R
+
+            derivatived_gravity_gradient = ((3 * mu / r**5) * (np.cross(derivatived_r_B, inertia_tensor @ r_B) 
+                                            + np.cross(r_B, inertia_tensor @ derivatived_r_B)))
+
+            derivatived_gyroscopic_term = - (np.cross(derivatived_omega_BN_B, inertia_tensor @ omega_BN_B) + 
+                                             np.cross(omega_BN_B, inertia_tensor @ derivatived_omega_BN_B))
+
+            derivated_omega_RN_B_dot = - np.cross(omega_BR_B, derivatived_omega_RN_B) + derivatived_dcm_BR @ omega_RN_R_dot
+
+            A_21[:, i] = I_inv @ (derivatived_gyroscopic_term + derivatived_gravity_gradient) - derivated_omega_RN_B_dot
+
+        # A_22 (d_omega_dot / d_omega)
+        A_22 = I_inv @ (skew_symmetric(inertia_tensor @ omega_BN_B) - skew_symmetric(omega_BN_B) @ inertia_tensor) - skew_symmetric(omega_RN_B)
+
+        continuous_A = np.block([[A_11, A_12],
+                                 [A_21, A_22]])
+
+        continuous_B = np.vstack([np.zeros((3, 3)), I_inv])
+
+        return continuous_A, continuous_B
+
     def motion_jacobian(t, state, control):
 
-        return approx_derivative(fun = lambda x: motion_model(t, x, control),
-                                 x0 = state,
-                                 method = '3-point')
+        return continuous_jacobians(t, state, control)[0]
     
     def measurement_model(t, state):
 
@@ -203,7 +276,7 @@ def simulation(initial_x_true: ArrayLike,
 
     ekf = ExtendedKalmanFilter(state = initial_x_hat,
                                covariance = initial_covariance,
-                               motion_model = motion_model,
+                               motion_model = discrete_dynamics,
                                motion_jacobian = motion_jacobian,
                                motion_noise_jacobian = motion_noise_jacobian,
                                measurement_model = measurement_model,
@@ -221,8 +294,9 @@ def simulation(initial_x_true: ArrayLike,
                                                     R = R,
                                                     Qf = Qf,
                                                     tf = controller_tf,
+                                                    continuous_jacobian_function = continuous_jacobians,
                                                     reference_provider = reference_provider,
-                                                    dynamics_function = dynamics)
+                                                    continuous_dynamics_function = continuous_dynamics)
 
     # noises & sensors
     rng = np.random.default_rng(int(seed))
@@ -284,7 +358,7 @@ def simulation(initial_x_true: ArrayLike,
             u_actual = control_limiter.saturation(u_cmd)
 
         # true state propagation & mrp shadow set transfer
-        x_true = motion_model(t, x_true, u_actual) + motion_noise_provider.get_sample(rng)
+        x_true = discrete_dynamics(t, x_true, u_actual) + motion_noise_provider.get_sample(rng)
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
 
         # prediction
