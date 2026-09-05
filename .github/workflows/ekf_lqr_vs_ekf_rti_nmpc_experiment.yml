@@ -1,0 +1,32 @@
+name: EKF LQR vs EKF RTI-NMPC Experiment
+
+on:
+    workflow_dispatch:
+
+jobs:
+    simulation:
+        runs-on: ubuntu-latest
+        timeout-minutes: 180
+        
+        steps:
+
+        - name: bring codes
+          uses: actions/checkout@v6
+
+        - name: install python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.12'
+
+        - name: install dependencies
+          run: pip install -e .
+
+        - name: run simulation
+          run: python -m projects.spacecraft_attitude_tracking.experiments.ekf_lqr_vs_ekf_rti_nmpc
+
+        - name: upload results
+          uses: actions/upload-artifact@v4
+          with:
+            name: ekf-lqr-vs-ekf-rti-nmpc-results
+            path: projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/
+
