@@ -15,10 +15,7 @@ from stochastic_control.sensors import Gyroscope, StarTracker
 
 from stochastic_control.estimators.extended_kalman_filter import ExtendedKalmanFilter
 from stochastic_control.controllers.mpc.rti_nmpc import RealTimeNMPCController
-####################################################################
-from time import perf_counter
-from collections import Counter
-####################################################################
+
 def simulation(initial_x_true: ArrayLike,
                initial_x_hat: ArrayLike,
                initial_covariance: ArrayLike,
@@ -368,55 +365,14 @@ def simulation(initial_x_true: ArrayLike,
     # run simulation
     rti_nmpc.nominal_trajectory(0, ekf.state)
     rti_nmpc.preparation(0)
-####################################################################
-    qp_status_counter = Counter()
-    jacobian_check_steps = {
-    0,
-    int(1 / dt),
-    int(5 / dt),
-    int(10 / dt),
-    int(15 / dt)
-    }
-####################################################################
+
     for k in range(total_step):
 
         tk = k * dt
         next_t = time[k + 1]
-####################################################################
-        # current step
-        if k % 10 == 0:
-            print(
-                f'\r[{k + 1:4d}/{total_step}] '
-                f't = {tk:6.2f}s | solving QP...',
-                end='',
-                flush=True
-            )
 
-        # QP feedback
-        start = perf_counter()
-####################################################################
         u_cmd, histories = rti_nmpc.feedback(ekf.state)
-####################################################################
-        feedback_time = perf_counter() - start
 
-        # QP status count
-        qp_status_counter[histories['status']] += 1
-
-        if k % 10 == 0:
-            print(
-                (
-                    f'\r[{k + 1:4d}/{total_step}] '
-                    f't = {tk:6.2f}s | '
-                    f'QP = {feedback_time:.3f}s | '
-                    f'status = {histories["status"]} | '
-                    f'optimal = {qp_status_counter["optimal"]} | '
-                    f'inaccurate = {qp_status_counter["optimal_inaccurate"]} | '
-                    f'failed = {qp_status_counter["qp_failed"]}'
-                ).ljust(140),
-                end='',
-                flush=True
-            )
-####################################################################
         # true state propagation & mrp shadow set transfer
         x_true = discrete_dynamics(tk, x_true, u_cmd) + motion_noise_provider.get_sample(rng)
         x_true[0:3] = mrp_shadow_set(x_true[0:3])
@@ -472,126 +428,8 @@ def simulation(initial_x_true: ArrayLike,
             gyroscope_correction_steps_history[k + 1] = 1
 
         rti_nmpc.warm_start(next_t)
-####################################################################
-        if k % 10 == 0:
-            print(
-                (
-                    f'\r[{k + 1:4d}/{total_step}] '
-                    f't = {next_t:6.2f}s | preparing next step...'
-                ).ljust(140),
-                end='',
-                flush=True
-            )
-####################################################################3
         rti_nmpc.preparation(next_t)
-####################################################################
-        if k in jacobian_check_steps:
 
-            # first nominal point used by RTI-NMPC
-            jacobian_t = next_t
-
-            jacobian_state = (
-                rti_nmpc.X_bar[0, :]
-            )
-
-            jacobian_control = (
-                rti_nmpc.U_bar[0, :]
-            )
-
-            # --------------------------------------------
-            # analytic continuous + Euler discretization
-            # --------------------------------------------
-
-            A_euler, B_euler = discrete_jacobians(
-                jacobian_t,
-                jacobian_state,
-                jacobian_control
-            )
-
-            # --------------------------------------------
-            # numerical derivative of actual RK4 map
-            # --------------------------------------------
-
-            A_rk4 = approx_derivative(
-                fun = lambda x: discrete_dynamics(
-                    jacobian_t,
-                    x,
-                    jacobian_control
-                ),
-                x0 = jacobian_state,
-                method = '3-point'
-            )
-
-            B_rk4 = approx_derivative(
-                fun = lambda u: discrete_dynamics(
-                    jacobian_t,
-                    jacobian_state,
-                    u
-                ),
-                x0 = jacobian_control,
-                method = '3-point'
-            )
-
-            # --------------------------------------------
-            # errors
-            # --------------------------------------------
-
-            A_difference = (
-                A_euler - A_rk4
-            )
-
-            B_difference = (
-                B_euler - B_rk4
-            )
-
-            A_dynamic_relative_error = (
-                np.linalg.norm(A_difference)
-                /
-                np.linalg.norm(
-                    A_rk4 - np.eye(6)
-                )
-            )
-
-            B_relative_error = (
-                np.linalg.norm(B_difference)
-                /
-                np.linalg.norm(B_rk4)
-            )
-
-            A_max_error = np.max(
-                np.abs(A_difference)
-            )
-
-            B_max_error = np.max(
-                np.abs(B_difference)
-            )
-
-            print()
-            print(
-                f'Jacobian check at '
-                f't = {jacobian_t:.2f}s'
-            )
-
-            print(
-                'A dynamic relative error:',
-                A_dynamic_relative_error
-            )
-
-            print(
-                'B relative error:',
-                B_relative_error
-            )
-
-            print(
-                'A max error:',
-                A_max_error
-            )
-
-            print(
-                'B max error:',
-                B_max_error
-            )
-####################################################################
         # update state histories
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)
