@@ -128,7 +128,27 @@ for i in range(3):
 axes[0].legend()
 fig.suptitle('Nadir Pointing Control')
 fig.tight_layout()
-plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/actual_control.png')
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png')
+plt.close()
+
+# control before 30s
+fig, axes = plt.subplots(3, 1, figsize = (6.4, 7.2))
+
+for i in range(3):
+    axes[i].plot(time[0:-1], lqr_result['actual_control'][i], label = 'EKF + LQR (u_actual)')
+    axes[i].plot(time[0:-1], lqr_result['commanded_control'][i], label = 'EKF + LQR (u_cmd)')
+    axes[i].plot(time[0:-1], mpc_result['commanded_control'][i], label = 'EKF + RTI-NMPC (u_cmd)')
+    axes[i].axhline(u_max[i], linestyle = '--')
+    axes[i].axhline(-u_max[i], linestyle = '--')
+    axes[i].set_xlabel('Time [s]')
+    axes[i].set_ylabel(f'u_{i + 1} Torque [Nm]')
+    axes[i].grid(True)
+
+axes[0].legend()
+fig.suptitle('Nadir Pointing Control')
+fig.tight_layout()
+plt.xlim(0, 30)
+plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_initial_30s.png')
 plt.close()
 
 # control limit violation
@@ -160,12 +180,12 @@ with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc
 # control effort
 lqr_control_effort = dt * np.sum(np.square(lqr_result['actual_control']))
 mpc_control_effort = dt * np.sum(np.square(mpc_result['commanded_control']))
-control_effort_ratio = (1 - mpc_control_effort / lqr_control_effort) * 100
+control_effort_ratio = (mpc_control_effort / lqr_control_effort) * 100
 
 context = ('Control Effort\n'
           f'LQR control effort [Nm^2 s]   = {lqr_control_effort: .4f}\n'
           f'RTI-NMPC effort [Nm^2 s]      = {mpc_control_effort: .4f}\n'
-          f'RTI-NMPC used {control_effort_ratio: .4f}% less control effort than LQR')
+          f'RTI-NMPC used {control_effort_ratio: .4f}% of the control effort of LQR')
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_effort.txt', 'w') as file:
     file.write(context)
@@ -185,6 +205,15 @@ context = ('RTI-NMPC QP Status\n'
 
 with open('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_status.txt', 'w') as file:
     file.write(context)
+
+# qp iterations
+plt.plot(time[0:-1], mpc_result['qp_iterations'])
+plt.xlabel('Time [s]')
+plt.ylabel('QP Solver Iterations')
+plt.title('RTI-NMPC QP Solver Iterations')
+plt.grid(True)
+plt.savefig('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_iterations.png')
+plt.close()
 
 # estimation error
 plt.subplot(2, 1, 1)
@@ -206,3 +235,22 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig(f'projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png')
 plt.close()
+
+# raw data
+np.savez_compressed('projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/raw_data.npz',
+
+    time = time,
+    lqr_attitude_tracking_error = lqr_result['attitude_tracking_error'],
+    lqr_omega_tracking_error = lqr_result['omega_tracking_error'],
+    lqr_attitude_estimation_error = lqr_result['attitude_estimation_error'],
+    lqr_omega_estimation_error = lqr_result['omega_estimation_error'],
+    lqr_commanded_control = lqr_result['commanded_control'],
+    lqr_actual_control = lqr_result['actual_control'],
+
+    mpc_attitude_tracking_error = mpc_result['attitude_tracking_error'],
+    mpc_omega_tracking_error = mpc_result['omega_tracking_error'],
+    mpc_attitude_estimation_error = mpc_result['attitude_estimation_error'],
+    mpc_omega_estimation_error = mpc_result['omega_estimation_error'],
+    mpc_commanded_control = mpc_result['commanded_control'],
+    mpc_qp_iterations = mpc_result['qp_iterations'],
+    mpc_qp_status = np.asarray(mpc_result['qp_status'], dtype = 'U32'))
