@@ -149,7 +149,7 @@ def simulation(initial_x_true: ArrayLike,
     def continuous_jacobians(t, state, control):
 
         # body state
-        sigma_BR = state[0:3]
+        sigma_BR = mrp_shadow_set(state[0:3])
         omega_BR_B = state[3:6]
 
         reference_state = nadir_provider.get_state(t)
@@ -256,7 +256,7 @@ def simulation(initial_x_true: ArrayLike,
 
         return approx_derivative(fun = lambda x: measurement_model(t, x),
                                  x0 = state,
-                                 method = '2-point')
+                                 method = '3-point')
 
     # output: rotation vector
     def innovation_function(measured_mrp, predicted_mrp):
@@ -370,6 +370,13 @@ def simulation(initial_x_true: ArrayLike,
     rti_nmpc.preparation(0)
 ####################################################################
     qp_status_counter = Counter()
+    jacobian_check_steps = {
+    0,
+    int(1 / dt),
+    int(5 / dt),
+    int(10 / dt),
+    int(15 / dt)
+    }
 ####################################################################
     for k in range(total_step):
 
@@ -477,7 +484,114 @@ def simulation(initial_x_true: ArrayLike,
             )
 ####################################################################3
         rti_nmpc.preparation(next_t)
+####################################################################
+        if k in jacobian_check_steps:
 
+            # first nominal point used by RTI-NMPC
+            jacobian_t = next_t
+
+            jacobian_state = (
+                rti_nmpc.X_bar[0, :]
+            )
+
+            jacobian_control = (
+                rti_nmpc.U_bar[0, :]
+            )
+
+            # --------------------------------------------
+            # analytic continuous + Euler discretization
+            # --------------------------------------------
+
+            A_euler, B_euler = discrete_jacobians(
+                jacobian_t,
+                jacobian_state,
+                jacobian_control
+            )
+
+            # --------------------------------------------
+            # numerical derivative of actual RK4 map
+            # --------------------------------------------
+
+            A_rk4 = approx_derivative(
+                fun = lambda x: discrete_dynamics(
+                    jacobian_t,
+                    x,
+                    jacobian_control
+                ),
+                x0 = jacobian_state,
+                method = '3-point'
+            )
+
+            B_rk4 = approx_derivative(
+                fun = lambda u: discrete_dynamics(
+                    jacobian_t,
+                    jacobian_state,
+                    u
+                ),
+                x0 = jacobian_control,
+                method = '3-point'
+            )
+
+            # --------------------------------------------
+            # errors
+            # --------------------------------------------
+
+            A_difference = (
+                A_euler - A_rk4
+            )
+
+            B_difference = (
+                B_euler - B_rk4
+            )
+
+            A_dynamic_relative_error = (
+                np.linalg.norm(A_difference)
+                /
+                np.linalg.norm(
+                    A_rk4 - np.eye(6)
+                )
+            )
+
+            B_relative_error = (
+                np.linalg.norm(B_difference)
+                /
+                np.linalg.norm(B_rk4)
+            )
+
+            A_max_error = np.max(
+                np.abs(A_difference)
+            )
+
+            B_max_error = np.max(
+                np.abs(B_difference)
+            )
+
+            print()
+            print(
+                f'Jacobian check at '
+                f't = {jacobian_t:.2f}s'
+            )
+
+            print(
+                'A dynamic relative error:',
+                A_dynamic_relative_error
+            )
+
+            print(
+                'B relative error:',
+                B_relative_error
+            )
+
+            print(
+                'A max error:',
+                A_max_error
+            )
+
+            print(
+                'B max error:',
+                B_max_error
+            )
+####################################################################
         # update state histories
         true_state_history[:, k + 1] = x_true
         reference_state_history[:, k + 1] = reference_x_function(next_t)

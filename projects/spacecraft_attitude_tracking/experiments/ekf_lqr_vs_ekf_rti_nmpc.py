@@ -56,8 +56,6 @@ mpc_result = ekf_rti_nmpc.simulation(initial_x_true = initial_x_true,
                                      seed = 2026,
                                      control_bound = (-u_max, u_max))
 
-
-
 time = lqr_result['time']
 
 # tracking error
