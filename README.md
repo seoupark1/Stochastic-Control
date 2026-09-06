@@ -47,6 +47,65 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 
 ### Results
 
+#### Tracking Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error.png"
+      width="75%"
+      alt="Tracking Error">
+  </a>
+</p>
+
+
+#### Initial 30-second Control Input
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_initial_30s.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_initial_30s.png"
+      width="75%"
+      alt="Initial 30-second Control Input">
+  </a>
+</p>
+
+
+#### Full Control Input
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png"
+      width="75%"
+      alt="Full Control Input">
+  </a>
+</p>
+
+
+#### EKF Estimation Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png"
+      width="75%"
+      alt="EKF Estimation Error">
+  </a>
+</p>
+
+
+#### RTI-NMPC QP Solver Iterations
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_iterations.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_iterations.png"
+      width="75%"
+      alt="RTI-NMPC QP Solver Iterations">
+  </a>
+</p>
+
 ### Interpretation
 
 ## Experiment 2 - Actuator Saturation
