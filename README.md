@@ -33,29 +33,27 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 | Sensor Noise | Gaussian |
 
 ## Contents
-[1. Normal Case vs Extreme Case](##1-normal-case-vs-extreme-case-(ekf-+-lqr))
+[1. LQR vs RTI-NMPC](#experiment-1---lqr-vs-rti-nmpc)
 
-[2. Actuator Torque Saturation](##2-actuator-torque-saturation-(ekf-+-lqr))
+[2. Actuator Saturation](##2-actuator-torque-saturation-(ekf-+-lqr))
 
-[3. Performance Comparison](##3-performance-comparison-(ekf-+-lqr-vs-ekf-+-rti-nmpc)) -> main
+[3. Normal case vs Extreme case](##3-performance-comparison-(ekf-+-lqr-vs-ekf-+-rti-nmpc)) -> main
 
-## 1. Normal Case vs Extreme Case (EKF + LQR)
+## Experiment 1 - LQR vs RTI-NMPC
 
-### Overview
+### Question
 
-### Conditions & Assumptions
+### Setup
 
 ### Results
 
-### Analysis
+### Interpretation
 
-### 후속연구주제
+## Experiment 2 - Actuator Saturation
 
-## 2. Actuator Torque Saturation (EKF + LQR)
+### Question
 
-### Overview
-
-### Conditions & Assumptions
+### Setup
 
 ### Results
 
@@ -63,12 +61,14 @@ normal_case_u_max_abs : [12.8076, 16.2495, 4.8823]
 
 extreme_case_u_max_abs : [38.3882, 49.6486, 12.2470]
 
-### Analysis
+### Interpretation
 
-## 3. Performance Comparison (EKF + LQR vs EKF + RTI-NMPC)
+## Experiment 3 - Normal Case vs Extreme Case
 
-### Overview
+### Question
 
-### Conditions & Assumptions
+### Setup
 
 ### Results
+
+### Interpretation
