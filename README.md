@@ -1,14 +1,23 @@
 # Spacecraft Attitude Tracking under Stochastic Environment and Actuator Constraints
 
-<img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="850">
-
-**Fast tracking · Aggressive control · Actuator saturation**
-
-<img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="850">
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="100%">
+      <br>
+      <sub><b>'aggressive control, '</b></sub>
+    </td>
+    <td align="center">
+      <img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="100%">
+      <br>
+      <sub><b>'slow </b></sub>
+    </td>
+  </tr>
+</table>
 
 **Constraint-respecting · Lower control effort · Slower attitude convergence**
 
-## 핵심질문
+## Question
 센서 노이즈와 외란이 존재하고 control이 제한된 우주선 자세제어 환경에서 큰 Tracking Error가 발생했을 때, LQR과 Real-Time NMPC의 Tracking Performance는 어떤 차이를 보이는가?
 
 ## 연구목적
