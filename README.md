@@ -18,14 +18,22 @@
   <sub>These GIFs were generated using raw data from the simulation, assisted by AI.</sub>
 </p>
 
-## Project Preview
-동일한 spacecraft와 sensing environment에서 LQR은 빠른 attitude correction을 위해 공격적인 torque를 사용하며 actuator saturation이 발생하였다. RTI-NMPC는 동일한 torque bound를 직접 만족하면서 더 작은 control effort를 사용했지만, attitude tracking error의 수렴은 상대적으로 느렸다.
+**Summary:** 동일한 제어환경에서 LQR은 초반에 빠르게 attitude error를 해소하기 위해 actuator saturation을 유발하면서 강한 torque를 생성했다. 반면 RTI-NMPC는 torque constraint를 직접 만족하면서 상대적으로 더 작은 control effort를 사용했지만 그만큼 attitude error 해소 시점이 늦게 나타났다.
 
-## Core Question
-How do the tracking performances of LQR and Real-Time NMPC differ when a large tracking error occurs in a spacecraft attitude control environment characterized by sensor noise, disturbances, and control constraints?
+## Overview
+이 프로젝트는 sensor noise, gravity gradient disturbance, 그리고 actuator torque constraint이 존재하는 환경에서 spacecraft의 nadir-pointing attitude tracking 성능을 분석한다.
 
-## Goal
-우주에서 미션을 수행하는 spacecraft에 예상치 못한 자세오차가 발생했을 때, 이 error를 해소하지 않는다면 그 시간대의 데이터를 놓치거나 미션에 실패하는 등의 결과로 이어질 수 있다. 우주선의 자세를 제어하는 Actuator는 구조적 안정성으로 인해 최대로 낼 수 있는 회전수와 토크에 제약이 있다. 따라서 좋은 controller는 이러한 constraints를 고려해 u를 반환해야 한다. 이 프로젝트에서 우주선의 현재 자세를 측정하는 estimator는 Extended Kalman Filter를 사용했다. Star Tracker와 Gyroscope 센서에서 각각 다른 sampling rate로 measurement를 실시하고 estimated attitude, angular velocity를 controller에 전달한다. Attitude를 표현하는 방식으로 Modified Rodrigues Parameter(MRP)를 사용했다. MRP는 3개의 파라미터로 구성되어 singularity를 가지지만 shadow set 치환을 통해 이를 해결할 수 있다. 매순간 normalize 해야하는 quaternion에 비해 연산에서 이점을 가진다. Controller로 LQR과 Real-Time NMPC를 두었다. LQR은 control constraint을 고려하지 못해 u_max를 초과하는 control을 command할 시, u_max로 clipped 된 control이 실제로 우주선에 작용한다. Real-Time NMPC는 내부에서 control constraint을 고려할 수 있으므로 반환되는 모든 optimal control이 u_max를 넘지 않는다. 따라서 최종 목표는 Gaussian Sensor Noise, Gravity Gradient External Torque, unexpected small torque noise가 존재하는 제어환경에서 control constraint가 있을 때 controllers가 어떻게 반응해 어느 정도의 tracking performance를 보이는지 알아보는 것이다.
+Spacecraft의 자세와 각속도는 서로 다른 sampling rate로 작동하는 Star Tracker와 Gyroscope의 measurement를 이용해 **Extended Kalman Filter (EKF)**로 추정한다. 자세는 Modified Rodrigues Parameters (MRP)로 표현한다.
+
+Estimated state를 기반으로 **LQR과 Real-Time Iteration NMPC (RTI-NMPC)**를 비교한다. LQR은 commanded control을 계산한 뒤 실제 actuator 입력에서 torque limit을 적용해 clip한다. 반면 RTI-NMPC는 해당 torque constraint를 input으로 받아 내부에서 Quadratic Problem을 풀어 optimal control을 반환한다.
+
+> **핵심 질문:** 큰 attitude tracking error가 발생했을 때, 동일한 제어환경과 control constraint에서 LQR과 RTI-NMPC는 tracking performance와 control usage에서 어떠한 차이를 보이는가?
+
+
+## Settings
+
+
+
 
 ## 1. EKF + LQR vs EKF + Real-Time NMPC
 
