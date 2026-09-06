@@ -1,4 +1,5 @@
-# Spacecraft Attitude Tracking under Gaussian Noise and Control Constraints
+# Spacecraft Attitude Tracking 
+# under Gaussian Noise and Control Constraints
 
 <p align="center">
   <a href="assets/gifs/ekf_lqr_mars_orbiting.gif">
