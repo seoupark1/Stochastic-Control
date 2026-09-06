@@ -18,9 +18,7 @@
   <sub>These GIFs were generated using raw data from the simulation, assisted by AI.</sub>
 </p>
 
-**Summary:** 
-
-동일한 제어환경에서 LQR은 초반에 빠르게 attitude error를 해소하기 위해 actuator saturation을 유발하면서 강한 torque를 생성했다. 반면 RTI-NMPC는 torque constraint를 직접 만족하면서 상대적으로 더 작은 control effort를 사용했지만 그만큼 attitude error 해소 시점이 늦게 나타났다.
+> **Summary:** 동일한 제어환경에서 LQR은 초반에 빠르게 attitude error를 해소하기 위해 actuator saturation을 유발하면서 강한 torque를 생성했다. 반면 RTI-NMPC는 torque constraint를 직접 만족하면서 상대적으로 더 작은 control effort를 사용했지만 그만큼 attitude error 해소 시점이 늦게 나타났다.
 
 ## Overview
 이 프로젝트는 sensor noise, gravity gradient disturbance, 그리고 actuator torque constraint이 존재하는 환경에서 spacecraft의 nadir-pointing attitude tracking 성능을 분석한다.
