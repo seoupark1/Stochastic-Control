@@ -3,17 +3,21 @@
 <table>
   <tr>
     <td align="center">
-      <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="100%">
+      <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="420%">
       <br>
-      <sub><b>'aggressive control, '</b></sub>
+      <sub><b>Aggressive Control, Actuator Saturation</b></sub>
     </td>
     <td align="center">
-      <img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="100%">
+      <img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="420%">
       <br>
-      <sub><b>'slow </b></sub>
+      <sub><b>Conservative Control, Constraint-aware Control </b></sub>
     </td>
   </tr>
 </table>
+
+<p align="center">
+  <sub>Click the GIFs to view it at full size</sub>
+</p>
 
 **Constraint-respecting · Lower control effort · Slower attitude convergence**
 
