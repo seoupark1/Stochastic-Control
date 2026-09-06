@@ -1,40 +1,19 @@
 # Spacecraft Attitude Tracking under Gaussian Noise and Actuator Constraints
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <a href="assets/ekf_lqr_mars_orbiting.gif">
-        <img
-          src="assets/ekf_lqr_mars_orbiting.gif"
-          width="420"
-          alt="EKF + LQR spacecraft attitude tracking"
-        >
-      </a>
-      <br>
-      <b>EKF + LQR</b>
-      <br>
-      <sub>Aggressive control, Actuator Saturation</sub>
-    </td>
-
-    <td width="50%" align="center">
-      <a href="assets/ekf_rti_nmpc_mars_orbiting.gif">
-        <img
-          src="assets/ekf_rti_nmpc_mars_orbiting.gif"
-          width="420"
-          alt="EKF + RTI-NMPC spacecraft attitude tracking"
-        >
-      </a>
-      <br>
-      <b>EKF + RTI-NMPC</b>
-      <br>
-      <sub>Constraint-aware control · slower convergence</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <a href="assets/gifs/ekf_lqr_mars_orbiting.gif">
+    <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="420"
+         alt="EKF + LQR spacecraft attitude tracking">
+  </a>
+  &nbsp;&nbsp;&nbsp;
+  <a href="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif">
+    <img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="420"
+         alt="EKF + RTI-NMPC spacecraft attitude tracking">
+  </a>
+</p>
 
 <p align="center">
-  <sub>🔍 Click either animation to view it at full size.</sub>
-</p>
+  <sub>Click a GIF to open the full-size animation.</sub>
 
 ## Question
 센서 노이즈와 외란이 존재하고 control이 제한된 우주선 자세제어 환경에서 큰 Tracking Error가 발생했을 때, LQR과 Real-Time NMPC의 Tracking Performance는 어떤 차이를 보이는가?
