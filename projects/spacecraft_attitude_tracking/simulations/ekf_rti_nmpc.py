@@ -174,11 +174,11 @@ def simulation(initial_x_true: ArrayLike,
         A_11 = np.zeros((3, 3))
 
         for i in range(3):
-            derivatived_sigma = np.eye(3)[:, i]
-            derivatived_b_matrix = (-2 * sigma_BR[i] * np.eye(3) + 2 * skew_symmetric(derivatived_sigma) 
-                                    + 2 * (np.outer(sigma_BR, derivatived_sigma) + np.outer(derivatived_sigma, sigma_BR)))
+            d_sigma = np.eye(3)[:, i]
+            d_b_matrix = (-2 * sigma_BR[i] * np.eye(3) + 2 * skew_symmetric(d_sigma) 
+                                    + 2 * (np.outer(sigma_BR, d_sigma) + np.outer(d_sigma, sigma_BR)))
 
-            A_11[:, i] = (1/4) * derivatived_b_matrix @ omega_BR_B
+            A_11[:, i] = (1/4) * d_b_matrix @ omega_BR_B
 
         # A_12 (d_sigma_dot / d_omega)
         A_12 = (1/4) * mrp_b_matrix(sigma_BR)
@@ -187,25 +187,23 @@ def simulation(initial_x_true: ArrayLike,
         A_21 = np.zeros((3, 3))
 
         for i in range(3):
-            derivatived_sigma = np.eye(3)[:, i]
+            d_sigma = np.eye(3)[:, i]
 
-            derivatived_dcm_BR = - skew_symmetric(4 * np.linalg.inv(mrp_b_matrix(sigma_BR)) @ derivatived_sigma) @ dcm_BR
+            d_dcm_BR = - skew_symmetric(4 * np.linalg.inv(mrp_b_matrix(sigma_BR)) @ d_sigma) @ dcm_BR
 
-            derivatived_omega_RN_B = derivatived_dcm_BR @ omega_RN_R
+            d_omega_RN_B = d_dcm_BR @ omega_RN_R
 
-            derivatived_omega_BN_B = derivatived_omega_RN_B
+            d_omega_BN_B = d_omega_RN_B
 
-            derivatived_r_B = derivatived_dcm_BR @ r_R
+            d_r_B = d_dcm_BR @ r_R
 
-            derivatived_gravity_gradient = ((3 * mu / r**5) * (np.cross(derivatived_r_B, inertia_tensor @ r_B) 
-                                            + np.cross(r_B, inertia_tensor @ derivatived_r_B)))
+            d_gravity_gradient = ((3 * mu / r**5) * (np.cross(d_r_B, inertia_tensor @ r_B) + np.cross(r_B, inertia_tensor @ d_r_B)))
 
-            derivatived_gyroscopic_term = - (np.cross(derivatived_omega_BN_B, inertia_tensor @ omega_BN_B) + 
-                                             np.cross(omega_BN_B, inertia_tensor @ derivatived_omega_BN_B))
+            d_gyroscopic_term = - (np.cross(d_omega_BN_B, inertia_tensor @ omega_BN_B) + np.cross(omega_BN_B, inertia_tensor @ d_omega_BN_B))
 
-            derivated_omega_RN_B_dot = - np.cross(omega_BR_B, derivatived_omega_RN_B) + derivatived_dcm_BR @ omega_RN_R_dot
+            d_omega_RN_B_dot = - np.cross(omega_BR_B, d_omega_RN_B) + d_dcm_BR @ omega_RN_R_dot
 
-            A_21[:, i] = I_inv @ (derivatived_gyroscopic_term + derivatived_gravity_gradient) - derivated_omega_RN_B_dot
+            A_21[:, i] = I_inv @ (d_gyroscopic_term + d_gravity_gradient) - d_omega_RN_B_dot
 
         # A_22 (d_omega_dot / d_omega)
         A_22 = I_inv @ (skew_symmetric(inertia_tensor @ omega_BN_B) - skew_symmetric(omega_BN_B) @ inertia_tensor) - skew_symmetric(omega_RN_B)
@@ -216,7 +214,7 @@ def simulation(initial_x_true: ArrayLike,
         continuous_B = np.vstack([np.zeros((3, 3)), I_inv])
 
         return continuous_A, continuous_B
-
+    
     def discrete_jacobians(t, state, control):
 
         continuous_A, continuous_B = continuous_jacobians(t, state, control)

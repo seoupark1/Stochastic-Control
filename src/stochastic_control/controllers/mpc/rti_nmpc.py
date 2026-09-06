@@ -302,23 +302,12 @@ class RealTimeNMPCController:
         backup_U_bar = self.U_bar.copy()
         backup_X_bar = self.X_bar.copy()
 
-        try:
-            self.qp.solve(solver = cp.OSQP,
-                          warm_start = True,
-                          max_iter = 20000,
-                          adaptive_rho = True)
+        self.qp.solve(solver = cp.OSQP,
+                        warm_start = True,
+                        max_iter = 20000,
+                        adaptive_rho = True)
 
-        except cp.error.SolverError:
-
-            self.U_bar = backup_U_bar
-            self.X_bar = backup_X_bar
-
-            histories = {'status': 'qp_failed',
-                         'iterations': 0}
-
-            return backup_U_bar[0, :], histories
-
-        if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE) or self.del_z.value is None:
+        if self.qp.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
 
             # use previous optimal u
             self.U_bar = backup_U_bar
