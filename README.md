@@ -1,4 +1,4 @@
-# Spacecraft Attitude Tracking under Gaussian Noise and Actuator Constraints
+# Spacecraft Attitude Tracking under Gaussian Noise and Control Constraints
 
 <p align="center">
   <a href="assets/gifs/ekf_lqr_mars_orbiting.gif">
@@ -15,6 +15,7 @@
 
 <p align="center">
   <sub>Click either GIF to view the full-size animation.</sub>
+  <sub>These GIFs were generated using raw data from simulation, assisted by AI.</sub>
 </p>
 
 ## Question
