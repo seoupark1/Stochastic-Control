@@ -1,13 +1,5 @@
 # Spacecraft Attitude Tracking under Stochastic Environment and Actuator Constraints
 
-## 핵심질문
-센서 노이즈와 외란이 존재하고 control이 제한된 우주선 자세제어 환경에서 큰 Tracking Error가 발생했을 때, LQR과 Real-Time NMPC의 Tracking Performance는 어떤 차이를 보이는가?
-
-## 연구목적
-Spacecraft의 rotation을 담당하는 Reaction Wheel은 구조적인 안정성 때문에 적정 회전수와 토크에 제한이 있다. 우주에서 미션을 수행하는 spacecraft에 예상치 못한 자세오차가 발생했을 때 actuator 제약은 미션의 성공과 실패를 가르는 크리티컬한 요소가 될 수 있다. 시간 내에 그 오차를 해소하지 못한다면 미션이 실패할 수 있기 때문이다. 이 프로젝트는 sensor noise, gravity gradient, unexpected small disturbance가 존재하는 소규모 stochastic environment에서 control constraint가 있는 actuator를 가장 잘 control하며 tracking error를 해소하는 controller는 lqr과 real time nmpc 중 어느 것일지 판단한다. 
-
-## Results Abstract
-
 <table>
   <tr>
     <th align="center">EKF + LQR</th>
@@ -30,6 +22,13 @@ Spacecraft의 rotation을 담당하는 Reaction Wheel은 구조적인 안정성 
     </td>
   </tr>
 </table>
+
+## 핵심질문
+센서 노이즈와 외란이 존재하고 control이 제한된 우주선 자세제어 환경에서 큰 Tracking Error가 발생했을 때, LQR과 Real-Time NMPC의 Tracking Performance는 어떤 차이를 보이는가?
+
+## 연구목적
+Spacecraft의 rotation을 담당하는 Reaction Wheel은 구조적인 안정성 때문에 적정 회전수와 토크에 제한이 있다. 우주에서 미션을 수행하는 spacecraft에 예상치 못한 자세오차가 발생했을 때 actuator 제약은 미션의 성공과 실패를 가르는 크리티컬한 요소가 될 수 있다. 시간 내에 그 오차를 해소하지 못한다면 미션이 실패할 수 있기 때문이다. 이 프로젝트는 sensor noise, gravity gradient, unexpected small disturbance가 존재하는 소규모 stochastic environment에서 control constraint가 있는 actuator를 가장 잘 control하며 tracking error를 해소하는 controller는 lqr과 real time nmpc 중 어느 것일지 판단한다. 
+
 
 동일한 spacecraft와 sensing environment에서 LQR은 빠른 attitude correction을 위해
 공격적인 torque를 사용하며 actuator saturation이 발생하였다.
