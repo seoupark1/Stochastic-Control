@@ -35,9 +35,9 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 ## Contents
 [1. LQR vs RTI-NMPC](#experiment-1---lqr-vs-rti-nmpc)
 
-[2. Actuator Saturation](##2-actuator-torque-saturation-(ekf-+-lqr))
+[2. Actuator Saturation](#experiment-2---actuator-saturation)
 
-[3. Normal case vs Extreme case](##3-performance-comparison-(ekf-+-lqr-vs-ekf-+-rti-nmpc)) -> main
+[3. Normal case vs Extreme case](#experiment-3---normal-case-vs-extreme-case)
 
 ## Experiment 1 - LQR vs RTI-NMPC
 
