@@ -177,4 +177,75 @@ extreme_case_u_max_abs : [38.3882, 49.6486, 12.2470]
 
 ### Results
 
+#### Tracking Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/tracking_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/tracking_error.png"
+      width="49%"
+      alt="Normal Case Tracking Error">
+  </a>
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/tracking_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/tracking_error.png"
+      width="49%"
+      alt="Extreme Case Tracking Error">
+  </a>
+</p>
+
+
+#### Commanded Control
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/commanded_control.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/commanded_control.png"
+      width="49%"
+      alt="Normal Case Commanded Control">
+  </a>
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/commanded_control.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/commanded_control.png"
+      width="49%"
+      alt="Extreme Case Commanded Control">
+  </a>
+</p>
+
+
+#### State Estimation Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/estimation_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/estimation_error.png"
+      width="49%"
+      alt="Normal Case State Estimation Error">
+  </a>
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/estimation_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/estimation_error.png"
+      width="49%"
+      alt="Extreme Case State Estimation Error">
+  </a>
+</p>
+
+
+#### Gravity-Gradient Disturbance
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/true_gravity_gradient.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/normal_case/true_gravity_gradient.png"
+      width="49%"
+      alt="Normal Case Gravity Gradient Torque">
+  </a>
+  <a href="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/true_gravity_gradient.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/normal_vs_extreme/extreme_case/true_gravity_gradient.png"
+      width="49%"
+      alt="Extreme Case Gravity Gradient Torque">
+  </a>
+</p>
+
 ### Interpretation
