@@ -83,14 +83,14 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 </p>
 
 
-#### EKF Estimation Error
+#### State Estimation Error
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png">
     <img
       src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png"
       width="75%"
-      alt="EKF Estimation Error">
+      alt="State Estimation Error">
   </a>
 </p>
 
@@ -115,6 +115,53 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 ### Setup
 
 ### Results
+
+#### Tracking Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png"
+      width="75%"
+      alt="Saturated vs Unsaturated Tracking Error">
+  </a>
+</p>
+
+
+#### Commanded vs Actual Control
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/saturated_control.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/saturated_control.png"
+      width="75%"
+      alt="Commanded vs Actual Control under Actuator Saturation">
+  </a>
+</p>
+
+
+#### State Estimation Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/estimation_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/estimation_error.png"
+      width="75%"
+      alt="State Estimation Error under Actuator Saturation">
+  </a>
+</p>
+
+
+#### Gravity-Gradient Disturbance
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/true_gravity_gradient.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/true_gravity_gradient.png"
+      width="75%"
+      alt="Gravity Gradient Distubance">
+  </a>
+</p>
 
 normal_case_u_max_abs : [12.8076, 16.2495, 4.8823]
 
