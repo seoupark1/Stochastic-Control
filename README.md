@@ -1,11 +1,9 @@
 # Spacecraft Attitude Tracking under Stochastic Environment and Actuator Constraints
 
-### EKF + LQR
 <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="850">
 
 **Fast tracking · Aggressive control · Actuator saturation**
 
-### EKF + RTI-NMPC
 <img src="assets/gifs/ekf_rti_nmpc_mars_orbiting.gif" width="850">
 
 **Constraint-respecting · Lower control effort · Slower attitude convergence**
