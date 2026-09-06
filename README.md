@@ -31,7 +31,7 @@ RTI-NMPC는 동일한 torque bound를 직접 만족하면서 더 작은 control 
 attitude tracking error의 수렴은 상대적으로 느렸다.
 
 
-# < Simulation Conditions >
+# Simulation Conditions & Assumptions
 [Normal Case: Small initial tracking error + trustworthy EKF]
 
 Initial Attitude Tracking Error = around 7 degrees
@@ -43,9 +43,9 @@ Initial Attitude Tracking Error = around 35 degrees
 Initial Angular Velocity Tracking Error = around 30 degrees
 
 
-# [ EKF + LQR ] vs [ EKF + Real-Time NMPC ]
+# EKF + LQR vs EKF + Real-Time NMPC
 
-# [ EKF + LQR ]: Normal Case vs Extreme Case
+# EKF + LQR : Normal Case vs Extreme Case
 EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error, commanded control, true gravity gradient) 추출
 
 u abs max cmd
@@ -54,4 +54,4 @@ normal : [12.8076, 16.2495, 4.8823]
 
 extreme : [38.3882, 49.6486, 12.2470]
 
-# [ EKF + LQR ]: Actuator Torque Saturation
+# EKF + LQR : Actuator Torque Saturation
