@@ -1,0 +1,3 @@
+Control Limit Violation
+LQR violation rate [%]        =  3.3667
+RTI-NMPC violation rate [%]   =  0.0000

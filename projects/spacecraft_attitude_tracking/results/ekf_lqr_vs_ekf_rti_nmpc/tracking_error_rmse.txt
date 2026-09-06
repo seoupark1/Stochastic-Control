@@ -1,0 +1,5 @@
+Tracking Error RMSE
+LQR attitude RMSE [deg]       =  14.3449
+RTI-NMPC attitude RMSE [deg]  =  42.9950
+LQR omega RMSE [deg/s]        =  1.7224
+RTI-NMPC omega RMSE [deg/s]   =  2.0530

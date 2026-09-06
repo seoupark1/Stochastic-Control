@@ -1,0 +1,4 @@
+Control Effort
+LQR control effort [Nm^2 s]   =  8699.2887
+RTI-NMPC effort [Nm^2 s]      =  3996.7246
+RTI-NMPC used  45.9431% of the control effort of LQR

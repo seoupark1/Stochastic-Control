@@ -1,0 +1,5 @@
+Final Tracking Error
+LQR attitude Error [deg]       =  1.8173
+RTI-NMPC attitude Error [deg]  =  8.5154
+LQR omega Error [deg/s]        =  0.1850
+RTI-NMPC omega Error [deg/s]   =  0.1896

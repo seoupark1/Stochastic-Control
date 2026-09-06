@@ -1,0 +1,6 @@
+RTI-NMPC QP Status
+optimal                       = 14863
+optimal_inaccurate            = 136
+qp_failed                     = 1
+max iterations                = 20000.0
+mean iterations               = 3111.7266666666665
