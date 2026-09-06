@@ -15,10 +15,10 @@ Spacecraft의 rotation을 담당하는 Reaction Wheel은 구조적인 안정성 
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/mars_lqr_attitude_notional_inertia_v5.gif" width="100%">
+      <img src="assets/gifs/ekf_lqr_mars_orbiting.gif" width="100%">
     </td>
     <td align="center">
-      <img src="assets/mars_rti_nmpc_attitude_notional_inertia_v5.gif" width="100%">
+      <img src="assets/ekf_rti_nmpc_mars_orbiting.gif" width="100%">
     </td>
   </tr>
   <tr>
