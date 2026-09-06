@@ -32,7 +32,7 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 | Disturbance | Gravity-gradient torque + Gaussian noise |
 | Sensor Noise | Gaussian |
 
-## Experiments
+## Contents
 [1. Normal Case vs Extreme Case](##1-normal-case-vs-extreme-case-(ekf-+-lqr))
 
 [2. Actuator Torque Saturation](##2-actuator-torque-saturation-(ekf-+-lqr))
