@@ -1,4 +1,4 @@
-# Spacecraft Attitude Tracking under Stochastic Environment and Actuator Constraints
+# Spacecraft Attitude Tracking under Gaussian Noise and Actuator Constraints
 
 <table>
   <tr>
