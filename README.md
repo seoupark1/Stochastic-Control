@@ -13,16 +13,29 @@
   </a>
 </p>
 
-> **Summary:** 동일한 제어환경에서 LQR은 초반에 빠르게 attitude error를 해소하기 위해 actuator saturation을 유발하면서 강한 torque를 생성했다. 반면 RTI-NMPC는 torque constraint를 직접 만족하면서 상대적으로 더 작은 control effort를 사용했지만 그만큼 attitude error 해소 시점이 늦게 나타났다.
+> **Summary:** Under the same control environment, LQR generated strong torque at the beginning to reduce the attitude error quickly, which led reaction wheel to saturation. In contrast, Real-Time NMPC satisfied the torque constraints and used relatively less control effort, but the attitude error converged more slowly.
 
 ## Overview
-이 프로젝트는 sensor noise, gravity gradient disturbance, 그리고 actuator torque constraint이 존재하는 환경에서 spacecraft의 nadir-pointing attitude tracking 성능을 분석한다. Spacecraft의 자세와 각속도는 서로 다른 sampling rate로 작동하는 Star Tracker와 Gyroscope의 measurement를 이용해 Extended Kalman Filter (EKF)로 추정한다. 자세는 Modified Rodrigues Parameters (MRP)로 표현한다. Estimated state를 기반으로 LQR과 Real-Time Iteration NMPC (RTI-NMPC)를 비교한다. LQR은 commanded control을 계산한 뒤 실제 actuator 입력에서 torque limit을 적용해 clip한다. 반면 RTI-NMPC는 해당 torque constraint를 input으로 받아 내부에서 Quadratic Problem을 풀어 optimal control을 반환한다. 큰 attitude tracking error가 발생했을 때, 동일한 제어환경과 control constraint에서 LQR과 RTI-NMPC는 tracking performance와 control usage에서 어떠한 차이를 보이는가?
+This Project analyzes the nadir-pointing attitude tracking performance of a spacecraft under sensor noise, gravity-gradient disturbance, and actuator torque constraints. The spacecraft attitude and angular velocity are esimated using an Extended Kalman Filter (EKF) based on measurements from a Star Tracker and a Gyroscope operating at different sampling rates.
 
+Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQR first computes the commanded control with no constraint, and then clip it according to the torque limit. In contrast, RTI-NMPC includes the torque constraints directly in its optimization problem and solves a Quadratic Program (QP) to obtain the optimal control.
 
 ## Settings
+|---|---|
+| Trajectory | Mars Nadir-pointing Circular Orbit |
+| State | MRP attitude error + body angular velocity error |
+| Estimator | Extended Kalman Filter |
+| Controllers | LQR + clipping / RTI-NMPC + control constraints |
+| Actuator | Reaction Wheel |
+| Sensors | Star Tracker + Gyroscope |
+| Disturbance | Gravity-gradient torque |
+| Motion uncertainty | Gaussian disturbance noise |
+| Measurement uncertainty | Gaussian sensor noise |
 
-
-
+## Experiments
+1. [EKF + LQR] : Normal Case vs Extreme Case
+2. [EKF + LQR] : Actuator Torque Saturation
+3. [EKF + RTI-NMPC] : Performance comparison -> main experiment
 
 ## 1. EKF + LQR vs EKF + Real-Time NMPC
 
