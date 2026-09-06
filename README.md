@@ -45,6 +45,10 @@ Initial Angular Velocity Tracking Error = around 30 degrees
 
 ## EKF + LQR vs EKF + Real-Time NMPC
 
+### Results: 
+
+### Conditions & Assumptions
+
 ## EKF + LQR : Normal Case vs Extreme Case
 EKF + TVLQR 환경에서 normal case와 extreme case 그래프(tracking error, estimation error, commanded control, true gravity gradient) 추출
 
