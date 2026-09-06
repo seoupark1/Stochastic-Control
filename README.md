@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <sub>Click either GIF to view the full-size animation.</sub>
+  <sub>Click either GIF to view the full-size animation.</sub><br>
   <sub>These GIFs were generated using raw data from simulation, assisted by AI.</sub>
 </p>
 
