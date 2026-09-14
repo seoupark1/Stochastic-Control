@@ -25,13 +25,14 @@ Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR 
 
 |  | Models / Methods |
 |:---|:---:|
-| Orbit | Mars Nadir-pointing Circular Orbit |
-| State | MRP attitude error + body angular velocity error |
+| Orbit | Mars Nadir-Pointing Circular Orbit |
+| Attitude Representation | Modified Rodrigues Parameters (MRPs) |
+| State | Attitude Error + Body Angular Velocity Error |
 | Estimator | Extended Kalman Filter |
 | Controllers | LQR / RTI-NMPC |
 | Actuator | Reaction Wheel |
 | Sensors | Star Tracker + Gyroscope |
-| Disturbance | Gravity-gradient torque + Gaussian noise |
+| Disturbance | Gravity-Gradient Torque + Gaussian Noise |
 | Sensor Noise | Gaussian |
 
 ## Contents
@@ -59,6 +60,12 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 | Attitude Uncertainty [deg] | 3 | 9 |
 | Angular Velocity Uncertainty [deg/s] | 1 | 3 |
 | Simulation Time [s] | 60 | 60 |
+
+| Cost Weight | Setting |
+|:---|:---:|
+| State Weight | `Q = diag(100, 100, 100, 500, 500, 500)` |
+| Control Weight | `R = 0.01 * I3` |
+| Terminal Weight | `Qf = diag(200, 200, 200, 1000, 1000, 1000)` |
 
 ### Results
 
