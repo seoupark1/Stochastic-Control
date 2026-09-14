@@ -200,7 +200,7 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 
 The tracking error was larger in the Extreme case as expected.
 
-A larger difference was observed in the required control torque. The peak commanded torque increased from [12.81, 16.25, 4.88] [Nm] in the Normal case to [38.39, 49.65, 12.25] [Nm] in the Extreme case.
+A larger difference was observed in the required control torque. The peak commanded torque increased from [12.81, 16.25, 4.88] [Nm] in the normal case to [38.39, 49.65, 12.25] [Nm] in the extreme case.
 
 In the real world, the commanded control cannot always be applied in full because of the torque limit.
 
@@ -282,7 +282,7 @@ The commanded control and actual control were different when the LQR command exc
 
 Because less torque was available during the initial phase, the saturated case reduced the tracking error more slowly than the unsaturated case.
 
-This was the main reason why I moved to constrained MPC. LQR is not aware of the actuator limit. Therefore, the actual applied control is different from the unconstrained commanded control calculated by LQR. I wanted the controller to consider the torque constraint while calculating the control itself.
+LQR is not aware of the actuator limit. Therefore, the actual applied control is different from the unconstrained commanded control calculated by LQR. I wanted the controller to consider the torque constraint while calculating the control itself.
 
 ## Experiment 3 - LQR vs RTI-NMPC
 
