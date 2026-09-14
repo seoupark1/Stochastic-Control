@@ -348,7 +348,7 @@ The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for
   </a>
 </p>
 
-The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial steps, while the RTI-NMPC's commanded control remained within the torque limit. The control limit violation rates over the full simulation were 3.3667% and 0%, respectively.
+The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial phase, while the RTI-NMPC's commanded control stayed inside the torque limit. The control limit violation rates over the full simulation were 3.3667% and 0%, respectively.
 
 #### 4) Full Control Input
 
@@ -403,6 +403,6 @@ RTI-NMPC behaved more conservatively. Its control input stayed inside the torque
 
 In this simulation, the angular velocity weights were set larger than the attitude weights. I think this tuning and the actuator constraint made RTI-NMPC avoid using large torque only to reduce the attitude tracking error quickly.
 
-Therefore, I could not interpret this result as RTI-NMPC having better tracking performance than LQR. LQR showed much faster attitude tracking in this case. The advantage I observed from RTI-NMPC was that the actuator constraint was considered before the control was applied instead of clipping an already calculated commanded control. As a result, RTI-NMPC did not violate the actuator constraint during the simulation.
+Therefore, I could not conclude this result as RTI-NMPC having better tracking performance than LQR. LQR showed much faster attitude tracking in this case. The advantage I observed from RTI-NMPC was that the actuator constraint was considered before the control was applied instead of clipping an already calculated commanded control. As a result, RTI-NMPC did not violate the actuator constraint during the simulation.
 
-The QP result also showed a computational limitation. Most QPs were solved successfully, but the mean OSQP iteration count was relatively large and one QP failed during the simulation. The current implementation is therefore useful for comparing the control methods, but I would not consider it a real-time spacecraft implementation yet.
+The QP result also showed a computational limitation. Most QPs were solved successfully, but the mean OSQP iteration count was relatively large and one QP failed during the simulation.
