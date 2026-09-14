@@ -17,7 +17,7 @@
   GIFs were created with AI assistance, using the raw data from experiment 3
 </p>
 
-> **Summary:** Under the same control environment, LQR generated large commanded control at the beginning to reduce the attitude error quickly, which caused actuator saturation. In contrast, Real-Time Iteration NMPC (RTI-NMPC) satisfied the torque constraints and used less control effort, but the attitude error converged more slowly.
+> **Summary:** Under the same control environment, LQR generated large commanded control at the beginning to reduce the attitude error quickly, which caused actuator saturation. In contrast, Real-Time Iteration NMPC (RTI-NMPC) satisfied the torque constraint and used less control effort, but the attitude error converged more slowly.
 
 ## Overview
 
