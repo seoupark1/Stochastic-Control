@@ -57,11 +57,14 @@ The same dynamics, EKF, initial state, sensor models, process noise, and random 
 | Gyroscope Sampling Rate | 100 [Hz] |
 | Torque Limit | -20 ~ 20 [Nm] |
 | RTI-NMPC Prediction Horizon | 2 [s] |
-| State Weight (Q) | diag(100, 100, 100, 500, 500, 500) |
-| Control Weight (R) | 0.01 * eye(3) |
-| Terminal State Weight (Qf or P) | 2Q |
 
-The LQR and RTI-NMPC also used the same relative state and control weights. The LQR command was clipped by the reaction-wheel torque limit after the control input was calculated, while the RTI-NMPC included the same torque limit directly in the QP.
+| Cost Weights | LQR | RTI-NMPC |
+|---|---:|---:|
+| State Weight | `Q = diag(100, 100, 100, 500, 500, 500)` | `Q = diag(1, 1, 1, 5, 5, 5)` |
+| Control Weight | `R = 0.01 * eye(3)` | `R = 0.0001 * eye(3)` |
+| Terminal Weight | `Qf = diag(200, 200, 200, 1000, 1000, 1000)` | `P = diag(200, 200, 200, 1000, 1000, 1000)` |
+
+For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `dt = 0.01` to match the scaling of the continuous cost used by LQR, while the terminal state weight P was set equal to the LQR terminal state weight Qf.
 
 ### Results
 
@@ -159,15 +162,15 @@ How much does actuator saturation affect the tracking performance when LQR requi
 
 ### Setup
 
-The Extreme case from the previous experiment was used for this test.
+The Extreme case defined in the Experiment 3 was used for this test.
 
 First, I ran the EKF-LQR simulation without an actuator limit and measured the maximum abs commanded control of each axis. Then, the torque limit was set to half of each maximum value to intentionally produce actuator saturation.
 
 | Axis | Torque Limit [Nm] |
 |---|---:|
-| 1 | approximately 19.19 |
-| 2 | approximately 24.82 |
-| 3 | approximately 6.12 |
+| 1 | 19.19 |
+| 2 | 24.82 |
+| 3 | 6.12 |
 
 The saturated and unsaturated cases used the same initial state, sensor noise, process noise, and random seed.
 
@@ -224,7 +227,7 @@ The commanded control and actual control were different when the LQR command exc
 
 Because less torque was available during the initial phase, the saturated case reduced the tracking error more slowly than the unsaturated case.
 
-This was the main reason why I moved to constrained MPC. Simply clipping the LQR command might not satisfy the actuator limit in the beginning of the simulation depending on the initial tracking error and its output is not optimal. I wanted the controller to aware the torque constraint while calculating the control itself.
+This was the main reason why I moved to constrained MPC. LQR does not aware of the actuator limit, therefore its clipped actual control is not optimal. I wanted the controller to consider the torque constraint while calculating the control itself.
 
 ## Experiment 3 - Normal Case vs Extreme Case
 
@@ -371,4 +374,4 @@ The tracking error was larger in the Extreme case as expected.
 
 The larger difference appeared in the required control torque. The peak commanded control increased from [12.81, 16.25, 4.88] [Nm] in the Normal case to [38.39, 49.65, 12.25] [Nm] in the Extreme case.
 
-In the real world, since a actuator have torque limit, commanded control from the controller can not be applied 100%.
+In the real world, since an actuator has a torque limit, the commanded control from the controller cannot be always applied 100%.
