@@ -155,7 +155,21 @@ The QP result also showed a computational limitation. Most QPs were solved succe
 
 ### Question
 
+How much does actuator saturation affect the tracking performance when LQR requires a large control torque?
+
 ### Setup
+
+The Extreme case from the previous experiment was used for this test.
+
+First, I ran the EKF-LQR simulation without an actuator limit and measured the maximum abs commanded control of each axis. Then, the torque limit was set to half of each maximum value to intentionally produce actuator saturation.
+
+| Axis | Torque Limit [Nm] |
+|---|---:|
+| 1 | approximately 19.19 |
+| 2 | approximately 24.82 |
+| 3 | approximately 6.12 |
+
+The saturated and unsaturated cases used the same initial state, sensor noise, process noise, and random seed.
 
 ### Results
 
@@ -206,11 +220,31 @@ The QP result also showed a computational limitation. Most QPs were solved succe
 
 ### Interpretation
 
+The commanded control and actual control were different when the LQR command exceeded the actuator limit. The LQR itself returned the control calculated from the nonlinear dynamics, while the reaction-wheel clipped the torque before it was applied to the spacecraft.
+
+Because less torque was available during the initial phase, the saturated case reduced the tracking error more slowly than the unsaturated case.
+
+This was the main reason why I moved to constrained MPC. Simply clipping the LQR command might not satisfy the actuator limit in the beginning of the simulation depending on the initial tracking error and its output is not optimal. I wanted the controller to aware the torque constraint while calculating the control itself.
+
 ## Experiment 3 - Normal Case vs Extreme Case
 
 ### Question
 
+How does the same EKF-LQR compensator behave when the initial tracking error and the initial estimation uncertainty become much larger?
+
 ### Setup
+
+Two initial conditions were compared using the same EKF-LQR simulation.
+
+The Extreme case was created by increasing the initial tracking error, estimation uncertainty, and process noise.
+
+|  | Normal Case | Extreme Case |
+|---|---:|---:|
+| Initial MRP | [0.03, -0.03, -0.01] | [0.09, -0.09, -0.03] |
+| Initial Angular Velocity [deg/s] | [-2.5, -2, 1] | [-7.5, -6, 3] |
+| Attitude Uncertainty [deg] | 3 | 9 |
+| Angular Velocity Uncertainty [deg/s] | 1 | 3 |
+| Simulation Time [s] | 60 | 60 |
 
 ### Results
 
@@ -332,3 +366,9 @@ The QP result also showed a computational limitation. Most QPs were solved succe
 </table>
 
 ### Interpretation
+
+The tracking error was larger in the Extreme case as expected.
+
+The larger difference appeared in the required control torque. The peak commanded control increased from [12.81, 16.25, 4.88] [Nm] in the Normal case to [38.39, 49.65, 12.25] [Nm] in the Extreme case.
+
+In the real world, since a actuator have torque limit, commanded control from the controller can not be applied 100%.
