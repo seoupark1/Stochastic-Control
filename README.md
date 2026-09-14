@@ -13,6 +13,10 @@
   </a>
 </p>
 
+<p align="center">
+  <i>GIFs were created with AI assistance, using the raw data from experiment 3.</i>
+</p>
+
 > **Summary:** Under the same control environment, LQR generated large commanded control at the beginning to reduce the attitude error quickly, which caused actuator saturation. In contrast, Real-Time Iteration NMPC (RTI-NMPC) satisfied the torque constraints and used less control effort, but the attitude error converged more slowly.
 
 ## Overview
@@ -23,7 +27,7 @@ Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR 
 
 ## Basic Settings
 
-|  | Models / Methods |
+| Setting | Model / Method |
 |:---|:---:|
 | Orbit | Mars Nadir-Pointing Circular Orbit |
 | Attitude Representation | Modified Rodrigues Parameters (MRPs) |
@@ -39,7 +43,7 @@ Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR 
 
 - [1. Normal Case vs Extreme Case](#experiment-1---normal-case-vs-extreme-case)
 - [2. Actuator Saturation](#experiment-2---actuator-saturation)
-- [3. LQR vs RTI-NMPC](#experiment-3---lqr-vs-rti-nmpc)
+- [3. LQR vs RTI-NMPC](#experiment-3---lqr-vs-rti-nmpc) -> main simulation
 
 ## Experiment 1 - Normal Case vs Extreme Case
 
@@ -53,7 +57,7 @@ Two initial conditions were compared using the same EKF-LQR simulation.
 
 The Extreme case was created by increasing the initial tracking error, estimation uncertainty, and process noise.
 
-|  | Normal Case | Extreme Case |
+| Parameter | Normal Case | Extreme Case |
 |:---|:---:|:---:|
 | Initial MRP | [0.03, -0.03, -0.01] | [0.09, -0.09, -0.03] |
 | Initial Angular Velocity [deg/s] | [-2.5, -2, 1] | [-7.5, -6, 3] |
@@ -125,10 +129,10 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 
 #### 3) Peak Absolute Commanded Torque
 
-|  | Axis 1 [Nm] | Axis 2 [Nm] | Axis 3 [Nm] |
+| Case | Axis 1 [Nm] | Axis 2 [Nm] | Axis 3 [Nm] |
 |:---|:---:|:---:|:---:|
-| Normal Case | 12.8076 | 16.2495 | 4.8823 |
-| Extreme Case | 38.3882 | 49.6486 | 12.2470 |
+| Normal | 12.8076 | 16.2495 | 4.8823 |
+| Extreme | 38.3882 | 49.6486 | 12.2470 |
 
 <details>
 <summary><b>State Estimation Error</b></summary>
@@ -198,7 +202,7 @@ The tracking error was larger in the Extreme case as expected.
 
 A larger difference was observed in the required control torque. The peak commanded torque increased from [12.81, 16.25, 4.88] [Nm] in the Normal case to [38.39, 49.65, 12.25] [Nm] in the Extreme case.
 
-In the real world, the commanded control cannot always be applied in full because of torque limit.
+In the real world, the commanded control cannot always be applied in full because of the torque limit.
 
 ## Experiment 2 - Actuator Saturation
 
@@ -210,7 +214,7 @@ How much does actuator saturation affect the tracking performance when LQR requi
 
 The Extreme case defined in Experiment 1 was used for this test.
 
-First, I ran the EKF-LQR simulation without an actuator limit and measured the maximum absolute commanded control of each axis. Then, the torque limit was set to half of each maximum value to intentionally produce actuator saturation.
+First, I ran the EKF-LQR simulation without an actuator limit and measured the maximum absolute commanded torque of each axis. Then, the torque limit was set to half of each maximum value to intentionally produce actuator saturation.
 
 |  | Axis 1 [Nm] | Axis 2 [Nm] | Axis 3 [Nm] |
 |:---:|:---:|:---:|:---:|
@@ -274,7 +278,7 @@ The saturated and unsaturated cases used the same initial state, sensor noise, p
 
 ### Interpretation
 
-The commanded control and actual control were different when the LQR command exceeded the actuator limit. The LQR itself returned the control calculated from the nonlinear dynamics, while the reaction-wheel clipped the torque before it was applied to the spacecraft.
+The commanded control and actual control were different when the LQR command exceeded the actuator limit. The LQR itself returned the unconstrained control, while the reaction-wheel clipped the torque before it was applied to the spacecraft.
 
 Because less torque was available during the initial phase, the saturated case reduced the tracking error more slowly than the unsaturated case.
 
@@ -290,7 +294,7 @@ How do LQR and RTI-NMPC behave differently under the same control environment wh
 
 The same dynamics, EKF, initial state, sensor models, process noise, and random seed were used for both controllers.
 
-|  | Setting |
+| Parameter | Setting |
 |:---|:---:|
 | Simulation Time [s] | 150 |
 | Simulation Step [s] | 0.01 |
@@ -299,7 +303,7 @@ The same dynamics, EKF, initial state, sensor models, process noise, and random 
 | Torque Limit [Nm] | -20 ~ 20 |
 | RTI-NMPC Prediction Horizon [s] | 2 |
 
-| Cost Weights | LQR | RTI-NMPC |
+| Cost Weight | LQR | RTI-NMPC |
 |:---|:---:|:---:|
 | State Weight | `Q = diag(100, 100, 100, 500, 500, 500)` | `Q = diag(1, 1, 1, 5, 5, 5)` |
 | Control Weight | `R = 0.01 * I3` | `R = 0.0001 * I3` |
@@ -311,13 +315,13 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 
 #### 1) Scalar Metrics
 
-|  | EKF + LQR | EKF + RTI-NMPC |
+| Metric | EKF + LQR | EKF + RTI-NMPC |
 |:---|:---:|:---:|
 | Attitude Tracking RMSE [deg] | 14.3449 | 42.9950 |
 | Angular Velocity Tracking RMSE [deg/s] | 1.7224 | 2.0530 |
 | Final Attitude Error [deg] | 1.8173 | 8.5154 |
 | Final Angular Velocity Error [deg/s] | 0.1850 | 0.1896 |
-| Control Effort [(Nm)^2s] | 8699.2887 | 3996.7246 |
+| Control Effort [(Nm)^2 s] | 8699.2887 | 3996.7246 |
 | Control Limit Violation [%] | 3.3667 | 0.0000 |
 
 #### 2) Tracking Error
@@ -344,7 +348,7 @@ The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for
   </a>
 </p>
 
-The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial steps, while the RTI-NMPC's commanded control remained within the torque limit. The control limit violation rates over the full simulation were 3.3667 [%] and 0 [%], respectively.
+The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial steps, while the RTI-NMPC's commanded control remained within the torque limit. The control limit violation rates over the full simulation were 3.3667% and 0%, respectively.
 
 #### 4) Full Control Input
 
@@ -357,7 +361,7 @@ The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial
   </a>
 </p>
 
-The total control effort was 8699.2887 [(Nm)^2s] for LQR and 3996.7246 [(Nm)^2s] for RTI-NMPC. Therefore, RTI-NMPC used 45.94 [%] of the LQR control effort in this simulation.
+The total control effort was 8699.2887 [(Nm)^2 s] for LQR and 3996.7246 [(Nm)^2 s] for RTI-NMPC. Therefore, RTI-NMPC used 45.94% of the LQR control effort in this simulation.
 
 <details>
 <summary><b>RTI-NMPC QP Solver Iterations</b></summary>
@@ -373,7 +377,7 @@ The total control effort was 8699.2887 [(Nm)^2s] for LQR and 3996.7246 [(Nm)^2s]
   </a>
 </p>
 
-Among 15,000 total QP solves, 14,863 solves were `optimal`, 136 solves were `optimal_inaccurate`, and one solve failed. The mean of the OSQP iterations was 3111.7.
+Among 15,000 total QP solves, 14,863 solves were `optimal`, 136 solves were `optimal_inaccurate`, and one solve failed. The mean number of the OSQP iterations was 3111.7.
 </details>
 
 <details>
