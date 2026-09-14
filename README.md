@@ -302,7 +302,7 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 
 ### Results
 
-#### Scalar Metrics
+#### 1) Scalar Metrics
 
 |  | EKF + LQR | EKF + RTI-NMPC |
 |---|---:|---:|
@@ -313,7 +313,7 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 | Control Effort [(Nm)^2 s] | 8699.2887 | 3996.7246 |
 | Control Limit Violation [%] | 3.3667 | 0.0000 |
 
-#### 1) Tracking Error
+#### 2) Tracking Error
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/tracking_error.png">
@@ -326,7 +326,7 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 
 The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for EKF + RTI-NMPC. At the end of the 150 s simulation, the attitude tracking errors were 1.8173 [deg] and 8.5154 [deg], respectively.
 
-#### 2) Initial 30-second Control Input
+#### 3) Initial 30-second Control Input
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control_initial_30s.png">
@@ -339,7 +339,7 @@ The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for
 
 The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial steps, while the RTI-NMPC's commanded control remained within the torque limit. The control limit violation rates over the full simulation were 3.3667 [%] and 0 [%], respectively.
 
-#### 3) Full Control Input
+#### 4) Full Control Input
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/control.png">
