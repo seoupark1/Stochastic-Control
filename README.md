@@ -62,13 +62,6 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 
 ### Results
 
-#### Peak Absolute Commanded Torque
-
-|  | Axis 1 | Axis 2 | Axis 3 |
-|---|---:|---:|---:|
-| Normal [Nm] | 12.8076 | 16.2495 | 4.8823 |
-| Extreme [Nm] | 38.3882 | 49.6486 | 12.2470 |
-
 #### 1) Tracking Error
 
 <table>
@@ -122,6 +115,13 @@ The Extreme case was created by increasing the initial tracking error, estimatio
     </td>
   </tr>
 </table>
+
+#### 3) Peak Absolute Commanded Torque
+
+|  | Axis 1 | Axis 2 | Axis 3 |
+|---|---:|---:|---:|
+| Normal [Nm] | 12.8076 | 16.2495 | 4.8823 |
+| Extreme [Nm] | 38.3882 | 49.6486 | 12.2470 |
 
 <details>
 <summary><b>State Estimation Error</b></summary>
