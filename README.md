@@ -43,7 +43,22 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 
 ### Question
 
+How differently do LQR and RTI-NMPC return control when the actuator has a fixed torque limit at the same control environment?
+
 ### Setup
+
+The same dynamics, EKF, initial state, sensor models, process noise, and random seed were used for both controllers.
+
+|  | Setting |
+|---|---:|
+| Simulation Time | 150 [s] |
+| Simulation Step | 0.01 [s] |
+| Star Tracker Sampling Rate | 10 [Hz] |
+| Gyroscope Sampling Rate | 100 [Hz] |
+| Torque Limit | -20 ~ 20 [Nm] |
+| RTI-NMPC Prediction Horizon | 2 [s] |
+
+The LQR and RTI-NMPC also used the same relative state and control weights. The LQR command was clipped by the reaction-wheel torque limit after the control input was calculated, while the RTI-NMPC included the same torque limit directly in the QP.
 
 ### Results
 
@@ -57,6 +72,9 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 | Final Angular Velocity Error [deg/s] | 0.1850 | 0.1896 |
 | Control Effort [Nm^2 s] | 8699.2887 | 3996.7246 |
 | Control Limit Violation [%] | 3.3667 | 0.0000 |
+| State Weight (Q) | diag(100, 100, 100, 500, 500, 500) |
+| Control Weight (R) | 0.01 * eye(3) |
+| Terminal State Weight (Qf, P) | 2Q |
 
 #### 1) Tracking Error
 
@@ -122,6 +140,16 @@ Among 15,000 total QP solves, 14,863 were `optimal`, 136 were `optimal_inaccurat
 </p>
 
 ### Interpretation
+
+The most noticeable difference was the initial control behavior. LQR tried to reduce the attitude tracking error quickly and generated large commanded control. Since the LQR did not aware of the actuator torque limit, part of the commanded control was clipped by the reaction wheel torque saturation.
+
+RTI-NMPC behaved more conservatively. Its control input stayed inside the torque constraint and the total control effort was much smaller than its of LQR. However, the attitude tracking error decreased more slowly.
+
+In this simulation, the angular velocity weight were given larger than the attitude weight. I think this tuning and actuator constraint made RTI-NMPC avoid using large torque only to reduce the attitude tracking error quickly.
+
+Therefore, I could not interpret this result as RTI-NMPC having better tracking performance than LQR. LQR showed much faster attitude tracking in this case. The critical advantage I observed from RTI-NMPC was that the actuator constraint was considered before the control was applied instead of clipping an already calculated u_cmd, which made RTI-NMPC never violate actuator constraint even once.
+
+The QP result also showed a computational limitation. Most QPs were solved successfully, but the mean OSQP iteration count was relatively large and one QP failed during the simulation. The current implementation is therefore useful for comparing the control methods, but I would not consider it a real-time spacecraft implementation yet.
 
 ## Experiment 2 - Actuator Saturation
 
