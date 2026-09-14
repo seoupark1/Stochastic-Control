@@ -23,7 +23,7 @@
 
 This project analyzes the nadir-pointing attitude tracking performance of a spacecraft under sensor noise, gravity-gradient disturbance, and actuator torque constraint. The spacecraft attitude and angular velocity are estimated using an Extended Kalman Filter (EKF) based on measurements from a Star Tracker and a Gyroscope operating at different sampling rates.
 
-Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR first computes the commanded control without considering the torque constraint, which is then clipped according to the torque limit. In contrast, RTI-NMPC includes the torque constraints directly in its optimization and solves a Quadratic Program (QP) to obtain the control input.
+Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR first computes the commanded control without considering the torque constraint, which is then clipped according to the torque limit. In contrast, RTI-NMPC includes the torque constraint directly in its optimization and solves a Quadratic Program (QP) to obtain the control input.
 
 ## Basic Settings
 
