@@ -312,7 +312,7 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 
 ### Results
 
-#### Summary
+#### Scalar Metrics
 
 |  | EKF + LQR | EKF + RTI-NMPC |
 |---|---:|---:|
