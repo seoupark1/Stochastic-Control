@@ -1,4 +1,4 @@
-# Spacecraft Attitude Tracking under Gaussian Sensor Noise and Control Constraints
+# Stochastic Spacecraft Attitude Tracking under Sensor Noise and Actuator Constraints
 
 <p align="center">
   <a href="assets/gifs/ekf_lqr_mars_orbiting.gif">
@@ -47,6 +47,17 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 
 ### Results
 
+#### Summary
+
+|  | EKF + LQR | EKF + RTI-NMPC |
+|---|---:|---:|
+| Attitude Tracking RMSE [deg] | 14.3449 | 42.9950 |
+| Angular Velocity Tracking RMSE [deg/s] | 1.7224 | 2.0530 |
+| Final Attitude Error [deg] | 1.8173 | 8.5154 |
+| Final Angular Velocity Error [deg/s] | 0.1850 | 0.1896 |
+| Control Effort [Nm^2 s] | 8699.2887 | 3996.7246 |
+| Control Limit Violation [%] | 3.3667 | 0.0000 |
+
 #### 1) Tracking Error
 
 <p align="center">
@@ -58,6 +69,7 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
   </a>
 </p>
 
+The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for EKF + RTI-NMPC. At the end of the 150 s simulation, the attitude tracking error were 1.8173 [deg] and 8.5154 deg respectively.
 
 #### 2) Initial 30-second Control Input
 
@@ -70,6 +82,7 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
   </a>
 </p>
 
+The LQR's commanded control exceeded the 20 [Nm] torque limit during the initial steps, while the RTI-NMPC's commanded control remained within the torque limit. The control limit violation rates over the full simulation were 3.3667% and 0% respectively.
 
 #### 3) Full Control Input
 
@@ -82,20 +95,9 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
   </a>
 </p>
 
+The total control effort was 8699.2887 [Nm^2s] for LQR and 3996.7246 [Nm^2s] for RTI-NMPC. Therefore, RTI-NMPC used 45.94% of the LQR control effort in this simulation.
 
-#### 4) State Estimation Error
-
-<p align="center">
-  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png">
-    <img
-      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png"
-      width="75%"
-      alt="State Estimation Error">
-  </a>
-</p>
-
-
-#### 5) RTI-NMPC QP Solver Iterations
+#### 4) RTI-NMPC QP Solver Iterations
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_iterations.png">
@@ -103,6 +105,19 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
       src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/rti_nmpc_qp_iterations.png"
       width="75%"
       alt="RTI-NMPC QP Solver Iterations">
+  </a>
+</p>
+
+Among 15,000 total QP solves, 14,863 were `optimal`, 136 were `optimal_inaccurate`, and one solved failed. The mean of the OSQP iterations was 3111.7.
+
+#### 5) State Estimation Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/ekf_lqr_vs_ekf_rti_nmpc/estimation_error.png"
+      width="75%"
+      alt="State Estimation Error">
   </a>
 </p>
 
@@ -116,19 +131,7 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
 
 ### Results
 
-#### 1) Tracking Error
-
-<p align="center">
-  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png">
-    <img
-      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png"
-      width="75%"
-      alt="Saturated vs Unsaturated Tracking Error">
-  </a>
-</p>
-
-
-#### 2) Commanded vs Actual Control
+#### 1) Commanded vs Actual Control
 
 <p align="center">
   <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/saturated_control.png">
@@ -136,6 +139,17 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
       src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/saturated_control.png"
       width="75%"
       alt="Commanded vs Actual Control under Actuator Saturation">
+  </a>
+</p>
+
+#### 2) Tracking Error
+
+<p align="center">
+  <a href="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png">
+    <img
+      src="projects/spacecraft_attitude_tracking/results/actuator_saturation/half_of_max/tracking_error.png"
+      width="75%"
+      alt="Saturated vs Unsaturated Tracking Error">
   </a>
 </p>
 
@@ -151,7 +165,6 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
   </a>
 </p>
 
-
 #### 4) Gravity-Gradient Disturbance
 
 <p align="center">
@@ -163,10 +176,6 @@ Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQ
   </a>
 </p>
 
-normal_case_u_max_abs : [12.8076, 16.2495, 4.8823]
-
-extreme_case_u_max_abs : [38.3882, 49.6486, 12.2470]
-
 ### Interpretation
 
 ## Experiment 3 - Normal Case vs Extreme Case
@@ -176,6 +185,13 @@ extreme_case_u_max_abs : [38.3882, 49.6486, 12.2470]
 ### Setup
 
 ### Results
+
+#### Peak abs Commanded Control
+
+|  | Axis 1 [Nm] | Axis 2 [Nm] | Axis 3 [Nm] |
+|---|---:|---:|---:|
+| Normal | 12.8076 | 16.2495 | 4.8823 |
+| Extreme | 38.3882 | 49.6486 | 12.2470 |
 
 #### 1) Tracking Error
 
@@ -231,7 +247,6 @@ extreme_case_u_max_abs : [38.3882, 49.6486, 12.2470]
     </td>
   </tr>
 </table>
-
 
 #### 3) State Estimation Error
 
