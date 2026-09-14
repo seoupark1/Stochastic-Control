@@ -57,6 +57,9 @@ The same dynamics, EKF, initial state, sensor models, process noise, and random 
 | Gyroscope Sampling Rate | 100 [Hz] |
 | Torque Limit | -20 ~ 20 [Nm] |
 | RTI-NMPC Prediction Horizon | 2 [s] |
+| State Weight (Q) | diag(100, 100, 100, 500, 500, 500) |
+| Control Weight (R) | 0.01 * eye(3) |
+| Terminal State Weight (Qf or P) | 2Q |
 
 The LQR and RTI-NMPC also used the same relative state and control weights. The LQR command was clipped by the reaction-wheel torque limit after the control input was calculated, while the RTI-NMPC included the same torque limit directly in the QP.
 
@@ -72,9 +75,6 @@ The LQR and RTI-NMPC also used the same relative state and control weights. The 
 | Final Angular Velocity Error [deg/s] | 0.1850 | 0.1896 |
 | Control Effort [Nm^2 s] | 8699.2887 | 3996.7246 |
 | Control Limit Violation [%] | 3.3667 | 0.0000 |
-| State Weight (Q) | diag(100, 100, 100, 500, 500, 500) |
-| Control Weight (R) | 0.01 * eye(3) |
-| Terminal State Weight (Qf, P) | 2Q |
 
 #### 1) Tracking Error
 
