@@ -324,7 +324,7 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
   </a>
 </p>
 
-The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for EKF + RTI-NMPC. At the end of the 150 s simulation, the attitude tracking errors were 1.8173 [deg] and 8.5154 [deg], respectively.
+The attitude tracking RMSE was 14.3449 [deg] for EKF + LQR and 42.9950 [deg] for EKF + RTI-NMPC. At the end of the 150 [s] simulation, the attitude tracking errors were 1.8173 [deg] and 8.5154 [deg], respectively.
 
 #### 3) Initial 30-second Control Input
 
