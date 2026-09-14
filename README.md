@@ -13,9 +13,9 @@
   </a>
 </p>
 
-<a align="center">
-  <b>GIFs were created with AI assistance, using the raw data from experiment 3.</b>
-</a>
+<p align="center">
+  GIFs were created with AI assistance, using the raw data from experiment 3.
+</p>
 
 > **Summary:** Under the same control environment, LQR generated large commanded control at the beginning to reduce the attitude error quickly, which caused actuator saturation. In contrast, Real-Time Iteration NMPC (RTI-NMPC) satisfied the torque constraints and used less control effort, but the attitude error converged more slowly.
 
@@ -131,8 +131,8 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 
 | Case | Axis 1 [Nm] | Axis 2 [Nm] | Axis 3 [Nm] |
 |:---|:---:|:---:|:---:|
-| Normal | 12.8076 | 16.2495 | 4.8823 |
-| Extreme | 38.3882 | 49.6486 | 12.2470 |
+| Normal Case | 12.8076 | 16.2495 | 4.8823 |
+| Extreme Case | 38.3882 | 49.6486 | 12.2470 |
 
 <details>
 <summary><b>State Estimation Error</b></summary>
