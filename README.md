@@ -21,7 +21,7 @@ This project analyzes the nadir-pointing attitude tracking performance of a spac
 Using the estimated state, the performances of LQR and RTI-NMPC are compared. LQR first computes the commanded control with no constraint, which is then clipped according to the torque limit. In contrast, RTI-NMPC includes the torque constraints directly in its optimization problem and solves a Quadratic Program (QP) to obtain the control input.
 
 ## Settings
-| Components | Models / Methods |
+|  | Models / Methods |
 |---|---|
 | Orbit | Mars Nadir-pointing Circular Orbit |
 | State | MRP attitude error + body angular velocity error |
