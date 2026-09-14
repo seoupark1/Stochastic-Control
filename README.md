@@ -24,7 +24,7 @@ Using the estimated state, the performance of LQR and RTI-NMPC is compared. LQR 
 ## Basic Settings
 
 |  | Models / Methods |
-|---|---|
+|:---:|:---:|
 | Orbit | Mars Nadir-pointing Circular Orbit |
 | State | MRP attitude error + body angular velocity error |
 | Estimator | Extended Kalman Filter |
@@ -53,7 +53,7 @@ Two initial conditions were compared using the same EKF-LQR simulation.
 The Extreme case was created by increasing the initial tracking error, estimation uncertainty, and process noise.
 
 |  | Normal Case | Extreme Case |
-|---|---:|---:|
+|:---:|:---:|:---:|
 | Initial MRP | [0.03, -0.03, -0.01] | [0.09, -0.09, -0.03] |
 | Initial Angular Velocity [deg/s] | [-2.5, -2, 1] | [-7.5, -6, 3] |
 | Attitude Uncertainty [deg] | 3 | 9 |
@@ -119,7 +119,7 @@ The Extreme case was created by increasing the initial tracking error, estimatio
 #### 3) Peak Absolute Commanded Torque
 
 |  | Axis 1 | Axis 2 | Axis 3 |
-|---|---:|---:|---:|
+|:---:|:---:|:---:|:---:|
 | Normal [Nm] | 12.8076 | 16.2495 | 4.8823 |
 | Extreme [Nm] | 38.3882 | 49.6486 | 12.2470 |
 
@@ -205,8 +205,8 @@ The Extreme case defined in Experiment 1 was used for this test.
 
 First, I ran the EKF-LQR simulation without an actuator limit and measured the maximum absolute commanded control of each axis. Then, the torque limit was set to half of each maximum value to intentionally produce actuator saturation.
 
-|  | Axis 1 | Axis 2| Axis 3 |
-|---|---:|---:|---:|
+|  | Axis 1 | Axis 2 | Axis 3 |
+|:---:|:---:|:---:|:---:|
 | Torque Limit [Nm] | 19.19 | 24.82 | 6.12 |
 
 The saturated and unsaturated cases used the same initial state, sensor noise, process noise, and random seed.
@@ -284,7 +284,7 @@ How do LQR and RTI-NMPC behave differently under the same control environment wh
 The same dynamics, EKF, initial state, sensor models, process noise, and random seed were used for both controllers.
 
 |  | Setting |
-|---|---:|
+|:---:|:---:|
 | Simulation Time [s] | 150 |
 | Simulation Step [s] | 0.01 |
 | Star Tracker Sampling Rate [Hz] | 10 |
@@ -293,7 +293,7 @@ The same dynamics, EKF, initial state, sensor models, process noise, and random 
 | RTI-NMPC Prediction Horizon [s] | 2 |
 
 | Cost Weights | LQR | RTI-NMPC |
-|---|---:|---:|
+|:---:|:---:|:---:|
 | State Weight | `Q = diag(100, 100, 100, 500, 500, 500)` | `Q = diag(1, 1, 1, 5, 5, 5)` |
 | Control Weight | `R = 0.01 * I3` | `R = 0.0001 * I3` |
 | Terminal Weight | `Qf = diag(200, 200, 200, 1000, 1000, 1000)` | `P = diag(200, 200, 200, 1000, 1000, 1000)` |
@@ -305,12 +305,12 @@ For RTI-NMPC, the stage weights Q and R were multiplied by the simulation step `
 #### 1) Scalar Metrics
 
 |  | EKF + LQR | EKF + RTI-NMPC |
-|---|---:|---:|
+|:---:|:---:|:---:|
 | Attitude Tracking RMSE [deg] | 14.3449 | 42.9950 |
 | Angular Velocity Tracking RMSE [deg/s] | 1.7224 | 2.0530 |
 | Final Attitude Error [deg] | 1.8173 | 8.5154 |
 | Final Angular Velocity Error [deg/s] | 0.1850 | 0.1896 |
-| Control Effort [(Nm)^2 s] | 8699.2887 | 3996.7246 |
+| Control Effort [(Nm)^2s] | 8699.2887 | 3996.7246 |
 | Control Limit Violation [%] | 3.3667 | 0.0000 |
 
 #### 2) Tracking Error
