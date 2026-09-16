@@ -3,7 +3,7 @@ from numpy.typing import ArrayLike, NDArray
 from ..math_tools import skew_symmetric
 
 # get dcm time derivative from body angular velocity
-def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn_b: ArrayLike) -> NDArray[np.float64]:
+def dcm_derivative(dcm_bn: ArrayLike, angular_velocity_bn_b: ArrayLike):
     c_bn = np.asarray(dcm_bn, dtype = float).reshape(3,3)
     omega = np.asarray(angular_velocity_bn_b, dtype = float).reshape(3,1)
 

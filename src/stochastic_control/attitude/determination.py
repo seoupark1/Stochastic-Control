@@ -30,7 +30,7 @@ def triad_method(v1_B, v2_B, v1_N, v2_N):
     return dcm_BbarN
 
 # Davenport's q-method about N sensors
-def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike) -> NDArray[np.float64]:
+def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike):
 
     # dimension validation
     if not (len(b_vectors) == len(n_vectors) == len(weight_vectors)):
@@ -69,7 +69,7 @@ def q_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLi
     return optimal_quaternion
 
 # optimal linear attitude estimator (olae)
-def olae_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike) -> NDArray[np.float64]:
+def olae_method(b_vectors: ArrayLike, n_vectors: ArrayLike, weight_vectors: ArrayLike):
 
     # dimension validation
     if not (len(b_vectors) == len(n_vectors) == len(weight_vectors)):

@@ -22,7 +22,7 @@ class Inertia:
         return eig_vals, eig_vecs
 
     def parallel_axis_shift(self,
-                            displacement: ArrayLike) -> NDArray[np.float64]:
+                            displacement: ArrayLike):
 
         if self.mass is None:
             raise ValueError('Mass is required for parallel axis shift')

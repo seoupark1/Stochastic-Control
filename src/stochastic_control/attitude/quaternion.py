@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-def normalize_quaternion(quaternion: ArrayLike) -> NDArray[np.float64]:
+def normalize_quaternion(quaternion: ArrayLike):
     b = np.asarray(quaternion, dtype = float).reshape(4)
     norm_b = np.linalg.norm(b)
 
@@ -54,7 +54,7 @@ def dcm_to_quaternion(dcm):
     return quaternion
 
 # quaternions to directional cosine matrix
-def quaternion_to_dcm(quaternions: ArrayLike) -> NDArray[np.float64]:
+def quaternion_to_dcm(quaternions: ArrayLike):
     # allocate parameters (b0 is a scalar part)
     quaternion = np.asarray(quaternions, dtype = float).reshape(4)
     quaternion /= np.linalg.norm(quaternion)
@@ -67,7 +67,7 @@ def quaternion_to_dcm(quaternions: ArrayLike) -> NDArray[np.float64]:
     return dcm
 
 # get quaternions time derivative from body angular velocity
-def quaternion_derivative(quaternions: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+def quaternion_derivative(quaternions: ArrayLike, angular_velocity_b: ArrayLike):
     euler_parameters = np.asarray(quaternions, dtype = float).reshape(4)
     omega = np.asarray(angular_velocity_b, dtype = float).reshape(3)
 

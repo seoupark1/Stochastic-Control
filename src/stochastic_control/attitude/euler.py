@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 # directional cosine matrix to (3-2-1) euler angles
-def dcm_to_ea321(dcm: NDArray) -> NDArray[np.float64]:
+def dcm_to_ea321(dcm: NDArray):
     # allocate parameters
     theta1 = np.arctan2(dcm[0,1], dcm[0,0])
     theta2 = -np.arcsin(dcm[0,2])
@@ -13,7 +13,7 @@ def dcm_to_ea321(dcm: NDArray) -> NDArray[np.float64]:
     return euler_angles_rad
 
 # (3-2-1) euler angles to directional cosine matrix
-def ea321_to_dcm(euler_angles_rad: NDArray) -> NDArray[np.float64]:
+def ea321_to_dcm(euler_angles_rad: NDArray):
     # allocate parameters
     theta1, theta2, theta3 = np.asarray(euler_angles_rad, dtype = float).reshape(3)
 
@@ -29,7 +29,7 @@ def ea321_to_dcm(euler_angles_rad: NDArray) -> NDArray[np.float64]:
     return dcm
 
 # get (3-2-1) euler anlges time derivative from body angular velocity
-def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike):
     euler_angles = np.asarray(euler_angles_rad, dtype = float).reshape(3)
     omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
 
@@ -47,7 +47,7 @@ def ea321_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike)
     return euler_angles_dot.flatten()
 
 # directional dosine matrix to (3-1-3) euler angles
-def dcm_to_ea313(dcm: ArrayLike) -> NDArray[np.float64]:
+def dcm_to_ea313(dcm: ArrayLike):
     # allocate parameters
     theta1 = np.arctan2(dcm[2,0], -dcm[2,1])
     theta2 = np.arccos(dcm[2,2])
@@ -58,7 +58,7 @@ def dcm_to_ea313(dcm: ArrayLike) -> NDArray[np.float64]:
     return euler_angles_rad
 
 # (3-1-3) euler angles to directional cosine matrix
-def ea313_to_dcm(euler_angles_rad: ArrayLike) -> NDArray[np.float64]:
+def ea313_to_dcm(euler_angles_rad: ArrayLike):
     # allocate parameters
     theta1, theta2, theta3 = np.asarray(euler_angles_rad, dtype = float).reshape(3)
 
@@ -74,7 +74,7 @@ def ea313_to_dcm(euler_angles_rad: ArrayLike) -> NDArray[np.float64]:
     return dcm
 
 # get (3-1-3) euler anlges time derivative from body angular velocity
-def ea313_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+def ea313_derivative(euler_angles_rad: ArrayLike, angular_velocity_b: ArrayLike):
     euler_angles = np.asarray(euler_angles_rad, dtype = float).reshape(3)
     omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
 

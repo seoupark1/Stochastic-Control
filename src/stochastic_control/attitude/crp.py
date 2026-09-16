@@ -15,14 +15,14 @@ def dcm_to_crp(dcm):
     return q
 
 # classical rodrigues parameters to directional cosine matrix
-def crp_to_dcm(q: ArrayLike) -> NDArray[np.float64]:
+def crp_to_dcm(q: ArrayLike):
     q = np.asarray(q, dtype = float).reshape(3)
     dcm = ((1 - np.vdot(q, q)) * np.eye(3) + 2 * np.outer(q, q) - 2 * skew_symmetric(q)) / (1 + np.vdot(q, q))
 
     return dcm
 
 # get crps time derivative from body angular velocity
-def crp_derivative(crp: ArrayLike, angular_velocity_b: ArrayLike) -> NDArray[np.float64]:
+def crp_derivative(crp: ArrayLike, angular_velocity_b: ArrayLike):
     q = np.asarray(crp, dtype = float).reshape(3,1)
     omega = np.asarray(angular_velocity_b, dtype = float).reshape(3,1)
 

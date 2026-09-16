@@ -26,7 +26,7 @@ class UnscentedKalmanFilter:
 
     def get_sigma_points(self,
                          mean: ArrayLike,
-                         covariance: ArrayLike) -> NDArray[np.float64]:
+                         covariance: ArrayLike):
 
         n = mean.shape[0]
         kappa = 3 - n

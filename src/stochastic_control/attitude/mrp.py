@@ -4,7 +4,7 @@ from ..math_tools import skew_symmetric
 from .quaternion import dcm_to_quaternion, normalize_quaternion
 
 # switch mrp to its shadow_set to avoid singularity
-def mrp_shadow_set(mrp: ArrayLike) -> NDArray[np.float64]:
+def mrp_shadow_set(mrp: ArrayLike):
     sigma = np.asarray(mrp, dtype = float).reshape(3,1)
     norm_sigma = np.vdot(sigma, sigma)
 
@@ -14,7 +14,7 @@ def mrp_shadow_set(mrp: ArrayLike) -> NDArray[np.float64]:
     return sigma.flatten()
 
 # quaternion to modified rodrigues parameters to avoid singularity
-def quaternion_to_mrp(quaternion: ArrayLike) -> NDArray[np.float64]:
+def quaternion_to_mrp(quaternion: ArrayLike):
     quaternion = np.asarray(quaternion, dtype = float).reshape(4)
     b = normalize_quaternion(quaternion)
 
